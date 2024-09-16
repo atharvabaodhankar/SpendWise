@@ -125,7 +125,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
     <>
       <button
         onClick={() => setShowManager(true)}
-        className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
+        className="bg-gradient-to-r from-slate-500 to-gray-600 text-white px-6 py-4 rounded-xl hover:from-slate-600 hover:to-gray-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
         title="Adjust Balances"
       >
         <Settings className="h-4 w-4" />
@@ -134,20 +134,26 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
       </button>
 
       {showManager && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                <Edit3 className="h-5 w-5" />
-                <span>Adjust Balances</span>
-              </h2>
-              <button
-                onClick={() => setShowManager(false)}
-                className="text-gray-500 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-scale">
+          <div className="premium-card w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="p-6 sm:p-8">
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-slate-500 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <Edit3 className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Balance Manager</h2>
+                    <p className="text-sm text-gray-500">Adjust your online and cash balances</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowManager(false)}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
             {/* Current Balances */}
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">

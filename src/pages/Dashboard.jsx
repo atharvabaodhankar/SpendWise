@@ -96,31 +96,47 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="text-center animate-fade-scale">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <span className="text-white text-2xl font-bold">₹</span>
+          </div>
+          <div className="text-xl font-semibold text-gray-700 mb-2">Loading SpendWise</div>
+          <div className="w-32 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
+            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Premium Header */}
+      <header className="glass-card border-0 border-b border-white/20 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">₹</span>
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <span className="text-white text-lg font-bold">₹</span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">SpendWise</h1>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  SpendWise
+                </h1>
+                <p className="text-sm text-gray-500 font-medium">Premium Financial Management</p>
+              </div>
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <span className="hidden sm:block text-gray-700 text-sm">
-                Welcome, {currentUser.email?.split('@')[0]}
-              </span>
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:block text-right">
+                <p className="text-sm font-medium text-gray-600">Welcome back,</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  {currentUser.email?.split('@')[0]}
+                </p>
+              </div>
               <button
                 onClick={logout}
-                className="bg-red-600 text-white px-3 py-2 sm:px-4 rounded-md hover:bg-red-700 transition-colors duration-200 text-sm"
+                className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 Logout
               </button>
@@ -130,139 +146,204 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 lg:p-6 rounded-lg shadow-md border border-green-100">
-            <div className="flex items-center">
-              <div className="p-2 lg:p-3 bg-green-100 rounded-full">
-                <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
-              </div>
-              <div className="ml-3 lg:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-gray-600">Total Income</p>
-                <p className="text-lg lg:text-2xl font-bold text-green-600">₹{totalIncome.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-red-50 to-rose-50 p-4 lg:p-6 rounded-lg shadow-md border border-red-100">
-            <div className="flex items-center">
-              <div className="p-2 lg:p-3 bg-red-100 rounded-full">
-                <TrendingDown className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
-              </div>
-              <div className="ml-3 lg:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-gray-600">Total Expenses</p>
-                <p className="text-lg lg:text-2xl font-bold text-red-600">₹{totalExpenses.toFixed(2)}</p>
+        {/* Premium Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up">
+          {/* Total Income Card */}
+          <div className="premium-card bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-emerald-100/50 group">
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-emerald-200 transition-all duration-300">
+                    <TrendingUp className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-600 mb-1">Total Income</p>
+                    <p className="text-2xl font-bold text-emerald-700">₹{totalIncome.toFixed(2)}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className={`bg-gradient-to-r p-4 lg:p-6 rounded-lg shadow-md border ${
+          {/* Total Expenses Card */}
+          <div className="premium-card bg-gradient-to-br from-rose-50 via-red-50 to-pink-50 border-rose-100/50 group">
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-rose-400 to-red-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-rose-200 transition-all duration-300">
+                    <TrendingDown className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-rose-600 mb-1">Total Expenses</p>
+                    <p className="text-2xl font-bold text-rose-700">₹{totalExpenses.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Online Balance Card */}
+          <div className={`premium-card group ${
             onlineBalance >= 0 
-              ? 'from-blue-50 to-indigo-50 border-blue-100' 
-              : 'from-orange-50 to-red-50 border-orange-100'
+              ? 'bg-gradient-to-br from-blue-50 via-indigo-50 to-cyan-50 border-blue-100/50' 
+              : 'bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 border-orange-100/50'
           }`}>
-            <div className="flex items-center">
-              <div className={`p-2 lg:p-3 rounded-full ${
-                onlineBalance >= 0 ? 'bg-blue-100' : 'bg-orange-100'
-              }`}>
-                <span className={`text-lg lg:text-xl ${
-                  onlineBalance >= 0 ? 'text-blue-600' : 'text-orange-600'
-                }`}>💳</span>
-              </div>
-              <div className="ml-3 lg:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-gray-600">Online Balance</p>
-                <p className={`text-lg lg:text-2xl font-bold ${onlineBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                  ₹{onlineBalance.toFixed(2)}
-                </p>
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ${
+                    onlineBalance >= 0 
+                      ? 'bg-gradient-to-r from-blue-400 to-indigo-500 group-hover:shadow-blue-200' 
+                      : 'bg-gradient-to-r from-orange-400 to-red-500 group-hover:shadow-orange-200'
+                  }`}>
+                    <span className="text-2xl">💳</span>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-semibold mb-1 ${
+                      onlineBalance >= 0 ? 'text-blue-600' : 'text-orange-600'
+                    }`}>Online Balance</p>
+                    <p className={`text-2xl font-bold ${
+                      onlineBalance >= 0 ? 'text-blue-700' : 'text-orange-700'
+                    }`}>₹{onlineBalance.toFixed(2)}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className={`bg-gradient-to-r p-4 lg:p-6 rounded-lg shadow-md border ${
+          {/* Cash Balance Card */}
+          <div className={`premium-card group ${
             cashBalance >= 0 
-              ? 'from-purple-50 to-violet-50 border-purple-100' 
-              : 'from-orange-50 to-red-50 border-orange-100'
+              ? 'bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50 border-purple-100/50' 
+              : 'bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 border-orange-100/50'
           }`}>
-            <div className="flex items-center">
-              <div className={`p-2 lg:p-3 rounded-full ${
-                cashBalance >= 0 ? 'bg-purple-100' : 'bg-orange-100'
-              }`}>
-                <span className={`text-lg lg:text-xl ${
-                  cashBalance >= 0 ? 'text-purple-600' : 'text-orange-600'
-                }`}>💵</span>
-              </div>
-              <div className="ml-3 lg:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-gray-600">Cash Balance</p>
-                <p className={`text-lg lg:text-2xl font-bold ${cashBalance >= 0 ? 'text-purple-600' : 'text-orange-600'}`}>
-                  ₹{cashBalance.toFixed(2)}
-                </p>
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ${
+                    cashBalance >= 0 
+                      ? 'bg-gradient-to-r from-purple-400 to-violet-500 group-hover:shadow-purple-200' 
+                      : 'bg-gradient-to-r from-orange-400 to-red-500 group-hover:shadow-orange-200'
+                  }`}>
+                    <span className="text-2xl">💵</span>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-semibold mb-1 ${
+                      cashBalance >= 0 ? 'text-purple-600' : 'text-orange-600'
+                    }`}>Cash Balance</p>
+                    <p className={`text-2xl font-bold ${
+                      cashBalance >= 0 ? 'text-purple-700' : 'text-orange-700'
+                    }`}>₹{cashBalance.toFixed(2)}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Total Balance Summary */}
-        <div className="mb-6">
-          <div className={`bg-gradient-to-r p-6 rounded-lg shadow-lg border-2 ${
+        {/* Premium Total Balance Summary */}
+        <div className="mb-8 animate-fade-scale">
+          <div className={`premium-card overflow-hidden ${
             balance >= 0 
-              ? 'from-emerald-50 to-teal-50 border-emerald-200' 
-              : 'from-red-50 to-orange-50 border-red-200'
+              ? 'bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-emerald-200/50' 
+              : 'bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 border-red-200/50'
           }`}>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">Total Balance (Online + Cash)</p>
-              <p className={`text-3xl lg:text-4xl font-bold ${balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                ₹{balance.toFixed(2)}
-              </p>
-              <div className="flex justify-center space-x-6 mt-4 text-sm text-gray-600">
-                <span>Online: ₹{onlineBalance.toFixed(2)}</span>
-                <span>•</span>
-                <span>Cash: ₹{cashBalance.toFixed(2)}</span>
+            <div className="relative p-8">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-5">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent transform -skew-y-12"></div>
+              </div>
+              
+              <div className="relative text-center">
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`w-16 h-16 rounded-3xl flex items-center justify-center shadow-xl ${
+                    balance >= 0 
+                      ? 'bg-gradient-to-r from-emerald-400 to-teal-500' 
+                      : 'bg-gradient-to-r from-red-400 to-orange-500'
+                  }`}>
+                    <DollarSign className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+                
+                <p className="text-lg font-semibold text-gray-600 mb-3">Total Portfolio Balance</p>
+                <p className={`text-5xl lg:text-6xl font-bold mb-6 ${
+                  balance >= 0 ? 'text-emerald-600' : 'text-red-600'
+                }`}>
+                  ₹{balance.toFixed(2)}
+                </p>
+                
+                <div className="flex justify-center items-center space-x-8 text-lg">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">💳</span>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-500">Online</p>
+                      <p className={`font-bold ${onlineBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                        ₹{onlineBalance.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="w-px h-12 bg-gray-300"></div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">💵</span>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-500">Cash</p>
+                      <p className={`font-bold ${cashBalance >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                        ₹{cashBalance.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:gap-4">
+        {/* Premium Action Buttons */}
+        <div className="mb-8 flex flex-wrap gap-4 justify-center lg:justify-start">
           <button
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
+            className="btn-primary flex items-center space-x-3 px-8 py-4 text-base font-semibold transform hover:scale-105 active:scale-95"
           >
             <PlusCircle className="h-5 w-5" />
             <span>Add Transaction</span>
           </button>
+          
           <a
             href="/analytics"
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
+            className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-8 py-4 rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center space-x-3 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
           >
-            <span>📊</span>
+            <span className="text-lg">📊</span>
             <span>View Analytics</span>
           </a>
+          
           <BalanceManager 
             onlineBalance={onlineBalance}
             cashBalance={cashBalance}
           />
+          
           {transactions.length > 0 && (
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   exportToPDF(transactions);
                   showSuccess('Transactions exported to PDF successfully!');
                 }}
-                className="bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
+                className="bg-gradient-to-r from-red-500 to-rose-600 text-white px-6 py-4 rounded-xl hover:from-red-600 hover:to-rose-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
               >
-                <Download className="h-5 w-5" />
-                <span>Export PDF</span>
+                <Download className="h-4 w-4" />
+                <span>PDF</span>
               </button>
               <button
                 onClick={() => {
                   exportToExcel(transactions);
                   showSuccess('Transactions exported to Excel successfully!');
                 }}
-                className="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
+                className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
               >
-                <Download className="h-5 w-5" />
-                <span>Export Excel</span>
+                <Download className="h-4 w-4" />
+                <span>Excel</span>
               </button>
             </div>
           )}
