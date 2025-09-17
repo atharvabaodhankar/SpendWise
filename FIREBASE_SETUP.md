@@ -32,17 +32,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only access their own data
+    
+    // Transactions collection - users can only access their own transactions
     match /transactions/{document} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
 
+    // Budgets collection - users can only access their own budget
     match /budgets/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Recurring transactions collection - users can only access their own recurring transactions
     match /recurringTransactions/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // Balance adjustments collection - users can only access their own balance adjustments
+    match /balanceAdjustments/{document} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
@@ -56,6 +65,8 @@ service cloud.firestore {
 ```
 
 3. Click **Publish**
+
+**Important**: Make sure to update your Firestore security rules to include the `balanceAdjustments` collection rules, otherwise the Balance Manager feature will not work.
 
 ## 5. Get Firebase Configuration
 
@@ -177,6 +188,22 @@ npx vercel --prod
   description: string,
   frequency: "weekly" | "monthly" | "yearly",
   nextExecution: timestamp,
+  createdAt: timestamp
+}
+```
+
+### balanceAdjustments
+
+```javascript
+{
+  id: "auto-generated",
+  userId: "user-uid",
+  onlineAdjustment: number,
+  cashAdjustment: number,
+  reason: string,
+  previousOnlineBalance: number,
+  previousCashBalance: number,
+  date: "YYYY-MM-DD",
   createdAt: timestamp
 }
 ```
