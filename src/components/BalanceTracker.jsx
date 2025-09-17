@@ -1,303 +1,207 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNotification } from '../context/NotificationContext';
+import React, { useState } from 'react';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { collection, addDoc, query, where, onSnapshot, orderBy, limit, doc, setDoc, getDoc } from 'firebase/firestore';
-import { Calculator, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { AlertTriangle, RefreshCw, DollarSign, Wallet, TrendingUp, Info } from 'lucide-react';
 
-export default function BalanceTracker({ transactions }) {
+const BalanceTracker = ({ 
+  currentBalances, 
+  transactionOnlineBalance, 
+  transactionCashBalance,
+  onBalanceUpdate 
+}) => {
   const { currentUser } = useAuth();
-  const { showSuccess, showError, showWarning } = useNotification();
-  const [currentBalances, setCurrentBalances] = useState({
-    online: 0,
-    cash: 0,
-    lastUpdated: null
-  });
-  const [showTracker, setShowTracker] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
-  // Load current balances from Firestore
-  useEffect(() => {
+  // Check for discrepancies (allow small rounding differences)
+  const onlineDiscrepancy = Math.abs((currentBalances?.online || 0) - transactionOnlineBalance) > 0.01;
+  const cashDiscrepancy = Math.abs((currentBalances?.cash || 0) - transactionCashBalance) > 0.01;
+  const hasDiscrepancy = onlineDiscrepancy || cashDiscrepancy;
+
+  const syncToTransactionBalance = async () => {
     if (!currentUser) return;
-
-    const loadCurrentBalances = async () => {
-      try {
-        const balanceDoc = await getDoc(doc(db, 'currentBalances', currentUser.uid));
-        if (balanceDoc.exists()) {
-          setCurrentBalances(balanceDoc.data());
-        }
-      } catch (error) {
-        console.error('Error loading current balances:', error);
-      }
-    };
-
-    loadCurrentBalances();
-  }, [currentUser]);
-
-  // Calculate transaction-based balances (for comparison)
-  const calculateTransactionBalances = () => {
-    const onlineIncome = transactions
-      .filter(t => t.type === 'income' && t.paymentMethod === 'online')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const onlineExpenses = transactions
-      .filter(t => t.type === 'expense' && t.paymentMethod === 'online')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const cashIncome = transactions
-      .filter(t => t.type === 'income' && t.paymentMethod === 'cash')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const cashExpenses = transactions
-      .filter(t => t.type === 'expense' && t.paymentMethod === 'cash')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    return {
-      online: onlineIncome - onlineExpenses,
-      cash: cashIncome - cashExpenses
-    };
-  };
-
-  const transactionBalances = calculateTransactionBalances();
-  const hasDiscrepancy = Math.abs(currentBalances.online - transactionBalances.online) > 0.01 || 
-                        Math.abs(currentBalances.cash - transactionBalances.cash) > 0.01;
-
-  const updateCurrentBalances = async (newOnlineBalance, newCashBalance, reason) => {
-    setLoading(true);
+    
+    setSyncing(true);
     try {
-      const balanceData = {
-        online: newOnlineBalance,
-        cash: newCashBalance,
-        lastUpdated: new Date(),
-        updatedBy: currentUser.uid,
-        reason: reason
+      const newBalances = {
+        online: transactionOnlineBalance,
+        cash: transactionCashBalance,
+        lastUpdated: serverTimestamp(),
+        updatedBy: 'sync_to_transactions'
       };
 
-      await setDoc(doc(db, 'currentBalances', currentUser.uid), balanceData);
-      setCurrentBalances(balanceData);
+      await setDoc(doc(db, 'currentBalances', currentUser.uid), newBalances);
       
-      showSuccess('Current balances updated successfully!');
-      setShowTracker(false);
+      if (onBalanceUpdate) {
+        onBalanceUpdate(newBalances);
+      }
     } catch (error) {
-      console.error('Error updating current balances:', error);
-      showError('Failed to update balances. Please try again.');
+      console.error('Error syncing balances:', error);
     } finally {
-      setLoading(false);
+      setSyncing(false);
     }
   };
 
-  const syncWithTransactions = () => {
-    updateCurrentBalances(
-      transactionBalances.online,
-      transactionBalances.cash,
-      'Synced with transaction history'
-    );
+  const syncToCurrentBalance = async () => {
+    if (!currentUser || !currentBalances) return;
+    
+    setSyncing(true);
+    try {
+      // This would require updating all transactions to match current balance
+      // For now, we'll just update the timestamp to acknowledge the current balance is correct
+      const updatedBalances = {
+        ...currentBalances,
+        lastUpdated: serverTimestamp(),
+        updatedBy: 'sync_to_current'
+      };
+
+      await setDoc(doc(db, 'currentBalances', currentUser.uid), updatedBalances);
+      
+      if (onBalanceUpdate) {
+        onBalanceUpdate(updatedBalances);
+      }
+    } catch (error) {
+      console.error('Error updating balances:', error);
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  return (
-    <>
-      {hasDiscrepancy && (
-        <div className="mb-6 premium-card bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200/50">
-          <div className="p-4">
-            <div className="flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-amber-800 mb-1">Balance Discrepancy Detected</h3>
-                <p className="text-sm text-amber-700 mb-3">
-                  Your current balances don't match your transaction history. This usually happens when you add historical transactions.
-                </p>
-                <div className="grid grid-cols-2 gap-4 text-xs mb-3">
-                  <div>
-                    <p className="font-medium text-amber-800">Current Balances:</p>
-                    <p>Online: ₹{currentBalances.online.toFixed(2)}</p>
-                    <p>Cash: ₹{currentBalances.cash.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-amber-800">Transaction-based:</p>
-                    <p>Online: ₹{transactionBalances.online.toFixed(2)}</p>
-                    <p>Cash: ₹{transactionBalances.cash.toFixed(2)}</p>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setShowTracker(true)}
-                    className="text-xs bg-amber-600 text-white px-3 py-1 rounded-md hover:bg-amber-700 transition-colors"
-                  >
-                    Update Current Balance
-                  </button>
-                  <button
-                    onClick={syncWithTransactions}
-                    className="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-md hover:bg-amber-200 transition-colors"
-                  >
-                    Sync with Transactions
-                  </button>
-                </div>
-              </div>
-            </div>
+  if (!hasDiscrepancy) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-green-800">Balances in Sync</h3>
+            <p className="text-sm text-green-600">Your current and transaction balances match perfectly!</p>
           </div>
         </div>
-      )}
-
-      {showTracker && (
-        <BalanceUpdateModal
-          currentBalances={currentBalances}
-          transactionBalances={transactionBalances}
-          onUpdate={updateCurrentBalances}
-          onClose={() => setShowTracker(false)}
-          loading={loading}
-        />
-      )}
-    </>
-  );
-}
-
-function BalanceUpdateModal({ currentBalances, transactionBalances, onUpdate, onClose, loading }) {
-  const [newBalances, setNewBalances] = useState({
-    online: currentBalances.online,
-    cash: currentBalances.cash,
-    reason: ''
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!newBalances.reason.trim()) {
-      alert('Please provide a reason for the balance update');
-      return;
-    }
-    onUpdate(
-      parseFloat(newBalances.online),
-      parseFloat(newBalances.cash),
-      newBalances.reason
+      </div>
     );
-  };
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-scale">
-      <div className="premium-card w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up">
-        <div className="p-6 sm:p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
-                <Calculator className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Update Current Balance</h2>
-                <p className="text-sm text-gray-500">Set your actual current balance</p>
-              </div>
-            </div>
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <AlertTriangle className="w-5 h-5 text-amber-600" />
+        </div>
+        
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-amber-800">Balance Discrepancy Detected</h3>
             <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              onClick={() => setShowDetails(!showDetails)}
+              className="text-amber-600 hover:text-amber-700 transition-colors"
             >
-              ×
+              <Info className="w-4 h-4" />
             </button>
           </div>
+          
+          <p className="text-sm text-amber-700 mb-4">
+            Your current balance doesn't match your transaction history. This usually happens when:
+          </p>
+          
+          <ul className="text-sm text-amber-700 mb-4 space-y-1">
+            <li>• You added historical transactions</li>
+            <li>• You made transactions outside the app</li>
+            <li>• You started tracking mid-way through your spending</li>
+          </ul>
 
-          <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Balance Comparison</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="space-y-2">
-                <p className="font-medium text-gray-600">Current (Actual)</p>
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span>💳 Online:</span>
-                    <span className="font-semibold">₹{currentBalances.online.toFixed(2)}</span>
+          {showDetails && (
+            <div className="bg-white rounded-lg p-4 mb-4 border border-amber-200">
+              <h4 className="font-medium text-amber-800 mb-3">Balance Comparison:</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-blue-500" />
+                    <span className="font-medium text-gray-700">Online Balance</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>💵 Cash:</span>
-                    <span className="font-semibold">₹{currentBalances.cash.toFixed(2)}</span>
+                  <div className="pl-6 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Current:</span>
+                      <span className="font-medium">₹{(currentBalances?.online || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">From Transactions:</span>
+                      <span className="font-medium">₹{transactionOnlineBalance.toFixed(2)}</span>
+                    </div>
+                    {onlineDiscrepancy && (
+                      <div className="flex justify-between text-sm font-medium text-amber-600">
+                        <span>Difference:</span>
+                        <span>₹{Math.abs((currentBalances?.online || 0) - transactionOnlineBalance).toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <p className="font-medium text-gray-600">Transaction-based</p>
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span>💳 Online:</span>
-                    <span className="font-semibold">₹{transactionBalances.online.toFixed(2)}</span>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-green-500" />
+                    <span className="font-medium text-gray-700">Cash Balance</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>💵 Cash:</span>
-                    <span className="font-semibold">₹{transactionBalances.cash.toFixed(2)}</span>
+                  <div className="pl-6 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Current:</span>
+                      <span className="font-medium">₹{(currentBalances?.cash || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">From Transactions:</span>
+                      <span className="font-medium">₹{transactionCashBalance.toFixed(2)}</span>
+                    </div>
+                    {cashDiscrepancy && (
+                      <div className="flex justify-between text-sm font-medium text-amber-600">
+                        <span>Difference:</span>
+                        <span>₹{Math.abs((currentBalances?.cash || 0) - transactionCashBalance).toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={syncToCurrentBalance}
+              disabled={syncing}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              {syncing ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <DollarSign className="w-4 h-4" />
+              )}
+              Keep Current Balance
+            </button>
+            
+            <button
+              onClick={syncToTransactionBalance}
+              disabled={syncing}
+              className="flex-1 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              {syncing ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <TrendingUp className="w-4 h-4" />
+              )}
+              Use Transaction Balance
+            </button>
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Current Online Balance (₹)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={newBalances.online}
-                  onChange={(e) => setNewBalances(prev => ({ ...prev, online: e.target.value }))}
-                  className="premium-input w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Current Cash Balance (₹)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={newBalances.cash}
-                  onChange={(e) => setNewBalances(prev => ({ ...prev, cash: e.target.value }))}
-                  className="premium-input w-full"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Reason for Update *
-              </label>
-              <input
-                type="text"
-                value={newBalances.reason}
-                onChange={(e) => setNewBalances(prev => ({ ...prev, reason: e.target.value }))}
-                placeholder="e.g., Checked actual bank balance, Counted physical cash"
-                className="premium-input w-full"
-                required
-              />
-            </div>
-
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-              <h4 className="text-sm font-semibold text-blue-800 mb-2">💡 Understanding Balance Tracking</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>• <strong>Current Balance:</strong> Your actual money right now</p>
-                <p>• <strong>Transaction-based:</strong> Calculated from all your recorded transactions</p>
-                <p>• <strong>Discrepancy:</strong> Happens when you add historical transactions or miss some transactions</p>
-                <p>• <strong>Solution:</strong> Update current balance to match your actual money, keep adding transactions going forward</p>
-              </div>
-            </div>
-
-            <div className="flex space-x-3 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 btn-primary py-3 font-semibold disabled:opacity-50"
-              >
-                {loading ? 'Updating...' : 'Update Current Balance'}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 btn-secondary py-3 font-semibold"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+          
+          <div className="mt-3 text-xs text-amber-600">
+            <strong>Tip:</strong> Choose "Keep Current Balance" if your current balance is accurate. 
+            Choose "Use Transaction Balance" if all your transactions are recorded correctly.
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default BalanceTracker;

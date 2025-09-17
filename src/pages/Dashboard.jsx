@@ -10,6 +10,7 @@ import BudgetGoals from '../components/BudgetGoals';
 import RecurringTransactions from '../components/RecurringTransactions';
 import BalanceManager from '../components/BalanceManager';
 import BalanceTracker from '../components/BalanceTracker';
+import InitialBalanceSetup from '../components/InitialBalanceSetup';
 import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 
 export default function Dashboard() {
@@ -18,17 +19,20 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentBalances, setCurrentBalances] = useState(null);
+  const [showInitialSetup, setShowInitialSetup] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
-
-    const q = query(
+    
+    // Load transactions
+    const transactionsQuery = query(
       collection(db, 'transactions'),
       where('userId', '==', currentUser.uid),
       orderBy('date', 'desc')
     );
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    
+    const unsubscribeTransactions = onSnapshot(transactionsQuery, (querySnapshot) => {
       const transactionsData = [];
       querySnapshot.forEach((doc) => {
         transactionsData.push({ id: doc.id, ...doc.data() });
@@ -36,8 +40,24 @@ export default function Dashboard() {
       setTransactions(transactionsData);
       setLoading(false);
     });
-
-    return () => unsubscribe();
+    
+    // Load current balances
+    const balanceDoc = doc(db, 'currentBalances', currentUser.uid);
+    const unsubscribeBalances = onSnapshot(balanceDoc, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setCurrentBalances(docSnapshot.data());
+        setShowInitialSetup(false);
+      } else {
+        // No current balances found, show initial setup
+        setCurrentBalances(null);
+        setShowInitialSetup(true);
+      }
+    });
+    
+    return () => {
+      unsubscribeTransactions();
+      unsubscribeBalances();
+    };
   }, [currentUser]);
 
   const addTransaction = async (transactionData) => {
@@ -75,25 +95,26 @@ export default function Dashboard() {
 
   const balance = totalIncome - totalExpenses;
 
-  // Calculate balances by payment method
-  const onlineIncome = transactions
+  // Calculate transaction-based balances for comparison
+  const transactionOnlineIncome = transactions
     .filter(t => t.type === 'income' && t.paymentMethod === 'online')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const onlineExpenses = transactions
+  const transactionOnlineExpenses = transactions
     .filter(t => t.type === 'expense' && t.paymentMethod === 'online')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const cashIncome = transactions
+  const transactionCashIncome = transactions
     .filter(t => t.type === 'income' && t.paymentMethod === 'cash')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const cashExpenses = transactions
+  const transactionCashExpenses = transactions
     .filter(t => t.type === 'expense' && t.paymentMethod === 'cash')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const onlineBalance = onlineIncome - onlineExpenses;
-  const cashBalance = cashIncome - cashExpenses;
+  // Use current balances if available, otherwise fall back to transaction-based calculation
+  const onlineBalance = currentBalances ? currentBalances.online : (transactionOnlineIncome - transactionOnlineExpenses);
+  const cashBalance = currentBalances ? currentBalances.cash : (transactionCashIncome - transactionCashExpenses);
 
   if (loading) {
     return (
@@ -109,6 +130,11 @@ export default function Dashboard() {
         </div>
       </div>
     );
+  }
+
+  // Show initial setup if no current balances are set
+  if (showInitialSetup) {
+    return <InitialBalanceSetup onComplete={() => setShowInitialSetup(false)} />;
   }
 
   return (
@@ -148,7 +174,14 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Balance Tracker - Shows discrepancy warnings */}
-        <BalanceTracker transactions={transactions} />
+        {currentBalances && (
+          <BalanceTracker
+            currentBalances={currentBalances}
+            transactionOnlineBalance={transactionOnlineIncome - transactionOnlineExpenses}
+            transactionCashBalance={transactionCashIncome - transactionCashExpenses}
+            onBalanceUpdate={setCurrentBalances}
+          />
+        )}
 
         {/* Premium Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up">
