@@ -56,6 +56,11 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
 
+    // Current balances collection - users can only access their own current balance
+    match /currentBalances/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;
@@ -205,5 +210,18 @@ npx vercel --prod
   previousCashBalance: number,
   date: "YYYY-MM-DD",
   createdAt: timestamp
+}
+```
+
+### currentBalances
+
+```javascript
+{
+  id: "user-uid", // Document ID is the user's UID
+  online: number,
+  cash: number,
+  lastUpdated: timestamp,
+  updatedBy: "user-uid",
+  reason: string
 }
 ```

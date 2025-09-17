@@ -9,6 +9,7 @@ import TransactionList from '../components/TransactionList';
 import BudgetGoals from '../components/BudgetGoals';
 import RecurringTransactions from '../components/RecurringTransactions';
 import BalanceManager from '../components/BalanceManager';
+import BalanceTracker from '../components/BalanceTracker';
 import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 
 export default function Dashboard() {
@@ -146,6 +147,9 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Balance Tracker - Shows discrepancy warnings */}
+        <BalanceTracker transactions={transactions} />
+
         {/* Premium Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up">
           {/* Total Income Card */}
