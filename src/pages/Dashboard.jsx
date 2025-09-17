@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { db } from '../firebase/config';
-import { collection, addDoc, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, onSnapshot, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { PlusCircle, TrendingUp, TrendingDown, DollarSign, Download } from 'lucide-react';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
@@ -62,13 +62,34 @@ export default function Dashboard() {
 
   const addTransaction = async (transactionData) => {
     try {
+      // Add transaction to database
       await addDoc(collection(db, 'transactions'), {
         ...transactionData,
         userId: currentUser.uid,
         createdAt: new Date()
       });
+
+      // Update current balance only if it's NOT a historical transaction
+      if (!transactionData.isHistorical && currentBalances) {
+        const balanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
+        const updatedBalances = {
+          ...currentBalances,
+          [transactionData.paymentMethod]: (currentBalances[transactionData.paymentMethod] || 0) + balanceChange,
+          lastUpdated: new Date(),
+          updatedBy: 'transaction_add'
+        };
+
+        await setDoc(doc(db, 'currentBalances', currentUser.uid), updatedBalances);
+      }
+
       setShowForm(false);
-      showSuccess(`${transactionData.type === 'income' ? 'Income' : 'Expense'} of ₹${transactionData.amount.toFixed(2)} added successfully!`);
+      
+      // Show appropriate success message
+      if (transactionData.isHistorical) {
+        showSuccess(`Historical ${transactionData.type} of ₹${transactionData.amount.toFixed(2)} recorded (current balance unchanged)`);
+      } else {
+        showSuccess(`${transactionData.type === 'income' ? 'Income' : 'Expense'} of ₹${transactionData.amount.toFixed(2)} added successfully!`);
+      }
     } catch (error) {
       console.error('Error adding transaction:', error);
       showError('Failed to add transaction. Please try again.');

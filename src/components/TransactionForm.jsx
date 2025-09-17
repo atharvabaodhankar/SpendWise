@@ -16,22 +16,39 @@ export default function TransactionForm({ onSubmit, onCancel }) {
     paymentMethod: 'online'
   });
 
+  // Check if the selected date is in the past (not today)
+  const isHistoricalDate = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return formData.date < today;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
       ...formData,
-      amount: parseFloat(formData.amount)
+      amount: parseFloat(formData.amount),
+      isHistorical: isHistoricalDate() // Flag to indicate if this is a historical transaction
     });
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-      // Reset category when type changes
-      ...(name === 'type' && { category: categories[value][0] })
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: value,
+        // Reset category when type changes
+        ...(name === 'type' && { category: categories[value][0] })
+      };
+      
+      // If date changes to historical and type is income, switch to expense
+      if (name === 'date' && value < new Date().toISOString().split('T')[0] && prev.type === 'income') {
+        newData.type = 'expense';
+        newData.category = categories.expense[0];
+      }
+      
+      return newData;
+    });
   };
 
   return (
@@ -61,6 +78,11 @@ export default function TransactionForm({ onSubmit, onCancel }) {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Transaction Type
+                  {isHistoricalDate() && (
+                    <span className="ml-2 text-xs text-amber-600 font-medium">
+                      (Historical - Expenses only)
+                    </span>
+                  )}
                 </label>
                 <select
                   name="type"
@@ -68,9 +90,14 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                   onChange={handleChange}
                   className="premium-input w-full"
                 >
-                  <option value="income">💰 Income</option>
+                  {!isHistoricalDate() && <option value="income">💰 Income</option>}
                   <option value="expense">💸 Expense</option>
                 </select>
+                {isHistoricalDate() && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    💡 Historical transactions don't affect current balance
+                  </p>
+                )}
               </div>
 
               <div>
@@ -143,6 +170,11 @@ export default function TransactionForm({ onSubmit, onCancel }) {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Date
+                {isHistoricalDate() && (
+                  <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
+                    Historical
+                  </span>
+                )}
               </label>
               <input
                 type="date"
@@ -150,8 +182,21 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                 value={formData.date}
                 onChange={handleChange}
                 required
-                className="premium-input w-full"
+                className={`premium-input w-full ${isHistoricalDate() ? 'border-amber-300 bg-amber-50' : ''}`}
               />
+              {isHistoricalDate() && (
+                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-600 text-sm">⚡</span>
+                    <div className="text-xs text-amber-700">
+                      <p className="font-medium mb-1">Smart Historical Mode:</p>
+                      <p>• Current balance stays unchanged (₹{formData.paymentMethod === 'online' ? 'Online' : 'Cash'} balance preserved)</p>
+                      <p>• Transaction recorded for expense tracking only</p>
+                      <p>• Only expenses allowed for past dates</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex space-x-4 pt-6">
