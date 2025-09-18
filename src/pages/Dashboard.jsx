@@ -71,7 +71,8 @@ export default function Dashboard() {
 
       // Update current balance only if it's NOT a historical transaction
       if (!transactionData.isHistorical && currentBalances) {
-        const balanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
+        // Always subtract for expenses (no income anymore)
+        const balanceChange = -transactionData.amount;
         const updatedBalances = {
           ...currentBalances,
           [transactionData.paymentMethod]: (currentBalances[transactionData.paymentMethod] || 0) + balanceChange,
@@ -86,9 +87,9 @@ export default function Dashboard() {
       
       // Show appropriate success message
       if (transactionData.isHistorical) {
-        showSuccess(`Historical ${transactionData.type} of ₹${transactionData.amount.toFixed(2)} recorded (current balance unchanged)`);
+        showSuccess(`Historical expense of ₹${transactionData.amount.toFixed(2)} recorded (current balance unchanged)`);
       } else {
-        showSuccess(`${transactionData.type === 'income' ? 'Income' : 'Expense'} of ₹${transactionData.amount.toFixed(2)} added successfully!`);
+        showSuccess(`Expense of ₹${transactionData.amount.toFixed(2)} added successfully!`);
       }
     } catch (error) {
       console.error('Error adding transaction:', error);
@@ -106,36 +107,25 @@ export default function Dashboard() {
     }
   };
 
-  const totalIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
-
   const totalExpenses = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const balance = totalIncome - totalExpenses;
+  // Balance is now just current balances (no income tracking)
+  const balance = onlineBalance + cashBalance;
 
-  // Calculate transaction-based balances for comparison
-  const transactionOnlineIncome = transactions
-    .filter(t => t.type === 'income' && t.paymentMethod === 'online')
-    .reduce((sum, t) => sum + t.amount, 0);
-
+  // Calculate transaction-based expenses for comparison (no income anymore)
   const transactionOnlineExpenses = transactions
     .filter(t => t.type === 'expense' && t.paymentMethod === 'online')
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const transactionCashIncome = transactions
-    .filter(t => t.type === 'income' && t.paymentMethod === 'cash')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const transactionCashExpenses = transactions
     .filter(t => t.type === 'expense' && t.paymentMethod === 'cash')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Use current balances if available, otherwise fall back to transaction-based calculation
-  const onlineBalance = currentBalances ? currentBalances.online : (transactionOnlineIncome - transactionOnlineExpenses);
-  const cashBalance = currentBalances ? currentBalances.cash : (transactionCashIncome - transactionCashExpenses);
+  // Use current balances (set by user initially, then updated by transactions)
+  const onlineBalance = currentBalances ? currentBalances.online : 0;
+  const cashBalance = currentBalances ? currentBalances.cash : 0;
 
   if (loading) {
     return (
@@ -198,31 +188,14 @@ export default function Dashboard() {
         {currentBalances && (
           <BalanceTracker
             currentBalances={currentBalances}
-            transactionOnlineBalance={transactionOnlineIncome - transactionOnlineExpenses}
-            transactionCashBalance={transactionCashIncome - transactionCashExpenses}
+            transactionOnlineBalance={-transactionOnlineExpenses}
+            transactionCashBalance={-transactionCashExpenses}
             onBalanceUpdate={setCurrentBalances}
           />
         )}
 
         {/* Premium Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up">
-          {/* Total Income Card */}
-          <div className="premium-card bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-emerald-100/50 group">
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 bg-gradient-to-r from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-emerald-200 transition-all duration-300">
-                    <TrendingUp className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-600 mb-1">Total Income</p>
-                    <p className="text-2xl font-bold text-emerald-700">₹{totalIncome.toFixed(2)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 animate-slide-up">
           {/* Total Expenses Card */}
           <div className="premium-card bg-gradient-to-br from-rose-50 via-red-50 to-pink-50 border-rose-100/50 group">
             <div className="p-6">
@@ -365,7 +338,7 @@ export default function Dashboard() {
             className="btn-primary flex items-center space-x-3 px-8 py-4 text-base font-semibold transform hover:scale-105 active:scale-95"
           >
             <PlusCircle className="h-5 w-5" />
-            <span>Add Transaction</span>
+            <span>Add Expense</span>
           </button>
           
           <a

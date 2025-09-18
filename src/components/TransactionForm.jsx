@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 
-const categories = {
-  income: ['Salary', 'Freelance', 'Investment', 'Gift', 'Other'],
-  expense: ['Food', 'Transportation', 'Entertainment', 'Bills', 'Shopping', 'Healthcare', 'Other']
-};
+const categories = ['Food', 'Transportation', 'Entertainment', 'Bills', 'Shopping', 'Healthcare', 'Other'];
 
 export default function TransactionForm({ onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
-    type: 'expense',
+    type: 'expense', // Always expense now
     amount: '',
     category: 'Food',
     description: '',
@@ -33,22 +30,10 @@ export default function TransactionForm({ onSubmit, onCancel }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        [name]: value,
-        // Reset category when type changes
-        ...(name === 'type' && { category: categories[value][0] })
-      };
-      
-      // If date changes to historical and type is income, switch to expense
-      if (name === 'date' && value < new Date().toISOString().split('T')[0] && prev.type === 'income') {
-        newData.type = 'expense';
-        newData.category = categories.expense[0];
-      }
-      
-      return newData;
-    });
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
@@ -61,8 +46,8 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                 <span className="text-white text-lg font-bold">+</span>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Add Transaction</h2>
-                <p className="text-sm text-gray-500">Record your income or expense</p>
+                <h2 className="text-xl font-bold text-gray-900">Add Expense</h2>
+                <p className="text-sm text-gray-500">Record your expense transaction</p>
               </div>
             </div>
             <button
@@ -75,31 +60,6 @@ export default function TransactionForm({ onSubmit, onCancel }) {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Transaction Type
-                  {isHistoricalDate() && (
-                    <span className="ml-2 text-xs text-amber-600 font-medium">
-                      (Historical - Expenses only)
-                    </span>
-                  )}
-                </label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className="premium-input w-full"
-                >
-                  {!isHistoricalDate() && <option value="income">💰 Income</option>}
-                  <option value="expense">💸 Expense</option>
-                </select>
-                {isHistoricalDate() && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    💡 Historical transactions don't affect current balance
-                  </p>
-                )}
-              </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Amount (₹)
@@ -116,9 +76,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                   className="premium-input w-full"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Category
@@ -129,28 +87,28 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                   onChange={handleChange}
                   className="premium-input w-full"
                 >
-                  {categories[formData.type].map(category => (
+                  {categories.map(category => (
                     <option key={category} value={category}>
                       {category}
                     </option>
                   ))}
                 </select>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Payment Method
-                </label>
-                <select
-                  name="paymentMethod"
-                  value={formData.paymentMethod}
-                  onChange={handleChange}
-                  className="premium-input w-full"
-                >
-                  <option value="online">💳 Online</option>
-                  <option value="cash">💵 Cash</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Payment Method
+              </label>
+              <select
+                name="paymentMethod"
+                value={formData.paymentMethod}
+                onChange={handleChange}
+                className="premium-input w-full"
+              >
+                <option value="online">💳 Online</option>
+                <option value="cash">💵 Cash</option>
+              </select>
             </div>
 
             <div>
@@ -192,7 +150,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                       <p className="font-medium mb-1">Smart Historical Mode:</p>
                       <p>• Current balance stays unchanged (₹{formData.paymentMethod === 'online' ? 'Online' : 'Cash'} balance preserved)</p>
                       <p>• Transaction recorded for expense tracking only</p>
-                      <p>• Only expenses allowed for past dates</p>
+                      <p>• Expense recorded for tracking only</p>
                     </div>
                   </div>
                 </div>
@@ -204,7 +162,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                 type="submit"
                 className="flex-1 btn-primary py-4 text-base font-semibold"
               >
-                Add Transaction
+                Add Expense
               </button>
               <button
                 type="button"
