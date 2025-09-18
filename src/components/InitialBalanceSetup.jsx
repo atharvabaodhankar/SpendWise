@@ -71,8 +71,8 @@ export default function InitialBalanceSetup({ onComplete }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center z-50 p-4">
-      <div className="premium-card w-full max-w-2xl animate-fade-scale">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center py-8 px-4">
+      <div className="premium-card w-full max-w-2xl animate-fade-scale my-auto">
         <div className="p-8">
           {/* Header */}
           <div className="text-center mb-8">
