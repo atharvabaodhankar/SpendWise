@@ -9,7 +9,6 @@ import TransactionList from '../components/TransactionList';
 import BudgetGoals from '../components/BudgetGoals';
 import RecurringTransactions from '../components/RecurringTransactions';
 import BalanceManager from '../components/BalanceManager';
-import BalanceTracker from '../components/BalanceTracker';
 import InitialBalanceSetup from '../components/InitialBalanceSetup';
 import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 
@@ -111,21 +110,14 @@ export default function Dashboard() {
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Balance is now just current balances (no income tracking)
-  const balance = onlineBalance + cashBalance;
 
-  // Calculate transaction-based expenses for comparison (no income anymore)
-  const transactionOnlineExpenses = transactions
-    .filter(t => t.type === 'expense' && t.paymentMethod === 'online')
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const transactionCashExpenses = transactions
-    .filter(t => t.type === 'expense' && t.paymentMethod === 'cash')
-    .reduce((sum, t) => sum + t.amount, 0);
 
   // Use current balances (set by user initially, then updated by transactions)
   const onlineBalance = currentBalances ? currentBalances.online : 0;
   const cashBalance = currentBalances ? currentBalances.cash : 0;
+
+  // Balance is now just current balances (no income tracking)
+  const balance = onlineBalance + cashBalance;
 
   if (loading) {
     return (
@@ -184,15 +176,7 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Balance Tracker - Shows discrepancy warnings */}
-        {currentBalances && (
-          <BalanceTracker
-            currentBalances={currentBalances}
-            transactionOnlineBalance={-transactionOnlineExpenses}
-            transactionCashBalance={-transactionCashExpenses}
-            onBalanceUpdate={setCurrentBalances}
-          />
-        )}
+
 
         {/* Premium Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 animate-slide-up">
