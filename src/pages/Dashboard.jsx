@@ -23,6 +23,7 @@ import {
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
 import BudgetGoals from "../components/BudgetGoals";
+import { checkBalanceAlert, checkDailyExpenseAlert } from '../utils/emailAlerts';
 import RecurringTransactions from "../components/RecurringTransactions";
 import BalanceManager from "../components/BalanceManager";
 import InitialBalanceSetup from "../components/InitialBalanceSetup";
@@ -104,7 +105,18 @@ export default function Dashboard() {
           doc(db, "currentBalances", currentUser.uid),
           updatedBalances
         );
+
+        // Check for balance alerts after updating balance
+        await checkBalanceAlert(currentUser.email, updatedBalances, currentBalances);
       }
+
+      // Check daily expense alerts
+      const today = new Date().toISOString().split('T')[0];
+      const todayExpenses = transactions
+        .filter(t => t.type === 'expense' && t.date === today)
+        .reduce((sum, t) => sum + t.amount, 0) + transactionData.amount;
+      
+      await checkDailyExpenseAlert(currentUser.email, todayExpenses);
 
       setShowForm(false);
 
