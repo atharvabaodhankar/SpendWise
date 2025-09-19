@@ -1,4 +1,4 @@
-// Vercel API Route for sending email alerts
+  // Vercel API Route for sending email alerts
 // This works with Resend email service
 
 export default async function handler(req, res) {
