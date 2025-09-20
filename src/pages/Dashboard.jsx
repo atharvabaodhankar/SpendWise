@@ -7,6 +7,7 @@ import { PlusCircle, TrendingUp, TrendingDown, DollarSign, Download } from 'luci
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import BudgetGoals from '../components/BudgetGoals';
+import RecurringTransactions from '../components/RecurringTransactions';
 import { exportToCSV } from '../utils/exportUtils';
 
 export default function Dashboard() {
@@ -174,9 +175,10 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Budget Goals */}
-        <div className="mb-8">
+        {/* Budget Goals and Recurring Transactions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <BudgetGoals />
+          <RecurringTransactions />
         </div>
 
         {/* Transactions List */}

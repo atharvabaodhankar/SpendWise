@@ -33,4 +33,15 @@ purple-600 { background-color: #9333ea; }
 .translate-y-0 { transform: translateY(0px); }
 .-translate-y-2 { transform: translateY(-0.5rem); }
 .opacity-100 { opacity: 1; }
-.opacity-0 { opacity: 0; }
+.opacity-0 { opacity: 0; }.bg
+-gray-50 { background-color: #f9fafb; }
+.bg-green-800 { background-color: #166534; }
+.bg-red-800 { background-color: #991b1b; }
+.text-green-800 { color: #166534; }
+.text-red-800 { color: #991b1b; }
+.text-xs { font-size: 0.75rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.space-y-3 > * + * { margin-top: 0.75rem; }
+.hover\:text-blue-800:hover { color: #1e40af; }
+.hover\:text-red-800:hover { color: #991b1b; }
