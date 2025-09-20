@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { db } from '../firebase/config';
 import { doc, setDoc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { Target, Edit2, Save, X } from 'lucide-react';
 
 export default function BudgetGoals() {
   const { currentUser } = useAuth();
+  const { showWarning, showSuccess } = useNotification();
   const [budget, setBudget] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [budgetAmount, setBudgetAmount] = useState('');
   const [currentMonthExpenses, setCurrentMonthExpenses] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -62,6 +65,7 @@ export default function BudgetGoals() {
       await setDoc(doc(db, 'budgets', currentUser.uid), budgetData);
       setBudget(budgetData);
       setIsEditing(false);
+      showSuccess('Budget updated successfully!');
     } catch (error) {
       console.error('Error saving budget:', error);
     }
@@ -69,6 +73,23 @@ export default function BudgetGoals() {
 
   const progressPercentage = budget ? (currentMonthExpenses / budget.monthlyLimit) * 100 : 0;
   const isOverBudget = progressPercentage > 100;
+
+  // Show budget warnings
+  useEffect(() => {
+    if (budget && progressPercentage > 90 && !hasShownWarning) {
+      if (isOverBudget) {
+        showWarning(`You've exceeded your monthly budget by $${(currentMonthExpenses - budget.monthlyLimit).toFixed(2)}!`);
+      } else if (progressPercentage > 90) {
+        showWarning(`You've used ${progressPercentage.toFixed(1)}% of your monthly budget. Consider reducing spending.`);
+      }
+      setHasShownWarning(true);
+    }
+    
+    // Reset warning flag when expenses go below 90%
+    if (progressPercentage <= 90) {
+      setHasShownWarning(false);
+    }
+  }, [budget, progressPercentage, isOverBudget, currentMonthExpenses, hasShownWarning, showWarning]);
 
   if (loading) {
     return <div className="bg-white p-6 rounded-lg shadow-md">Loading budget...</div>;

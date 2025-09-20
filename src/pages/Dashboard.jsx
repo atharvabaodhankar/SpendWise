@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { db } from '../firebase/config';
 import { collection, addDoc, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { PlusCircle, TrendingUp, TrendingDown, DollarSign, Trash2 } from 'lucide-react';
+import { PlusCircle, TrendingUp, TrendingDown, DollarSign, Download } from 'lucide-react';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import BudgetGoals from '../components/BudgetGoals';
+import { exportToCSV } from '../utils/exportUtils';
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
+  const { showSuccess, showError } = useNotification();
   const [transactions, setTransactions] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -42,16 +45,20 @@ export default function Dashboard() {
         createdAt: new Date()
       });
       setShowForm(false);
+      showSuccess(`${transactionData.type === 'income' ? 'Income' : 'Expense'} of $${transactionData.amount.toFixed(2)} added successfully!`);
     } catch (error) {
       console.error('Error adding transaction:', error);
+      showError('Failed to add transaction. Please try again.');
     }
   };
 
   const deleteTransaction = async (id) => {
     try {
       await deleteDoc(doc(db, 'transactions', id));
+      showSuccess('Transaction deleted successfully!');
     } catch (error) {
       console.error('Error deleting transaction:', error);
+      showError('Failed to delete transaction. Please try again.');
     }
   };
 
@@ -130,7 +137,7 @@ export default function Dashboard() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mb-6 flex space-x-4">
+        <div className="mb-6 flex flex-wrap gap-4">
           <button
             onClick={() => setShowForm(true)}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
@@ -145,6 +152,18 @@ export default function Dashboard() {
             <span>📊</span>
             <span>View Analytics</span>
           </a>
+          {transactions.length > 0 && (
+            <button
+              onClick={() => {
+                exportToCSV(transactions);
+                showSuccess('Transactions exported successfully!');
+              }}
+              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+            >
+              <Download className="h-5 w-5" />
+              <span>Export CSV</span>
+            </button>
+          )}
         </div>
 
         {/* Transaction Form Modal */}
