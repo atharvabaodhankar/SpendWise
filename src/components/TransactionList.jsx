@@ -42,6 +42,11 @@ export default function TransactionList({ transactions, onDelete }) {
                     <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
                       {transaction.paymentMethod === 'online' ? '💳 Online' : '💵 Cash'}
                     </span>
+                    {transaction.isBalanceAdjustment && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">
+                        ⚙️ Balance Adjustment
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

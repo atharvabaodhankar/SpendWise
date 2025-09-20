@@ -8,6 +8,7 @@ import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import BudgetGoals from '../components/BudgetGoals';
 import RecurringTransactions from '../components/RecurringTransactions';
+import BalanceManager from '../components/BalanceManager';
 import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 
 export default function Dashboard() {
@@ -237,6 +238,10 @@ export default function Dashboard() {
             <span>📊</span>
             <span>View Analytics</span>
           </a>
+          <BalanceManager 
+            onlineBalance={onlineBalance}
+            cashBalance={cashBalance}
+          />
           {transactions.length > 0 && (
             <div className="flex flex-col sm:flex-row gap-2">
               <button
