@@ -71,7 +71,7 @@ export default function Home() {
             <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">📊</span>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Track Expenses</h3>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900">Track Expenses</h3>
             <p className="text-gray-600">
               Easily categorize and monitor your daily expenses to understand where your money goes.
             </p>
@@ -81,7 +81,7 @@ export default function Home() {
             <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">🎯</span>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Set Budgets</h3>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900">Set Budgets</h3>
             <p className="text-gray-600">
               Create monthly budgets and get alerts when you're approaching your limits.
             </p>
@@ -91,7 +91,7 @@ export default function Home() {
             <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">📈</span>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Visualize Trends</h3>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900">Visualize Trends</h3>
             <p className="text-gray-600">
               See your spending patterns with beautiful charts and gain insights into your habits.
             </p>

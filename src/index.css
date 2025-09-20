@@ -1,47 +1,9 @@
-@import "tailwindcss";.bg-gree
-n-600 { background-color: #16a34a; }
-.bg-green-700 { background-color: #15803d; }
-.hover\:bg-green-700:hover { background-color: #15803d; }
-.hover\:text-blue-800:hover { color: #1e40af; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@media (min-width: 1024px) {
-  .lg\:col-span-2 { grid-column: span 2 / span 2; }
-  .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}.text-gre
-en-700 { color: #15803d; }
-.hover\:text-green-700:hover { color: #15803d; }
-.hover\:text-red-700:hover { color: #b91c1c; }
-.bg-red-500 { background-color: #ef4444; }
-.bg-green-500 { background-color: #22c55e; }
-.bg-gray-200 { background-color: #e5e7eb; }
-.h-3 { height: 0.75rem; }
-.transition-all { transition-property: all; }
-.duration-300 { transition-duration: 300ms; }.bg-
-purple-600 { background-color: #9333ea; }
-.bg-purple-700 { background-color: #7c3aed; }
-.hover\:bg-purple-700:hover { background-color: #7c3aed; }
-.flex-wrap { flex-wrap: wrap; }
-.gap-4 { gap: 1rem; }.bg
--yellow-100 { background-color: #fef3c7; }
-.border-yellow-400 { border-color: #fbbf24; }
-.text-yellow-700 { color: #a16207; }
-.flex-shrink-0 { flex-shrink: 0; }
-.mt-0\.5 { margin-top: 0.125rem; }
-.mr-3 { margin-right: 0.75rem; }
-.ml-3 { margin-left: 0.75rem; }
-.space-y-2 > * + * { margin-top: 0.5rem; }
-.translate-y-0 { transform: translateY(0px); }
-.-translate-y-2 { transform: translateY(-0.5rem); }
-.opacity-100 { opacity: 1; }
-.opacity-0 { opacity: 0; }.bg
--gray-50 { background-color: #f9fafb; }
-.bg-green-800 { background-color: #166534; }
-.bg-red-800 { background-color: #991b1b; }
-.text-green-800 { color: #166534; }
-.text-red-800 { color: #991b1b; }
-.text-xs { font-size: 0.75rem; }
-.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-.space-y-3 > * + * { margin-top: 0.75rem; }
-.hover\:text-blue-800:hover { color: #1e40af; }
-.hover\:text-red-800:hover { color: #991b1b; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
