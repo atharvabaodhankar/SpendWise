@@ -96,25 +96,25 @@ export default function BudgetGoals() {
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <Target className="h-6 w-6 text-blue-600" />
-          <h2 className="text-xl font-semibold">Monthly Budget</h2>
+        <div className="flex items-center space-x-2 min-w-0 flex-1">
+          <Target className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+          <h2 className="text-lg sm:text-xl font-semibold truncate">Monthly Budget</h2>
         </div>
         
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100 transition-colors duration-150"
           >
             <Edit2 className="h-5 w-5" />
           </button>
         ) : (
-          <div className="flex space-x-2">
+          <div className="flex space-x-1 sm:space-x-2">
             <button
               onClick={saveBudget}
-              className="text-green-600 hover:text-green-700"
+              className="text-green-600 hover:text-green-700 p-1 rounded-md hover:bg-green-50 transition-colors duration-150"
             >
               <Save className="h-5 w-5" />
             </button>
@@ -123,7 +123,7 @@ export default function BudgetGoals() {
                 setIsEditing(false);
                 setBudgetAmount(budget ? budget.monthlyLimit.toString() : '');
               }}
-              className="text-red-600 hover:text-red-700"
+              className="text-red-600 hover:text-red-700 p-1 rounded-md hover:bg-red-50 transition-colors duration-150"
             >
               <X className="h-5 w-5" />
             </button>
@@ -143,28 +143,28 @@ export default function BudgetGoals() {
               onChange={(e) => setBudgetAmount(e.target.value)}
               step="0.01"
               min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
               placeholder="Enter your monthly budget"
             />
           </div>
         </div>
       ) : budget ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">Budget Limit:</span>
-            <span className="text-lg font-semibold">${budget.monthlyLimit.toFixed(2)}</span>
+            <span className="text-sm sm:text-base text-gray-600">Budget Limit:</span>
+            <span className="text-base sm:text-lg font-semibold">${budget.monthlyLimit.toFixed(2)}</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">Spent This Month:</span>
-            <span className={`text-lg font-semibold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
+            <span className="text-sm sm:text-base text-gray-600">Spent This Month:</span>
+            <span className={`text-base sm:text-lg font-semibold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
               ${currentMonthExpenses.toFixed(2)}
             </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">Remaining:</span>
-            <span className={`text-lg font-semibold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
+            <span className="text-sm sm:text-base text-gray-600">Remaining:</span>
+            <span className={`text-base sm:text-lg font-semibold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
               ${(budget.monthlyLimit - currentMonthExpenses).toFixed(2)}
             </span>
           </div>
