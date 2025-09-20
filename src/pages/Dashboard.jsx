@@ -141,14 +141,14 @@ export default function Dashboard() {
         <div className="mb-6 flex flex-wrap gap-4">
           <button
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
           >
             <PlusCircle className="h-5 w-5" />
             <span>Add Transaction</span>
           </button>
           <a
             href="/analytics"
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
           >
             <span>📊</span>
             <span>View Analytics</span>
@@ -159,7 +159,7 @@ export default function Dashboard() {
                 exportToCSV(transactions);
                 showSuccess('Transactions exported successfully!');
               }}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 flex items-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
             >
               <Download className="h-5 w-5" />
               <span>Export CSV</span>

@@ -172,23 +172,26 @@ export default function BudgetGoals() {
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Progress</span>
-              <span className={isOverBudget ? 'text-red-600' : 'text-gray-600'}>
+              <span className="text-gray-700">Progress</span>
+              <span className={`font-medium ${isOverBudget ? 'text-red-600' : 'text-gray-600'}`}>
                 {progressPercentage.toFixed(1)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
-                className={`h-3 rounded-full transition-all duration-300 ${
-                  isOverBudget ? 'bg-red-500' : 'bg-green-500'
+                className={`h-3 rounded-full transition-all duration-500 ease-out ${
+                  isOverBudget ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-green-500 to-green-600'
                 }`}
                 style={{ width: `${Math.min(progressPercentage, 100)}%` }}
               ></div>
             </div>
             {isOverBudget && (
-              <p className="text-sm text-red-600 font-medium">
-                ⚠️ You've exceeded your budget by ${(currentMonthExpenses - budget.monthlyLimit).toFixed(2)}
-              </p>
+              <div className="bg-red-50 border border-red-200 rounded-md p-3 mt-3">
+                <p className="text-sm text-red-700 font-medium flex items-center">
+                  <span className="mr-2">⚠️</span>
+                  You've exceeded your budget by ${(currentMonthExpenses - budget.monthlyLimit).toFixed(2)}
+                </p>
+              </div>
             )}
           </div>
         </div>

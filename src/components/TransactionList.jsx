@@ -12,13 +12,13 @@ export default function TransactionList({ transactions, onDelete }) {
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>
       </div>
       
       <div className="divide-y divide-gray-200">
         {transactions.map((transaction) => (
-          <div key={transaction.id} className="px-6 py-4 hover:bg-gray-50">
+          <div key={transaction.id} className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className={`p-2 rounded-full ${
@@ -50,7 +50,7 @@ export default function TransactionList({ transactions, onDelete }) {
                 
                 <button
                   onClick={() => onDelete(transaction.id)}
-                  className="text-gray-400 hover:text-red-600 p-1"
+                  className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors duration-150"
                   title="Delete transaction"
                 >
                   <Trash2 className="h-4 w-4" />
