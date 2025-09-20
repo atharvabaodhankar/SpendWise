@@ -5,6 +5,7 @@ import { collection, addDoc, query, where, orderBy, onSnapshot, deleteDoc, doc }
 import { PlusCircle, TrendingUp, TrendingDown, DollarSign, Trash2 } from 'lucide-react';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
+import BudgetGoals from '../components/BudgetGoals';
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
@@ -128,8 +129,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Add Transaction Button */}
-        <div className="mb-6">
+        {/* Action Buttons */}
+        <div className="mb-6 flex space-x-4">
           <button
             onClick={() => setShowForm(true)}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
@@ -137,6 +138,13 @@ export default function Dashboard() {
             <PlusCircle className="h-5 w-5" />
             <span>Add Transaction</span>
           </button>
+          <a
+            href="/analytics"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+          >
+            <span>📊</span>
+            <span>View Analytics</span>
+          </a>
         </div>
 
         {/* Transaction Form Modal */}
@@ -146,6 +154,11 @@ export default function Dashboard() {
             onCancel={() => setShowForm(false)}
           />
         )}
+
+        {/* Budget Goals */}
+        <div className="mb-8">
+          <BudgetGoals />
+        </div>
 
         {/* Transactions List */}
         <TransactionList 
