@@ -167,16 +167,16 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200">
         <div className="text-center animate-fade-scale">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-indigo-800 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg">
             <span className="text-white text-2xl font-bold">₹</span>
           </div>
-          <div className="text-xl font-semibold text-gray-700 mb-2">
+          <div className="text-xl font-semibold text-slate-700 mb-2">
             Loading SpendWise
           </div>
-          <div className="w-32 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
-            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse"></div>
+          <div className="w-32 h-1 bg-slate-200 rounded-full mx-auto overflow-hidden">
+            <div className="w-full h-full bg-gradient-to-r from-indigo-800 to-slate-800 rounded-full animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -191,21 +191,21 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200">
       {/* Premium Responsive Header */}
       <header className="glass-card border-0 border-b border-white/20 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4 sm:py-6">
             {/* Logo and Brand */}
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-indigo-800 to-slate-800 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
                 <span className="text-white text-base sm:text-lg font-bold">₹</span>
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
                   SpendWise
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-500 font-medium">
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
                   Premium Financial Management
                 </p>
               </div>
@@ -214,10 +214,10 @@ export default function Dashboard() {
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-6">
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-sm font-medium text-slate-600">
                   Welcome back,
                 </p>
-                <p className="text-lg font-semibold text-gray-800">
+                <p className="text-lg font-semibold text-slate-800">
                   {currentUser.email?.split("@")[0]}
                 </p>
               </div>
@@ -250,10 +250,10 @@ export default function Dashboard() {
               <div className="space-y-4">
                 {/* User Info */}
                 <div className="px-4 py-3 bg-white/10 rounded-xl backdrop-blur-sm">
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-slate-600">
                     Welcome back,
                   </p>
-                  <p className="text-lg font-semibold text-gray-800">
+                  <p className="text-lg font-semibold text-slate-800">
                     {currentUser.email?.split("@")[0]}
                   </p>
                 </div>
@@ -265,7 +265,7 @@ export default function Dashboard() {
                       setShowForm(true);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 font-medium shadow-lg"
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-indigo-800 to-slate-800 text-white rounded-xl hover:from-indigo-900 hover:to-slate-900 transition-all duration-300 font-medium shadow-lg"
                   >
                     <PlusCircle className="h-5 w-5" />
                     <span>Add Expense</span>
@@ -273,7 +273,7 @@ export default function Dashboard() {
 
                   <a
                     href="/analytics"
-                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 font-medium shadow-lg"
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 font-medium shadow-lg"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     <BarChart3 className="h-5 w-5" />
@@ -285,7 +285,7 @@ export default function Dashboard() {
                       setShowMobileMenu(false);
                       // Trigger balance manager - we'll need to pass this down
                     }}
-                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-slate-500 to-gray-600 text-white rounded-xl hover:from-slate-600 hover:to-gray-700 transition-all duration-300 font-medium shadow-lg"
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-xl hover:from-yellow-600 hover:to-amber-700 transition-all duration-300 font-medium shadow-lg"
                   >
                     <Settings className="h-5 w-5" />
                     <span>Adjust Balances</span>
@@ -311,7 +311,7 @@ export default function Dashboard() {
                           showSuccess("Transactions exported to Excel successfully!");
                           setShowMobileMenu(false);
                         }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 font-medium shadow-lg"
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 font-medium shadow-lg"
                       >
                         <Download className="h-5 w-5" />
                         <span>Export Excel</span>
@@ -364,7 +364,7 @@ export default function Dashboard() {
           <div
             className={`premium-card group ${
               onlineBalance >= 0
-                ? "bg-gradient-to-br from-blue-50 via-indigo-50 to-cyan-50 border-blue-100/50"
+                ? "bg-gradient-to-br from-indigo-50 via-blue-50 to-slate-50 border-indigo-100/50"
                 : "bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 border-orange-100/50"
             }`}
           >
@@ -374,7 +374,7 @@ export default function Dashboard() {
                   <div
                     className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ${
                       onlineBalance >= 0
-                        ? "bg-gradient-to-r from-blue-400 to-indigo-500 group-hover:shadow-blue-200"
+                        ? "bg-gradient-to-r from-indigo-600 to-slate-700 group-hover:shadow-indigo-200"
                         : "bg-gradient-to-r from-orange-400 to-red-500 group-hover:shadow-orange-200"
                     }`}
                   >
@@ -383,14 +383,14 @@ export default function Dashboard() {
                   <div>
                     <p
                       className={`text-sm font-semibold mb-1 ${
-                        onlineBalance >= 0 ? "text-blue-600" : "text-orange-600"
+                        onlineBalance >= 0 ? "text-indigo-700" : "text-orange-600"
                       }`}
                     >
                       Online Balance
                     </p>
                     <p
                       className={`text-2xl font-bold ${
-                        onlineBalance >= 0 ? "text-blue-700" : "text-orange-700"
+                        onlineBalance >= 0 ? "text-indigo-800" : "text-orange-700"
                       }`}
                     >
                       ₹{onlineBalance.toFixed(2)}
@@ -405,7 +405,7 @@ export default function Dashboard() {
           <div
             className={`premium-card group ${
               cashBalance >= 0
-                ? "bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50 border-purple-100/50"
+                ? "bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border-yellow-100/50"
                 : "bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 border-orange-100/50"
             }`}
           >
@@ -415,7 +415,7 @@ export default function Dashboard() {
                   <div
                     className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ${
                       cashBalance >= 0
-                        ? "bg-gradient-to-r from-purple-400 to-violet-500 group-hover:shadow-purple-200"
+                        ? "bg-gradient-to-r from-yellow-500 to-amber-600 group-hover:shadow-yellow-200"
                         : "bg-gradient-to-r from-orange-400 to-red-500 group-hover:shadow-orange-200"
                     }`}
                   >
@@ -424,14 +424,14 @@ export default function Dashboard() {
                   <div>
                     <p
                       className={`text-sm font-semibold mb-1 ${
-                        cashBalance >= 0 ? "text-purple-600" : "text-orange-600"
+                        cashBalance >= 0 ? "text-amber-700" : "text-orange-600"
                       }`}
                     >
                       Cash Balance
                     </p>
                     <p
                       className={`text-2xl font-bold ${
-                        cashBalance >= 0 ? "text-purple-700" : "text-orange-700"
+                        cashBalance >= 0 ? "text-amber-800" : "text-orange-700"
                       }`}
                     >
                       ₹{cashBalance.toFixed(2)}
@@ -471,7 +471,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <p className="text-lg font-semibold text-gray-600 mb-3">
+                <p className="text-lg font-semibold text-slate-600 mb-3">
                   Total Portfolio Balance
                 </p>
                 <p
@@ -486,12 +486,12 @@ export default function Dashboard() {
                   <div className="flex items-center space-x-2">
                     <span className="text-2xl">💳</span>
                     <div className="text-left">
-                      <p className="text-sm font-medium text-gray-500">
+                      <p className="text-sm font-medium text-slate-500">
                         Online
                       </p>
                       <p
                         className={`font-bold ${
-                          onlineBalance >= 0 ? "text-blue-600" : "text-red-600"
+                          onlineBalance >= 0 ? "text-indigo-700" : "text-red-600"
                         }`}
                       >
                         ₹{onlineBalance.toFixed(2)}
@@ -499,15 +499,15 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="w-px h-12 bg-gray-300"></div>
+                  <div className="w-px h-12 bg-slate-300"></div>
 
                   <div className="flex items-center space-x-2">
                     <span className="text-2xl">💵</span>
                     <div className="text-left">
-                      <p className="text-sm font-medium text-gray-500">Cash</p>
+                      <p className="text-sm font-medium text-slate-500">Cash</p>
                       <p
                         className={`font-bold ${
-                          cashBalance >= 0 ? "text-purple-600" : "text-red-600"
+                          cashBalance >= 0 ? "text-amber-700" : "text-red-600"
                         }`}
                       >
                         ₹{cashBalance.toFixed(2)}
@@ -532,7 +532,7 @@ export default function Dashboard() {
 
           <a
             href="/analytics"
-            className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-8 py-4 rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center space-x-3 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-4 rounded-xl hover:from-emerald-600 hover:to-emerald-700 flex items-center space-x-3 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
           >
             <BarChart3 className="h-5 w-5" />
             <span>View Analytics</span>
@@ -560,7 +560,7 @@ export default function Dashboard() {
                   exportToExcel(transactions);
                   showSuccess("Transactions exported to Excel successfully!");
                 }}
-                className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-4 rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-4 rounded-xl hover:from-emerald-600 hover:to-emerald-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
               >
                 <Download className="h-4 w-4" />
                 <span>Excel</span>
@@ -573,7 +573,7 @@ export default function Dashboard() {
         <div className="lg:hidden fixed bottom-6 right-6 z-30">
           <button
             onClick={() => setShowForm(true)}
-            className="w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-blue-500/25 flex items-center justify-center transform hover:scale-110 active:scale-95 transition-all duration-300"
+            className="w-14 h-14 bg-gradient-to-r from-indigo-800 to-slate-800 text-white rounded-full shadow-2xl hover:shadow-indigo-500/25 flex items-center justify-center transform hover:scale-110 active:scale-95 transition-all duration-300"
           >
             <PlusCircle className="h-6 w-6" />
           </button>
