@@ -101,7 +101,7 @@ export default function RecurringTransactions() {
         createdAt: new Date()
       });
 
-      showSuccess(`Recurring ${recurringTransaction.type} of $${recurringTransaction.amount.toFixed(2)} executed!`);
+      showSuccess(`Recurring ${recurringTransaction.type} of ₹${recurringTransaction.amount.toFixed(2)} executed!`);
     } catch (error) {
       console.error('Error executing recurring transaction:', error);
       showError('Failed to execute recurring transaction.');
@@ -171,7 +171,7 @@ export default function RecurringTransactions() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
                 <input
                   type="number"
                   name="amount"
@@ -265,7 +265,7 @@ export default function RecurringTransactions() {
                   <span className="text-gray-500 text-sm">{frequencies[transaction.frequency]}</span>
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  {transaction.category} • ${transaction.amount.toFixed(2)}
+                  {transaction.category} • ₹{transaction.amount.toFixed(2)}
                 </div>
               </div>
               

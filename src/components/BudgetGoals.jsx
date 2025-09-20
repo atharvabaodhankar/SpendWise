@@ -78,7 +78,7 @@ export default function BudgetGoals() {
   useEffect(() => {
     if (budget && progressPercentage > 90 && !hasShownWarning) {
       if (isOverBudget) {
-        showWarning(`You've exceeded your monthly budget by $${(currentMonthExpenses - budget.monthlyLimit).toFixed(2)}!`);
+        showWarning(`You've exceeded your monthly budget by ₹${(currentMonthExpenses - budget.monthlyLimit).toFixed(2)}!`);
       } else if (progressPercentage > 90) {
         showWarning(`You've used ${progressPercentage.toFixed(1)}% of your monthly budget. Consider reducing spending.`);
       }
@@ -135,7 +135,7 @@ export default function BudgetGoals() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Monthly Budget Limit ($)
+              Monthly Budget Limit (₹)
             </label>
             <input
               type="number"
@@ -152,20 +152,20 @@ export default function BudgetGoals() {
         <div className="space-y-3 sm:space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-sm sm:text-base text-gray-600">Budget Limit:</span>
-            <span className="text-base sm:text-lg font-semibold">${budget.monthlyLimit.toFixed(2)}</span>
+            <span className="text-base sm:text-lg font-semibold">₹{budget.monthlyLimit.toFixed(2)}</span>
           </div>
           
           <div className="flex justify-between items-center">
             <span className="text-sm sm:text-base text-gray-600">Spent This Month:</span>
             <span className={`text-base sm:text-lg font-semibold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
-              ${currentMonthExpenses.toFixed(2)}
+              ₹{currentMonthExpenses.toFixed(2)}
             </span>
           </div>
 
           <div className="flex justify-between items-center">
             <span className="text-sm sm:text-base text-gray-600">Remaining:</span>
             <span className={`text-base sm:text-lg font-semibold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
-              ${(budget.monthlyLimit - currentMonthExpenses).toFixed(2)}
+              ₹{(budget.monthlyLimit - currentMonthExpenses).toFixed(2)}
             </span>
           </div>
 
@@ -189,7 +189,7 @@ export default function BudgetGoals() {
               <div className="bg-red-50 border border-red-200 rounded-md p-3 mt-3">
                 <p className="text-sm text-red-700 font-medium flex items-center">
                   <span className="mr-2">⚠️</span>
-                  You've exceeded your budget by ${(currentMonthExpenses - budget.monthlyLimit).toFixed(2)}
+                  You've exceeded your budget by ₹{(currentMonthExpenses - budget.monthlyLimit).toFixed(2)}
                 </p>
               </div>
             )}

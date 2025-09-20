@@ -8,7 +8,7 @@ import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import BudgetGoals from '../components/BudgetGoals';
 import RecurringTransactions from '../components/RecurringTransactions';
-import { exportToCSV } from '../utils/exportUtils';
+import { exportToPDF, exportToExcel } from '../utils/exportUtils';
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
@@ -175,16 +175,28 @@ export default function Dashboard() {
             <span>View Analytics</span>
           </a>
           {transactions.length > 0 && (
-            <button
-              onClick={() => {
-                exportToCSV(transactions);
-                showSuccess('Transactions exported successfully!');
-              }}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 flex items-center justify-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
-            >
-              <Download className="h-5 w-5" />
-              <span>Export CSV</span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => {
+                  exportToPDF(transactions);
+                  showSuccess('Transactions exported to PDF successfully!');
+                }}
+                className="bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 flex items-center justify-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
+              >
+                <Download className="h-5 w-5" />
+                <span>Export PDF</span>
+              </button>
+              <button
+                onClick={() => {
+                  exportToExcel(transactions);
+                  showSuccess('Transactions exported to Excel successfully!');
+                }}
+                className="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2 transition-colors duration-200 shadow-md hover:shadow-lg"
+              >
+                <Download className="h-5 w-5" />
+                <span>Export Excel</span>
+              </button>
+            </div>
           )}
         </div>
 
