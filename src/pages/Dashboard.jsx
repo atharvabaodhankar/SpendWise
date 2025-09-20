@@ -19,6 +19,11 @@ import {
   TrendingDown,
   DollarSign,
   Download,
+  Menu,
+  X,
+  BarChart3,
+  Settings,
+  FileText,
 } from "lucide-react";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
@@ -37,6 +42,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [currentBalances, setCurrentBalances] = useState(null);
   const [showInitialSetup, setShowInitialSetup] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -186,25 +192,28 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Premium Header */}
-      <header className="glass-card border-0 border-b border-white/20 backdrop-blur-xl">
+      {/* Premium Responsive Header */}
+      <header className="glass-card border-0 border-b border-white/20 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
-                <span className="text-white text-lg font-bold">₹</span>
+          <div className="flex justify-between items-center py-4 sm:py-6">
+            {/* Logo and Brand */}
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <span className="text-white text-base sm:text-lg font-bold">₹</span>
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                   SpendWise
                 </h1>
-                <p className="text-sm text-gray-500 font-medium">
+                <p className="text-xs sm:text-sm text-gray-500 font-medium">
                   Premium Financial Management
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:block text-right">
+
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-6">
+              <div className="text-right">
                 <p className="text-sm font-medium text-gray-600">
                   Welcome back,
                 </p>
@@ -219,7 +228,111 @@ export default function Dashboard() {
                 Logout
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="lg:hidden">
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-white/20 transition-all duration-200"
+              >
+                {showMobileMenu ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {showMobileMenu && (
+            <div className="lg:hidden border-t border-white/20 py-4 animate-slide-down">
+              <div className="space-y-4">
+                {/* User Info */}
+                <div className="px-4 py-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                  <p className="text-sm font-medium text-gray-600">
+                    Welcome back,
+                  </p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {currentUser.email?.split("@")[0]}
+                  </p>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setShowForm(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 font-medium shadow-lg"
+                  >
+                    <PlusCircle className="h-5 w-5" />
+                    <span>Add Expense</span>
+                  </button>
+
+                  <a
+                    href="/analytics"
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 font-medium shadow-lg"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <BarChart3 className="h-5 w-5" />
+                    <span>View Analytics</span>
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      // Trigger balance manager - we'll need to pass this down
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-slate-500 to-gray-600 text-white rounded-xl hover:from-slate-600 hover:to-gray-700 transition-all duration-300 font-medium shadow-lg"
+                  >
+                    <Settings className="h-5 w-5" />
+                    <span>Adjust Balances</span>
+                  </button>
+
+                  {transactions.length > 0 && (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          exportToPDF(transactions);
+                          showSuccess("Transactions exported to PDF successfully!");
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 transition-all duration-300 font-medium shadow-lg"
+                      >
+                        <FileText className="h-5 w-5" />
+                        <span>Export PDF</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          exportToExcel(transactions);
+                          showSuccess("Transactions exported to Excel successfully!");
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all duration-300 font-medium shadow-lg"
+                      >
+                        <Download className="h-5 w-5" />
+                        <span>Export Excel</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Logout Button */}
+                <button
+                  onClick={() => {
+                    logout();
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 font-semibold shadow-lg"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -407,8 +520,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Premium Action Buttons */}
-        <div className="mb-8 flex flex-wrap gap-4 justify-center lg:justify-start">
+        {/* Premium Action Buttons - Desktop Only */}
+        <div className="mb-8 hidden lg:flex flex-wrap gap-4 justify-start">
           <button
             onClick={() => setShowForm(true)}
             className="btn-primary flex items-center space-x-3 px-8 py-4 text-base font-semibold transform hover:scale-105 active:scale-95"
@@ -421,7 +534,7 @@ export default function Dashboard() {
             href="/analytics"
             className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-8 py-4 rounded-xl hover:from-emerald-600 hover:to-green-700 flex items-center space-x-3 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
           >
-            <span className="text-lg">📊</span>
+            <BarChart3 className="h-5 w-5" />
             <span>View Analytics</span>
           </a>
 
@@ -439,7 +552,7 @@ export default function Dashboard() {
                 }}
                 className="bg-gradient-to-r from-red-500 to-rose-600 text-white px-6 py-4 rounded-xl hover:from-red-600 hover:to-rose-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
               >
-                <Download className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 <span>PDF</span>
               </button>
               <button
@@ -454,6 +567,16 @@ export default function Dashboard() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Mobile Quick Action - Floating Add Button */}
+        <div className="lg:hidden fixed bottom-6 right-6 z-30">
+          <button
+            onClick={() => setShowForm(true)}
+            className="w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-blue-500/25 flex items-center justify-center transform hover:scale-110 active:scale-95 transition-all duration-300"
+          >
+            <PlusCircle className="h-6 w-6" />
+          </button>
         </div>
 
         {/* Transaction Form Modal */}
