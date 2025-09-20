@@ -37,16 +37,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
-    
+
     match /budgets/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     match /recurringTransactions/{document} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
-    
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;
@@ -95,6 +95,7 @@ VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 ## 9. Deploy (Optional)
 
 ### Firebase Hosting
+
 ```bash
 npm install -g firebase-tools
 firebase login
@@ -104,6 +105,7 @@ firebase deploy
 ```
 
 ### Vercel
+
 ```bash
 npm run build
 npx vercel --prod
@@ -112,14 +114,17 @@ npx vercel --prod
 ## Troubleshooting
 
 ### Permission Denied Errors
+
 - Ensure you're signed in before accessing Firestore
 - Check that security rules are published
 - Verify `userId` field is set correctly in documents
 
 ### CORS Errors with Google Auth
+
 - Add your domain to authorized domains in Firebase Console > Authentication > Settings > Authorized domains
 
 ### Environment Variables Not Loading
+
 - Ensure `.env` file is in project root
 - Restart development server after adding `.env`
 - Check that variable names start with `VITE_`
@@ -135,6 +140,7 @@ npx vercel --prod
 ## Collections Structure
 
 ### transactions
+
 ```javascript
 {
   id: "auto-generated",
@@ -149,6 +155,7 @@ npx vercel --prod
 ```
 
 ### budgets
+
 ```javascript
 {
   id: "user-uid", // Document ID is the user's UID
@@ -159,6 +166,7 @@ npx vercel --prod
 ```
 
 ### recurringTransactions
+
 ```javascript
 {
   id: "auto-generated",
