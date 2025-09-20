@@ -73,6 +73,26 @@ export default function Dashboard() {
 
   const balance = totalIncome - totalExpenses;
 
+  // Calculate balances by payment method
+  const onlineIncome = transactions
+    .filter(t => t.type === 'income' && t.paymentMethod === 'online')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const onlineExpenses = transactions
+    .filter(t => t.type === 'expense' && t.paymentMethod === 'online')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const cashIncome = transactions
+    .filter(t => t.type === 'income' && t.paymentMethod === 'cash')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const cashExpenses = transactions
+    .filter(t => t.type === 'expense' && t.paymentMethod === 'cash')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const onlineBalance = onlineIncome - onlineExpenses;
+  const cashBalance = cashIncome - cashExpenses;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -110,49 +130,92 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg shadow-md border border-green-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 lg:p-6 rounded-lg shadow-md border border-green-100">
             <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-full">
-                <TrendingUp className="h-6 w-6 text-green-600" />
+              <div className="p-2 lg:p-3 bg-green-100 rounded-full">
+                <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Income</p>
-                <p className="text-2xl font-bold text-green-600">₹{totalIncome.toFixed(2)}</p>
+              <div className="ml-3 lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-gray-600">Total Income</p>
+                <p className="text-lg lg:text-2xl font-bold text-green-600">₹{totalIncome.toFixed(2)}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-red-50 to-rose-50 p-6 rounded-lg shadow-md border border-red-100">
+          <div className="bg-gradient-to-r from-red-50 to-rose-50 p-4 lg:p-6 rounded-lg shadow-md border border-red-100">
             <div className="flex items-center">
-              <div className="p-3 bg-red-100 rounded-full">
-                <TrendingDown className="h-6 w-6 text-red-600" />
+              <div className="p-2 lg:p-3 bg-red-100 rounded-full">
+                <TrendingDown className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Expenses</p>
-                <p className="text-2xl font-bold text-red-600">₹{totalExpenses.toFixed(2)}</p>
+              <div className="ml-3 lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-gray-600">Total Expenses</p>
+                <p className="text-lg lg:text-2xl font-bold text-red-600">₹{totalExpenses.toFixed(2)}</p>
               </div>
             </div>
           </div>
 
-          <div className={`bg-gradient-to-r p-6 rounded-lg shadow-md border ${
-            balance >= 0 
+          <div className={`bg-gradient-to-r p-4 lg:p-6 rounded-lg shadow-md border ${
+            onlineBalance >= 0 
               ? 'from-blue-50 to-indigo-50 border-blue-100' 
               : 'from-orange-50 to-red-50 border-orange-100'
           }`}>
             <div className="flex items-center">
-              <div className={`p-3 rounded-full ${
-                balance >= 0 ? 'bg-blue-100' : 'bg-orange-100'
+              <div className={`p-2 lg:p-3 rounded-full ${
+                onlineBalance >= 0 ? 'bg-blue-100' : 'bg-orange-100'
               }`}>
-                <DollarSign className={`h-6 w-6 ${
-                  balance >= 0 ? 'text-blue-600' : 'text-orange-600'
-                }`} />
+                <span className={`text-lg lg:text-xl ${
+                  onlineBalance >= 0 ? 'text-blue-600' : 'text-orange-600'
+                }`}>💳</span>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Balance</p>
-                <p className={`text-2xl font-bold ${balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                  ₹{balance.toFixed(2)}
+              <div className="ml-3 lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-gray-600">Online Balance</p>
+                <p className={`text-lg lg:text-2xl font-bold ${onlineBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                  ₹{onlineBalance.toFixed(2)}
                 </p>
+              </div>
+            </div>
+          </div>
+
+          <div className={`bg-gradient-to-r p-4 lg:p-6 rounded-lg shadow-md border ${
+            cashBalance >= 0 
+              ? 'from-purple-50 to-violet-50 border-purple-100' 
+              : 'from-orange-50 to-red-50 border-orange-100'
+          }`}>
+            <div className="flex items-center">
+              <div className={`p-2 lg:p-3 rounded-full ${
+                cashBalance >= 0 ? 'bg-purple-100' : 'bg-orange-100'
+              }`}>
+                <span className={`text-lg lg:text-xl ${
+                  cashBalance >= 0 ? 'text-purple-600' : 'text-orange-600'
+                }`}>💵</span>
+              </div>
+              <div className="ml-3 lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-gray-600">Cash Balance</p>
+                <p className={`text-lg lg:text-2xl font-bold ${cashBalance >= 0 ? 'text-purple-600' : 'text-orange-600'}`}>
+                  ₹{cashBalance.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Balance Summary */}
+        <div className="mb-6">
+          <div className={`bg-gradient-to-r p-6 rounded-lg shadow-lg border-2 ${
+            balance >= 0 
+              ? 'from-emerald-50 to-teal-50 border-emerald-200' 
+              : 'from-red-50 to-orange-50 border-red-200'
+          }`}>
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-600 mb-2">Total Balance (Online + Cash)</p>
+              <p className={`text-3xl lg:text-4xl font-bold ${balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                ₹{balance.toFixed(2)}
+              </p>
+              <div className="flex justify-center space-x-6 mt-4 text-sm text-gray-600">
+                <span>Online: ₹{onlineBalance.toFixed(2)}</span>
+                <span>•</span>
+                <span>Cash: ₹{cashBalance.toFixed(2)}</span>
               </div>
             </div>
           </div>

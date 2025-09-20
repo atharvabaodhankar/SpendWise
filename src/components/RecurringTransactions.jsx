@@ -22,7 +22,8 @@ export default function RecurringTransactions() {
     amount: '',
     category: 'Bills',
     description: '',
-    frequency: 'monthly'
+    frequency: 'monthly',
+    paymentMethod: 'online'
   });
 
   const categories = {
@@ -69,7 +70,8 @@ export default function RecurringTransactions() {
         amount: '',
         category: 'Bills',
         description: '',
-        frequency: 'monthly'
+        frequency: 'monthly',
+        paymentMethod: 'online'
       });
       showSuccess('Recurring transaction created successfully!');
     } catch (error) {
@@ -96,6 +98,7 @@ export default function RecurringTransactions() {
         amount: recurringTransaction.amount,
         category: recurringTransaction.category,
         description: `${recurringTransaction.description} (Recurring)`,
+        paymentMethod: recurringTransaction.paymentMethod || 'online',
         date: new Date().toISOString().split('T')[0],
         userId: currentUser.uid,
         createdAt: new Date()
@@ -211,6 +214,19 @@ export default function RecurringTransactions() {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                <select
+                  name="paymentMethod"
+                  value={formData.paymentMethod}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="online">💳 Online</option>
+                  <option value="cash">💵 Cash</option>
+                </select>
+              </div>
             </div>
 
             <div>
@@ -264,8 +280,11 @@ export default function RecurringTransactions() {
                   <span className="hidden sm:inline text-gray-500">•</span>
                   <span className="text-gray-500 text-sm">{frequencies[transaction.frequency]}</span>
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  {transaction.category} • ₹{transaction.amount.toFixed(2)}
+                <div className="text-sm text-gray-600 mt-1 flex items-center space-x-2">
+                  <span>{transaction.category} • ₹{transaction.amount.toFixed(2)}</span>
+                  <span className="text-xs px-2 py-1 rounded-full bg-gray-100">
+                    {transaction.paymentMethod === 'online' ? '💳 Online' : '💵 Cash'}
+                  </span>
                 </div>
               </div>
               

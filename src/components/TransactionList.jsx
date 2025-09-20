@@ -38,6 +38,11 @@ export default function TransactionList({ transactions, onDelete }) {
                   <p className="text-sm text-gray-500">
                     {transaction.category} • {new Date(transaction.date).toLocaleDateString()}
                   </p>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                      {transaction.paymentMethod === 'online' ? '💳 Online' : '💵 Cash'}
+                    </span>
+                  </div>
                 </div>
               </div>
               
