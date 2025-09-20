@@ -153,3 +153,22 @@ body {
 @media (min-width: 1024px) {
   .lg\:px-8 { padding-left: 2rem; padding-right: 2rem; }
 }
+
+/* Additional utility classes */
+.text-4xl { font-size: 2.25rem; }
+.text-5xl { font-size: 3rem; }
+.max-w-3xl { max-width: 48rem; }
+.py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+.py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+.px-8 { padding-left: 2rem; padding-right: 2rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.w-16 { width: 4rem; }
+.h-16 { height: 4rem; }
+
+.bg-blue-100 { background-color: #dbeafe; }
+.bg-green-100 { background-color: #dcfce7; }
+.bg-purple-100 { background-color: #f3e8ff; }
+
+.hover\:bg-gray-50:hover { background-color: #f9fafb; }
+.hover\:text-gray-900:hover { color: #111827; }
