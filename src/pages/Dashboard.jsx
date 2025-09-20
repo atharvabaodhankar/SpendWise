@@ -104,9 +104,11 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg shadow-md border border-green-100">
             <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600" />
+              <div className="p-3 bg-green-100 rounded-full">
+                <TrendingUp className="h-6 w-6 text-green-600" />
+              </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Income</p>
                 <p className="text-2xl font-bold text-green-600">${totalIncome.toFixed(2)}</p>
@@ -114,9 +116,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-gradient-to-r from-red-50 to-rose-50 p-6 rounded-lg shadow-md border border-red-100">
             <div className="flex items-center">
-              <TrendingDown className="h-8 w-8 text-red-600" />
+              <div className="p-3 bg-red-100 rounded-full">
+                <TrendingDown className="h-6 w-6 text-red-600" />
+              </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Expenses</p>
                 <p className="text-2xl font-bold text-red-600">${totalExpenses.toFixed(2)}</p>
@@ -124,12 +128,22 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className={`bg-gradient-to-r p-6 rounded-lg shadow-md border ${
+            balance >= 0 
+              ? 'from-blue-50 to-indigo-50 border-blue-100' 
+              : 'from-orange-50 to-red-50 border-orange-100'
+          }`}>
             <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-blue-600" />
+              <div className={`p-3 rounded-full ${
+                balance >= 0 ? 'bg-blue-100' : 'bg-orange-100'
+              }`}>
+                <DollarSign className={`h-6 w-6 ${
+                  balance >= 0 ? 'text-blue-600' : 'text-orange-600'
+                }`} />
+              </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Balance</p>
-                <p className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-2xl font-bold ${balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
                   ${balance.toFixed(2)}
                 </p>
               </div>

@@ -91,15 +91,27 @@ export default function Analytics() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {transactions.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-500 text-lg">No data to analyze yet</p>
-            <p className="text-gray-400">Add some transactions to see your spending patterns!</p>
+          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+            <div className="mx-auto h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <span className="text-2xl">📊</span>
+            </div>
+            <p className="text-gray-500 text-lg font-medium">No data to analyze yet</p>
+            <p className="text-gray-400 mt-2">Add some transactions to see your spending patterns!</p>
+            <a 
+              href="/dashboard" 
+              className="inline-block mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
+            >
+              Add Transactions
+            </a>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Expenses by Category */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-4">Expenses by Category</h2>
+            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+              <h2 className="text-xl font-semibold mb-6 text-gray-900 flex items-center">
+                <span className="mr-2">🥧</span>
+                Expenses by Category
+              </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -122,8 +134,11 @@ export default function Analytics() {
             </div>
 
             {/* Monthly Spending */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-4">Monthly Spending</h2>
+            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+              <h2 className="text-xl font-semibold mb-6 text-gray-900 flex items-center">
+                <span className="mr-2">📈</span>
+                Monthly Spending
+              </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -136,29 +151,32 @@ export default function Analytics() {
             </div>
 
             {/* Summary Stats */}
-            <div className="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
-              <h2 className="text-xl font-semibold mb-4">Spending Summary</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-red-600">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-md lg:col-span-2 border border-blue-100">
+              <h2 className="text-xl font-semibold mb-6 text-gray-900 flex items-center">
+                <span className="mr-2">📊</span>
+                Spending Summary
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-3xl font-bold text-red-600 mb-1">
                     ${Object.values(expensesByCategory).reduce((a, b) => a + b, 0).toFixed(2)}
-                  </p>
-                  <p className="text-gray-600">Total Expenses</p>
+                  </div>
+                  <p className="text-gray-600 font-medium">Total Expenses</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">
+                <div className="text-center bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-3xl font-bold text-blue-600 mb-1">
                     {Object.keys(expensesByCategory).length}
-                  </p>
-                  <p className="text-gray-600">Categories</p>
+                  </div>
+                  <p className="text-gray-600 font-medium">Categories</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">
+                <div className="text-center bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-3xl font-bold text-green-600 mb-1">
                     ${Object.values(expensesByCategory).length > 0 
                       ? (Object.values(expensesByCategory).reduce((a, b) => a + b, 0) / Object.values(expensesByCategory).length).toFixed(2)
                       : '0.00'
                     }
-                  </p>
-                  <p className="text-gray-600">Avg per Category</p>
+                  </div>
+                  <p className="text-gray-600 font-medium">Avg per Category</p>
                 </div>
               </div>
             </div>
