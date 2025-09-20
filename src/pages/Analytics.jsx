@@ -139,7 +139,7 @@ export default function Analytics() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                  <Tooltip formatter={(value) => `₹${value.toFixed(2)}`} />
                 </PieChart>
               </ResponsiveContainer>
               </div>
@@ -164,7 +164,7 @@ export default function Analytics() {
                     interval={0}
                   />
                   <YAxis fontSize={12} />
-                  <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                  <Tooltip formatter={(value) => `₹${value.toFixed(2)}`} />
                   <Bar dataKey="amount" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
@@ -180,7 +180,7 @@ export default function Analytics() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                 <div className="text-center bg-white p-4 rounded-lg shadow-sm">
                   <div className="text-3xl font-bold text-red-600 mb-1">
-                    ${Object.values(expensesByCategory).reduce((a, b) => a + b, 0).toFixed(2)}
+                    ₹{Object.values(expensesByCategory).reduce((a, b) => a + b, 0).toFixed(2)}
                   </div>
                   <p className="text-gray-600 font-medium">Total Expenses</p>
                 </div>
@@ -192,7 +192,7 @@ export default function Analytics() {
                 </div>
                 <div className="text-center bg-white p-4 rounded-lg shadow-sm">
                   <div className="text-3xl font-bold text-green-600 mb-1">
-                    ${Object.values(expensesByCategory).length > 0 
+                    ₹{Object.values(expensesByCategory).length > 0 
                       ? (Object.values(expensesByCategory).reduce((a, b) => a + b, 0) / Object.values(expensesByCategory).length).toFixed(2)
                       : '0.00'
                     }

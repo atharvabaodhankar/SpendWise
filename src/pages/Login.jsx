@@ -41,7 +41,7 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-xl font-bold">$</span>
+            <span className="text-white text-xl font-bold">₹</span>
           </div>
           <h2 className="text-3xl font-bold text-gray-900">
             Sign in to SpendWise

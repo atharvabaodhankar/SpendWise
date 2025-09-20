@@ -45,7 +45,7 @@ export default function TransactionList({ transactions, onDelete }) {
                 <span className={`text-lg font-semibold ${
                   transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                  {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
                 </span>
                 
                 <button

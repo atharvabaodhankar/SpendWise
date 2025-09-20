@@ -46,7 +46,7 @@ export default function Dashboard() {
         createdAt: new Date()
       });
       setShowForm(false);
-      showSuccess(`${transactionData.type === 'income' ? 'Income' : 'Expense'} of $${transactionData.amount.toFixed(2)} added successfully!`);
+      showSuccess(`${transactionData.type === 'income' ? 'Income' : 'Expense'} of ₹${transactionData.amount.toFixed(2)} added successfully!`);
     } catch (error) {
       console.error('Error adding transaction:', error);
       showError('Failed to add transaction. Please try again.');
@@ -89,7 +89,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
               <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">$</span>
+                <span className="text-white text-sm font-bold">₹</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">SpendWise</h1>
             </div>
@@ -118,7 +118,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Income</p>
-                <p className="text-2xl font-bold text-green-600">${totalIncome.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-green-600">₹{totalIncome.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Expenses</p>
-                <p className="text-2xl font-bold text-red-600">${totalExpenses.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-red-600">₹{totalExpenses.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function Dashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Balance</p>
                 <p className={`text-2xl font-bold ${balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                  ${balance.toFixed(2)}
+                  ₹{balance.toFixed(2)}
                 </p>
               </div>
             </div>
