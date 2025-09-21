@@ -40,8 +40,12 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-xl font-bold">₹</span>
+          <div className="mx-auto h-12 w-12 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+            <img 
+              src="/logo.png" 
+              alt="SpendWise Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <h2 className="text-3xl font-bold text-gray-900">
             Sign in to SpendWise

@@ -76,8 +76,12 @@ export default function InitialBalanceSetup({ onComplete }) {
         <div className="p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl">
-              <Wallet className="h-10 w-10 text-white" />
+            <div className="w-20 h-20 mx-auto mb-4 rounded-3xl flex items-center justify-center shadow-xl overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="SpendWise Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Welcome to SpendWise!

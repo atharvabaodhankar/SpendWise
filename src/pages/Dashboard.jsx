@@ -169,8 +169,12 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200">
         <div className="text-center animate-fade-scale">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-indigo-800 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white text-2xl font-bold">₹</span>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
+            <img 
+              src="/logo.png" 
+              alt="SpendWise Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="text-xl font-semibold text-slate-700 mb-2">
             Loading SpendWise
@@ -198,8 +202,12 @@ export default function Dashboard() {
           <div className="flex justify-between items-center py-4 sm:py-6">
             {/* Logo and Brand */}
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-indigo-800 to-slate-800 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
-                <span className="text-white text-base sm:text-lg font-bold">₹</span>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300 overflow-hidden">
+                <img 
+                  src="/logo.png" 
+                  alt="SpendWise Logo" 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
