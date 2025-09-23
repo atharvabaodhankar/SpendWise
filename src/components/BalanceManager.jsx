@@ -10,6 +10,10 @@ import {
   onSnapshot,
   orderBy,
   limit,
+  doc,
+  updateDoc,
+  setDoc,
+  getDoc,
 } from "firebase/firestore";
 import { Settings, Edit3, Save, X } from "lucide-react";
 
@@ -108,6 +112,33 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
       // Record the adjustment for history
       await addDoc(collection(db, "balanceAdjustments"), adjustmentData);
 
+      // Update current balances document
+      const balanceDocRef = doc(db, "currentBalances", currentUser.uid);
+      const balanceDoc = await getDoc(balanceDocRef);
+      
+      if (balanceDoc.exists()) {
+        const currentData = balanceDoc.data();
+        const newOnlineBalance = currentData.online + (parseFloat(adjustments.online) || 0);
+        const newCashBalance = currentData.cash + (parseFloat(adjustments.cash) || 0);
+        
+        await updateDoc(balanceDocRef, {
+          online: newOnlineBalance,
+          cash: newCashBalance,
+          lastUpdated: new Date(),
+          updatedBy: currentUser.uid,
+          reason: `Balance adjustment: ${adjustments.reason}`,
+        });
+      } else {
+        // Create new balance document if it doesn't exist
+        await setDoc(balanceDocRef, {
+          online: parseFloat(adjustments.online) || 0,
+          cash: parseFloat(adjustments.cash) || 0,
+          lastUpdated: new Date(),
+          updatedBy: currentUser.uid,
+          reason: `Initial balance adjustment: ${adjustments.reason}`,
+        });
+      }
+
       setAdjustments({ online: "", cash: "", reason: "" });
       setShowManager(false);
 
@@ -139,7 +170,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
     <>
       <button
         onClick={() => setShowManager(true)}
-        className="bg-gradient-to-r from-slate-500 to-gray-600 text-white px-6 py-4 rounded-xl hover:from-slate-600 hover:to-gray-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+        className="bg-gradient-to-r from-slate-500 to-gray-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl hover:from-slate-600 hover:to-gray-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation"
         title="Adjust Balances"
       >
         <Settings className="h-4 w-4" />
@@ -148,8 +179,23 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
       </button>
 
       {showManager && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-2 sm:p-4 animate-fade-scale overflow-y-auto">
-          <div className="premium-card w-full max-w-2xl my-4 sm:my-0 sm:max-h-[90vh] overflow-y-auto animate-slide-up">
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 animate-fade-scale overflow-y-auto"
+          style={{ 
+            zIndex: 9999,
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'manipulation'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowManager(false);
+            }
+          }}
+        >
+          <div 
+            className="premium-card w-full max-w-2xl my-4 sm:my-0 sm:max-h-[90vh] overflow-y-auto animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-4 sm:p-6 lg:p-8">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
                 <div className="flex items-center space-x-3 sm:space-x-4">
