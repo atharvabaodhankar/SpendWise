@@ -17,10 +17,14 @@ import {
 } from "firebase/firestore";
 import { Settings, Edit3, Save, X } from "lucide-react";
 
-export default function BalanceManager({ onlineBalance, cashBalance }) {
+export default function BalanceManager({ onlineBalance, cashBalance, externalShowManager, setExternalShowManager }) {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useNotification();
   const [showManager, setShowManager] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const isManagerOpen = externalShowManager !== undefined ? externalShowManager : showManager;
+  const setManagerOpen = setExternalShowManager || setShowManager;
   const [adjustments, setAdjustments] = useState({
     online: "",
     cash: "",
@@ -30,7 +34,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!currentUser || !showManager) return;
+    if (!currentUser || !isManagerOpen) return;
 
     const q = query(
       collection(db, "balanceAdjustments"),
@@ -48,7 +52,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
     });
 
     return () => unsubscribe();
-  }, [currentUser, showManager]);
+  }, [currentUser, isManagerOpen]);
 
   const handleAdjustment = async (e) => {
     e.preventDefault();
@@ -140,7 +144,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
       }
 
       setAdjustments({ online: "", cash: "", reason: "" });
-      setShowManager(false);
+      setManagerOpen(false);
 
       const totalAdjustment =
         (parseFloat(adjustments.online) || 0) +
@@ -166,19 +170,50 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
     }));
   };
 
+  const handleButtonClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setManagerOpen(true);
+  };
+
+  const handleTouchStart = (e) => {
+    setManagerOpen(true);
+  };
+
+  const handleMouseDown = (e) => {
+    setManagerOpen(true);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setManagerOpen(true);
+    }
+  };
+
   return (
     <>
-      <button
-        onClick={() => setShowManager(true)}
-        className="bg-gradient-to-r from-slate-500 to-gray-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl hover:from-slate-600 hover:to-gray-700 flex items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation"
+      <div
+        onClick={handleButtonClick}
+        onTouchStart={handleTouchStart}
+        onMouseDown={handleMouseDown}
+        onKeyDown={handleKeyDown}
+        className="hidden lg:flex bg-gradient-to-r from-slate-500 to-gray-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl hover:from-slate-600 hover:to-gray-700 items-center space-x-2 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 cursor-pointer"
         title="Adjust Balances"
+        role="button"
+        tabIndex={0}
+        style={{ 
+          userSelect: 'none',
+          WebkitTapHighlightColor: 'transparent',
+          touchAction: 'manipulation'
+        }}
       >
         <Settings className="h-4 w-4" />
         <span className="hidden sm:inline">Adjust Balances</span>
         <span className="sm:hidden">Adjust</span>
-      </button>
+      </div>
 
-      {showManager && (
+      {isManagerOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 animate-fade-scale overflow-y-auto"
           style={{ 
@@ -188,7 +223,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowManager(false);
+              setManagerOpen(false);
             }
           }}
         >
@@ -197,6 +232,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 sm:p-6 lg:p-8">
+              
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
                 <div className="flex items-center space-x-3 sm:space-x-4">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-slate-500 to-gray-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
@@ -212,7 +248,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowManager(false)}
+                  onClick={() => setManagerOpen(false)}
                   className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 self-end sm:self-auto"
                 >
                   <X className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -355,7 +391,7 @@ export default function BalanceManager({ onlineBalance, cashBalance }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowManager(false)}
+                    onClick={() => setManagerOpen(false)}
                     className="w-full sm:flex-1 bg-gray-200 text-gray-700 py-3 sm:py-3 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
                   >
                     Cancel

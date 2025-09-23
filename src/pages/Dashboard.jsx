@@ -43,6 +43,7 @@ export default function Dashboard() {
   const [currentBalances, setCurrentBalances] = useState(null);
   const [showInitialSetup, setShowInitialSetup] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showBalanceManager, setShowBalanceManager] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -291,9 +292,9 @@ export default function Dashboard() {
                   <button
                     onClick={() => {
                       setShowMobileMenu(false);
-                      // Trigger balance manager - we'll need to pass this down
+                      setShowBalanceManager(true);
                     }}
-                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-xl hover:from-yellow-600 hover:to-amber-700 transition-all duration-300 font-medium shadow-lg"
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-left bg-gradient-to-r from-slate-500 to-gray-600 text-white rounded-xl hover:from-slate-600 hover:to-gray-700 transition-all duration-300 font-medium shadow-lg"
                   >
                     <Settings className="h-5 w-5" />
                     <span>Adjust Balances</span>
@@ -576,6 +577,14 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* Mobile Balance Manager */}
+        <BalanceManager
+          onlineBalance={onlineBalance}
+          cashBalance={cashBalance}
+          externalShowManager={showBalanceManager}
+          setExternalShowManager={setShowBalanceManager}
+        />
 
         {/* Mobile Quick Action - Floating Add Button */}
         <div className="lg:hidden fixed bottom-6 right-6 z-30">
