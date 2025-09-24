@@ -6,10 +6,10 @@ const ALERT_THRESHOLDS = {
   WEEKLY_EXPENSE_LIMIT: 10000
 };
 
-// Send email alert via Vercel API route
+// Send email alert via Gmail SMTP API route
 const sendEmailAlert = async (type, userEmail, data) => {
   try {
-    const response = await fetch('/api/send-alert', {
+    const response = await fetch('/api/send-gmail-alert', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -22,7 +22,8 @@ const sendEmailAlert = async (type, userEmail, data) => {
     });
 
     if (response.ok) {
-      console.log(`${type} email alert sent successfully to ${userEmail}`);
+      const result = await response.json();
+      console.log(`${type} email alert sent successfully to ${userEmail}`, result);
     } else {
       console.error('Failed to send email alert:', await response.text());
     }
