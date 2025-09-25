@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
 import { db } from "../firebase/config";
+import { sendBalanceAdjustmentAlert } from "../utils/emailAlerts";
 import {
   collection,
   addDoc,
@@ -120,10 +121,12 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
       const balanceDocRef = doc(db, "currentBalances", currentUser.uid);
       const balanceDoc = await getDoc(balanceDocRef);
       
+      let newOnlineBalance, newCashBalance;
+      
       if (balanceDoc.exists()) {
         const currentData = balanceDoc.data();
-        const newOnlineBalance = currentData.online + (parseFloat(adjustments.online) || 0);
-        const newCashBalance = currentData.cash + (parseFloat(adjustments.cash) || 0);
+        newOnlineBalance = currentData.online + (parseFloat(adjustments.online) || 0);
+        newCashBalance = currentData.cash + (parseFloat(adjustments.cash) || 0);
         
         await updateDoc(balanceDocRef, {
           online: newOnlineBalance,
@@ -134,14 +137,28 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
         });
       } else {
         // Create new balance document if it doesn't exist
+        newOnlineBalance = parseFloat(adjustments.online) || 0;
+        newCashBalance = parseFloat(adjustments.cash) || 0;
+        
         await setDoc(balanceDocRef, {
-          online: parseFloat(adjustments.online) || 0,
-          cash: parseFloat(adjustments.cash) || 0,
+          online: newOnlineBalance,
+          cash: newCashBalance,
           lastUpdated: new Date(),
           updatedBy: currentUser.uid,
           reason: `Initial balance adjustment: ${adjustments.reason}`,
         });
       }
+
+      // Send balance adjustment confirmation email
+      await sendBalanceAdjustmentAlert(currentUser.email, {
+        reason: adjustments.reason,
+        onlineAdjustment: parseFloat(adjustments.online) || 0,
+        cashAdjustment: parseFloat(adjustments.cash) || 0,
+        previousOnlineBalance: onlineBalance,
+        previousCashBalance: cashBalance,
+        newOnlineBalance: newOnlineBalance,
+        newCashBalance: newCashBalance
+      });
 
       setAdjustments({ online: "", cash: "", reason: "" });
       setManagerOpen(false);

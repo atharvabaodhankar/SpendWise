@@ -61,6 +61,9 @@ export default async function handler(req, res) {
     } else if (type === 'daily_expense') {
       subject = '📊 Daily Expense Alert - SpendWise';
       html = generateDailyExpenseEmail(data.totalExpenses);
+    } else if (type === 'balance_adjustment') {
+      subject = '⚖️ Balance Adjustment Confirmation - SpendWise';
+      html = generateBalanceAdjustmentEmail(data);
     } else {
       subject = '📧 SpendWise Alert';
       html = `<h2>Alert from SpendWise</h2><p>Alert type: ${type}</p>`;
@@ -203,6 +206,89 @@ function generateDailyExpenseEmail(totalExpenses) {
         <div style="background: #f5f5f5; padding: 20px; text-align: center;">
           <p style="margin: 0; color: #666; font-size: 14px;">
             Stay on track with your daily budget goals! 🎯
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateBalanceAdjustmentEmail(data) {
+  const { reason, onlineAdjustment, cashAdjustment, previousOnlineBalance, previousCashBalance, newOnlineBalance, newCashBalance } = data;
+  
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
+      <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">⚖️ Balance Adjusted</h1>
+          <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">SpendWise Confirmation</p>
+        </div>
+        
+        <div style="padding: 30px;">
+          <h2 style="color: #4CAF50; margin-top: 0;">Balance Adjustment Confirmed</h2>
+          
+          <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; border-left: 4px solid #4CAF50; margin: 20px 0;">
+            <h3 style="color: #2e7d32; margin-top: 0;">📝 Reason:</h3>
+            <p style="margin: 0; font-size: 16px; color: #333; font-style: italic;">
+              "${reason}"
+            </p>
+          </div>
+
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #495057; margin-top: 0;">💰 Balance Changes:</h3>
+            
+            ${onlineAdjustment !== 0 ? `
+              <div style="margin-bottom: 15px; padding: 15px; background: white; border-radius: 6px; border-left: 3px solid #2196F3;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-weight: bold; color: #2196F3;">💳 Online Balance</span>
+                  <span style="color: ${onlineAdjustment > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">
+                    ${onlineAdjustment > 0 ? '+' : ''}₹${onlineAdjustment.toFixed(2)}
+                  </span>
+                </div>
+                <div style="font-size: 14px; color: #666;">
+                  ₹${previousOnlineBalance.toFixed(2)} → ₹${newOnlineBalance.toFixed(2)}
+                </div>
+              </div>
+            ` : ''}
+            
+            ${cashAdjustment !== 0 ? `
+              <div style="margin-bottom: 15px; padding: 15px; background: white; border-radius: 6px; border-left: 3px solid #FF9800;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-weight: bold; color: #FF9800;">💵 Cash Balance</span>
+                  <span style="color: ${cashAdjustment > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">
+                    ${cashAdjustment > 0 ? '+' : ''}₹${cashAdjustment.toFixed(2)}
+                  </span>
+                </div>
+                <div style="font-size: 14px; color: #666;">
+                  ₹${previousCashBalance.toFixed(2)} → ₹${newCashBalance.toFixed(2)}
+                </div>
+              </div>
+            ` : ''}
+            
+            <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 6px; text-align: center;">
+              <span style="font-weight: bold; color: #1976d2;">💼 Total Balance: ₹${(newOnlineBalance + newCashBalance).toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div style="background: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #f57c00; margin-top: 0;">📊 Summary:</h3>
+            <ul style="color: #f57c00; margin: 10px 0; padding-left: 20px;">
+              <li>Adjustment recorded in your transaction history</li>
+              <li>Balance changes are now reflected in your dashboard</li>
+              <li>This email serves as your confirmation receipt</li>
+            </ul>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px;">
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+              Adjustment made on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
+            </p>
+          </div>
+        </div>
+        
+        <div style="background: #f5f5f5; padding: 20px; text-align: center;">
+          <p style="margin: 0; color: #666; font-size: 14px;">
+            Balance Adjustment Confirmed • SpendWise App ⚖️
           </p>
         </div>
       </div>

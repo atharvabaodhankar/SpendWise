@@ -55,6 +55,11 @@ export const checkDailyExpenseAlert = async (userEmail, todayExpenses) => {
   }
 };
 
+// Send balance adjustment confirmation email
+export const sendBalanceAdjustmentAlert = async (userEmail, adjustmentData) => {
+  await sendEmailAlert('balance_adjustment', userEmail, adjustmentData);
+};
+
 // Send balance alert email
 const sendBalanceAlert = async (userEmail, balance, type) => {
   const isLow = type === 'low';
