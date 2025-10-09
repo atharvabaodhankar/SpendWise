@@ -1,6 +1,19 @@
-import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState } from 'react';
+import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function TransactionList({ transactions, onDelete }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const transactionsPerPage = 10;
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(transactions.length / transactionsPerPage);
+  const startIndex = (currentPage - 1) * transactionsPerPage;
+  const endIndex = startIndex + transactionsPerPage;
+  const currentTransactions = transactions.slice(startIndex, endIndex);
+  
+  const goToPage = (page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
   if (transactions.length === 0) {
     return (
       <div className="premium-card text-center p-12 animate-fade-scale">
@@ -16,19 +29,29 @@ export default function TransactionList({ transactions, onDelete }) {
   return (
     <div className="premium-card overflow-hidden animate-slide-up">
       <div className="px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200/50">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <span className="text-white text-sm font-bold">📋</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <span className="text-white text-sm font-bold">📋</span>
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Recent Transactions</h2>
+              <p className="text-xs sm:text-sm text-gray-500">
+                {transactions.length} total • Showing {Math.min(startIndex + 1, transactions.length)}-{Math.min(endIndex, transactions.length)}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Recent Transactions</h2>
-            <p className="text-xs sm:text-sm text-gray-500">{transactions.length} transactions</p>
-          </div>
+          
+          {totalPages > 1 && (
+            <div className="hidden sm:flex items-center space-x-1 text-xs text-gray-500">
+              <span>Page {currentPage} of {totalPages}</span>
+            </div>
+          )}
         </div>
       </div>
       
       <div className="divide-y divide-gray-100">
-        {transactions.map((transaction, index) => (
+        {currentTransactions.map((transaction, index) => (
           <div 
             key={transaction.id} 
             className="px-4 sm:px-6 py-4 sm:py-5 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50/30 transition-all duration-300 group"
@@ -97,6 +120,79 @@ export default function TransactionList({ transactions, onDelete }) {
           </div>
         ))}
       </div>
+      
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="px-4 sm:px-6 py-4 bg-gray-50/50 border-t border-gray-200/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Previous</span>
+              </button>
+              
+              <div className="flex items-center space-x-1">
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => goToPage(pageNum)}
+                      className={`w-8 h-8 text-sm font-medium rounded-lg transition-all duration-200 ${
+                        currentPage === pageNum
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                {totalPages > 5 && currentPage < totalPages - 2 && (
+                  <>
+                    <span className="text-gray-400 px-1">...</span>
+                    <button
+                      onClick={() => goToPage(totalPages)}
+                      className="w-8 h-8 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+              
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="text-xs text-gray-500 sm:hidden">
+              Page {currentPage} of {totalPages}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
