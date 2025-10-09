@@ -109,7 +109,7 @@ export default function TransactionList({ transactions, onDelete }) {
                 </div>
                 
                 <button
-                  onClick={() => onDelete(transaction.id)}
+                  onClick={() => onDelete(transaction)}
                   className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all duration-200 sm:opacity-0 sm:group-hover:opacity-100"
                   title="Delete transaction"
                 >
@@ -193,6 +193,8 @@ export default function TransactionList({ transactions, onDelete }) {
           </div>
         </div>
       )}
+
+
     </div>
   );
 }

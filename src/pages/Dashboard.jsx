@@ -32,6 +32,7 @@ import { checkBalanceAlert, checkDailyExpenseAlert } from '../utils/emailAlerts'
 import RecurringTransactions from "../components/RecurringTransactions";
 import BalanceManager from "../components/BalanceManager";
 import InitialBalanceSetup from "../components/InitialBalanceSetup";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import { exportToPDF, exportToExcel } from "../utils/exportUtils";
 
 export default function Dashboard() {
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const [showInitialSetup, setShowInitialSetup] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showBalanceManager, setShowBalanceManager] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -152,14 +154,25 @@ export default function Dashboard() {
     }
   };
 
-  const deleteTransaction = async (id) => {
+  const handleDeleteRequest = (transaction) => {
+    setDeleteConfirmation(transaction);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmation) return;
+    
     try {
-      await deleteDoc(doc(db, "transactions", id));
+      await deleteDoc(doc(db, "transactions", deleteConfirmation.id));
+      setDeleteConfirmation(null);
       showSuccess("Transaction deleted successfully!");
     } catch (error) {
       console.error("Error deleting transaction:", error);
       showError("Failed to delete transaction. Please try again.");
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmation(null);
   };
 
   const totalExpenses = transactions
@@ -620,9 +633,16 @@ export default function Dashboard() {
         {/* Transactions List */}
         <TransactionList
           transactions={transactions}
-          onDelete={deleteTransaction}
+          onDelete={handleDeleteRequest}
         />
       </div>
+
+      {/* Delete Confirmation Modal at Root Level */}
+      <DeleteConfirmationModal
+        transaction={deleteConfirmation}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 }
