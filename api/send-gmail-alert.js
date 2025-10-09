@@ -1,40 +1,41 @@
 // Gmail-based email alerts - works with any email address
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method not allowed" });
   }
 
   const { type, userEmail, data } = req.body;
 
   if (!userEmail) {
-    return res.status(400).json({ message: 'userEmail is required' });
+    return res.status(400).json({ message: "userEmail is required" });
   }
 
   try {
     // Check if Gmail credentials are configured
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-      return res.status(500).json({ 
-        error: 'Gmail credentials not configured',
-        message: 'Please add GMAIL_USER and GMAIL_APP_PASSWORD to environment variables' 
+      return res.status(500).json({
+        error: "Gmail credentials not configured",
+        message:
+          "Please add GMAIL_USER and GMAIL_APP_PASSWORD to environment variables",
       });
     }
 
     // Import nodemailer dynamically
-    const nodemailer = await import('nodemailer');
-    
+    const nodemailer = await import("nodemailer");
+
     // Create Gmail transporter
     const transporter = nodemailer.default.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
         user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD
-      }
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
     });
 
     let subject, html;
-    
-    if (type === 'test') {
-      subject = '🎉 Gmail Test - SpendWise';
+
+    if (type === "test") {
+      subject = "🎉 Gmail Test - SpendWise";
       html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #4CAF50;">🎉 Gmail SMTP Working!</h2>
@@ -52,20 +53,20 @@ export default async function handler(req, res) {
           </p>
         </div>
       `;
-    } else if (type === 'low_balance') {
-      subject = '⚠️ Low Balance Alert - SpendWise';
+    } else if (type === "low_balance") {
+      subject = "⚠️ Low Balance Alert - SpendWise";
       html = generateLowBalanceEmail(data.balance);
-    } else if (type === 'critical_balance') {
-      subject = '🚨 Critical Balance Alert - SpendWise';
+    } else if (type === "critical_balance") {
+      subject = "🚨 Critical Balance Alert - SpendWise";
       html = generateCriticalBalanceEmail(data.balance);
-    } else if (type === 'daily_expense') {
-      subject = '📊 Daily Expense Alert - SpendWise';
+    } else if (type === "daily_expense") {
+      subject = "📊 Daily Expense Alert - SpendWise";
       html = generateDailyExpenseEmail(data.totalExpenses);
-    } else if (type === 'balance_adjustment') {
-      subject = '⚖️ Balance Adjustment Confirmation - SpendWise';
+    } else if (type === "balance_adjustment") {
+      subject = "⚖️ Balance Adjustment Confirmation - SpendWise";
       html = generateBalanceAdjustmentEmail(data);
     } else {
-      subject = '📧 SpendWise Alert';
+      subject = "📧 SpendWise Alert";
       html = `<h2>Alert from SpendWise</h2><p>Alert type: ${type}</p>`;
     }
 
@@ -73,23 +74,22 @@ export default async function handler(req, res) {
       from: `"SpendWise App" <${process.env.GMAIL_USER}>`,
       to: userEmail,
       subject: subject,
-      html: html
+      html: html,
     };
 
     const result = await transporter.sendMail(mailOptions);
-    
-    res.status(200).json({ 
-      success: true, 
+
+    res.status(200).json({
+      success: true,
       messageId: result.messageId,
-      message: 'Email sent successfully via Gmail!',
-      sentTo: userEmail
+      message: "Email sent successfully via Gmail!",
+      sentTo: userEmail,
     });
-    
   } catch (error) {
-    console.error('Gmail email error:', error);
-    res.status(500).json({ 
-      error: 'Failed to send Gmail email',
-      details: error.message 
+    console.error("Gmail email error:", error);
+    res.status(500).json({
+      error: "Failed to send Gmail email",
+      details: error.message,
     });
   }
 }
@@ -108,7 +108,9 @@ function generateLowBalanceEmail(balance) {
           
           <div style="background: #fff3e0; padding: 20px; border-radius: 8px; border-left: 4px solid #ff7043; margin: 20px 0; text-align: center;">
             <p style="margin: 0; font-size: 18px; color: #333;">
-              Your total balance: <strong style="color: #ff7043; font-size: 32px; display: block; margin-top: 10px;">₹${balance.toFixed(2)}</strong>
+              Your total balance: <strong style="color: #ff7043; font-size: 32px; display: block; margin-top: 10px;">₹${balance.toFixed(
+                2
+              )}</strong>
             </p>
           </div>
 
@@ -146,7 +148,9 @@ function generateCriticalBalanceEmail(balance) {
           
           <div style="background: #ffebee; padding: 20px; border-radius: 8px; border-left: 4px solid #ff3838; margin: 20px 0; text-align: center;">
             <p style="margin: 0; font-size: 18px; color: #333;">
-              Your total balance: <strong style="color: #ff3838; font-size: 32px; display: block; margin-top: 10px;">₹${balance.toFixed(2)}</strong>
+              Your total balance: <strong style="color: #ff3838; font-size: 32px; display: block; margin-top: 10px;">₹${balance.toFixed(
+                2
+              )}</strong>
             </p>
           </div>
 
@@ -185,7 +189,9 @@ function generateDailyExpenseEmail(totalExpenses) {
           
           <div style="background: #f3e5f5; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0; text-align: center;">
             <p style="margin: 0; font-size: 18px; color: #333;">
-              Today's expenses: <strong style="color: #667eea; font-size: 32px; display: block; margin-top: 10px;">₹${totalExpenses.toFixed(2)}</strong>
+              Today's expenses: <strong style="color: #667eea; font-size: 32px; display: block; margin-top: 10px;">₹${totalExpenses.toFixed(
+                2
+              )}</strong>
             </p>
             <p style="margin: 15px 0 0 0; color: #6c757d; font-size: 16px;">
               Daily limit: ₹2,000.00
@@ -214,8 +220,16 @@ function generateDailyExpenseEmail(totalExpenses) {
 }
 
 function generateBalanceAdjustmentEmail(data) {
-  const { reason, onlineAdjustment, cashAdjustment, previousOnlineBalance, previousCashBalance, newOnlineBalance, newCashBalance } = data;
-  
+  const {
+    reason,
+    onlineAdjustment,
+    cashAdjustment,
+    previousOnlineBalance,
+    previousCashBalance,
+    newOnlineBalance,
+    newCashBalance,
+  } = data;
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
       <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -237,36 +251,58 @@ function generateBalanceAdjustmentEmail(data) {
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="color: #495057; margin-top: 0;">💰 Balance Changes:</h3>
             
-            ${onlineAdjustment !== 0 ? `
+            ${
+              onlineAdjustment !== 0
+                ? `
               <div style="margin-bottom: 15px; padding: 15px; background: white; border-radius: 6px; border-left: 3px solid #2196F3;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <span style="font-weight: bold; color: #2196F3;">💳 Online Balance</span>
-                  <span style="color: ${onlineAdjustment > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">
-                    ${onlineAdjustment > 0 ? '+' : ''}₹${onlineAdjustment.toFixed(2)}
+                  <span style="color: ${
+                    onlineAdjustment > 0 ? "#4CAF50" : "#f44336"
+                  }; font-weight: bold;">
+                    ${
+                      onlineAdjustment > 0 ? "+" : ""
+                    }₹${onlineAdjustment.toFixed(2)}
                   </span>
                 </div>
                 <div style="font-size: 14px; color: #666;">
-                  ₹${previousOnlineBalance.toFixed(2)} → ₹${newOnlineBalance.toFixed(2)}
+                  ₹${previousOnlineBalance.toFixed(
+                    2
+                  )} → ₹${newOnlineBalance.toFixed(2)}
                 </div>
               </div>
-            ` : ''}
+            `
+                : ""
+            }
             
-            ${cashAdjustment !== 0 ? `
+            ${
+              cashAdjustment !== 0
+                ? `
               <div style="margin-bottom: 15px; padding: 15px; background: white; border-radius: 6px; border-left: 3px solid #FF9800;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <span style="font-weight: bold; color: #FF9800;">💵 Cash Balance</span>
-                  <span style="color: ${cashAdjustment > 0 ? '#4CAF50' : '#f44336'}; font-weight: bold;">
-                    ${cashAdjustment > 0 ? '+' : ''}₹${cashAdjustment.toFixed(2)}
+                  <span style="color: ${
+                    cashAdjustment > 0 ? "#4CAF50" : "#f44336"
+                  }; font-weight: bold;">
+                    ${cashAdjustment > 0 ? "+" : ""}₹${cashAdjustment.toFixed(
+                    2
+                  )}
                   </span>
                 </div>
                 <div style="font-size: 14px; color: #666;">
-                  ₹${previousCashBalance.toFixed(2)} → ₹${newCashBalance.toFixed(2)}
+                  ₹${previousCashBalance.toFixed(
+                    2
+                  )} → ₹${newCashBalance.toFixed(2)}
                 </div>
               </div>
-            ` : ''}
+            `
+                : ""
+            }
             
             <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 6px; text-align: center;">
-              <span style="font-weight: bold; color: #1976d2;">💼 Total Balance: ₹${(newOnlineBalance + newCashBalance).toFixed(2)}</span>
+              <span style="font-weight: bold; color: #1976d2;">💼 Total Balance: ₹${(
+                newOnlineBalance + newCashBalance
+              ).toFixed(2)}</span>
             </div>
           </div>
 
