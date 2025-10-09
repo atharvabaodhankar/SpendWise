@@ -12,6 +12,8 @@ export default function TransactionForm({ onSubmit, onCancel }) {
     date: new Date().toISOString().split('T')[0],
     paymentMethod: 'online'
   });
+  
+  const [affectCurrentBalance, setAffectCurrentBalance] = useState(false);
 
   // Check if the selected date is in the past (not today)
   const isHistoricalDate = () => {
@@ -24,7 +26,8 @@ export default function TransactionForm({ onSubmit, onCancel }) {
     onSubmit({
       ...formData,
       amount: parseFloat(formData.amount),
-      isHistorical: isHistoricalDate() // Flag to indicate if this is a historical transaction
+      isHistorical: isHistoricalDate(),
+      affectCurrentBalance: isHistoricalDate() ? affectCurrentBalance : true // For current/future dates, always affect balance
     });
   };
 
@@ -130,7 +133,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                 Date
                 {isHistoricalDate() && (
                   <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
-                    Historical
+                    Past Date
                   </span>
                 )}
               </label>
@@ -142,15 +145,52 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                 required
                 className={`premium-input w-full ${isHistoricalDate() ? 'border-amber-300 bg-amber-50' : ''}`}
               />
+              
               {isHistoricalDate() && (
-                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <span className="text-amber-600 text-sm">⚡</span>
-                    <div className="text-xs text-amber-700">
-                      <p className="font-medium mb-1">Smart Historical Mode:</p>
-                      <p>• Current balance stays unchanged (₹{formData.paymentMethod === 'online' ? 'Online' : 'Cash'} balance preserved)</p>
-                      <p>• Transaction recorded for expense tracking only</p>
-                      <p>• Expense recorded for tracking only</p>
+                <div className="mt-3 space-y-3">
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2 mb-3">
+                      <span className="text-amber-600 text-sm">⚠️</span>
+                      <div className="text-sm text-amber-700">
+                        <p className="font-medium mb-1">Past Date Detected</p>
+                        <p>You're adding an expense for a previous date. Choose how this should affect your current balance:</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={affectCurrentBalance}
+                          onChange={(e) => setAffectCurrentBalance(e.target.checked)}
+                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <div className="text-sm">
+                          <span className="font-medium text-gray-900">
+                            Deduct from current {formData.paymentMethod === 'online' ? 'online' : 'cash'} balance
+                          </span>
+                          <p className="text-gray-600 mt-1">
+                            {affectCurrentBalance 
+                              ? `✅ Will reduce your current ${formData.paymentMethod} balance by ₹${formData.amount || '0.00'}`
+                              : `📊 Will only record for expense tracking (balance unchanged)`
+                            }
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className={`p-3 rounded-lg border ${affectCurrentBalance ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className={affectCurrentBalance ? 'text-red-600' : 'text-blue-600'}>
+                        {affectCurrentBalance ? '💰' : '📈'}
+                      </span>
+                      <span className={`font-medium ${affectCurrentBalance ? 'text-red-700' : 'text-blue-700'}`}>
+                        {affectCurrentBalance 
+                          ? `Current ${formData.paymentMethod} balance will be reduced`
+                          : 'Expense tracked for analytics only'
+                        }
+                      </span>
                     </div>
                   </div>
                 </div>

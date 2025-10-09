@@ -95,8 +95,9 @@ export default function Dashboard() {
         createdAt: new Date(),
       });
 
-      // Update current balance only if it's NOT a historical transaction
-      if (!transactionData.isHistorical && currentBalances) {
+      // Update current balance based on user's choice for historical transactions
+      // For current/future dates, always affect balance (affectCurrentBalance will be true)
+      if (transactionData.affectCurrentBalance && currentBalances) {
         // Always subtract for expenses (no income anymore)
         const balanceChange = -transactionData.amount;
         const updatedBalances = {
@@ -127,12 +128,18 @@ export default function Dashboard() {
 
       setShowForm(false);
 
-      // Show appropriate success message
-      if (transactionData.isHistorical) {
+      // Show appropriate success message based on whether balance was affected
+      if (transactionData.isHistorical && !transactionData.affectCurrentBalance) {
         showSuccess(
           `Historical expense of ₹${transactionData.amount.toFixed(
             2
-          )} recorded (current balance unchanged)`
+          )} recorded for tracking only (current balance unchanged)`
+        );
+      } else if (transactionData.isHistorical && transactionData.affectCurrentBalance) {
+        showSuccess(
+          `Historical expense of ₹${transactionData.amount.toFixed(
+            2
+          )} added and deducted from current ${transactionData.paymentMethod} balance!`
         );
       } else {
         showSuccess(
