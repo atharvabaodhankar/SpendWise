@@ -10,6 +10,7 @@ export default function Analytics() {
   const { currentUser, logout } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState('all');
 
   useEffect(() => {
     if (!currentUser) return;
@@ -31,8 +32,23 @@ export default function Analytics() {
     return () => unsubscribe();
   }, [currentUser]);
 
+  // Get unique months from transactions
+  const availableMonths = [...new Set(
+    transactions
+      .filter(t => t.type === 'expense')
+      .map(t => new Date(t.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
+  )].sort((a, b) => new Date(a) - new Date(b));
+
+  // Filter transactions based on selected month
+  const filteredTransactions = selectedMonth === 'all' 
+    ? transactions 
+    : transactions.filter(t => {
+        const transactionMonth = new Date(t.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        return transactionMonth === selectedMonth;
+      });
+
   // Process data for charts
-  const expensesByCategory = transactions
+  const expensesByCategory = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((acc, transaction) => {
       acc[transaction.category] = (acc[transaction.category] || 0) + transaction.amount;
@@ -44,7 +60,7 @@ export default function Analytics() {
     value: amount
   }));
 
-  // Monthly spending data
+  // Monthly spending data (always show all months for the bar chart)
   const monthlyData = transactions
     .filter(t => t.type === 'expense')
     .reduce((acc, transaction) => {
@@ -154,13 +170,40 @@ export default function Analytics() {
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-8 animate-slide-up">
+            {/* Month Filter */}
+            <div className="premium-card p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+                      <span className="text-white text-sm">📅</span>
+                    </div>
+                    <span>Filter by Month</span>
+                  </h2>
+                  <p className="text-sm text-slate-600 mt-1 ml-11">View analytics for specific months</p>
+                </div>
+                <div className="flex-shrink-0">
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="w-full sm:w-auto px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-indigo-300"
+                  >
+                    <option value="all">All Months</option>
+                    {availableMonths.map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
             {/* Summary Stats - Mobile First */}
             <div className="premium-card bg-gradient-to-br from-indigo-50 via-blue-50 to-slate-50 border-indigo-100/50 p-4 sm:p-6">
               <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6 flex items-center">
                 <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-slate-700 rounded-xl flex items-center justify-center mr-3">
                   <span className="text-white text-sm">📊</span>
                 </div>
-                <span>Spending Summary</span>
+                <span>Spending Summary {selectedMonth !== 'all' && `- ${selectedMonth}`}</span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                 <div className="text-center bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow duration-300">
@@ -195,7 +238,7 @@ export default function Analytics() {
                   <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mr-3">
                     <span className="text-white text-sm">🥧</span>
                   </div>
-                  <span className="truncate">Expenses by Category</span>
+                  <span className="truncate">Expenses by Category {selectedMonth !== 'all' && `- ${selectedMonth}`}</span>
                 </h2>
                 <div className="h-64 sm:h-80 lg:h-96">
                   <ResponsiveContainer width="100%" height="100%">
