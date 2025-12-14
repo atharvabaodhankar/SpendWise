@@ -1,6 +1,6 @@
-# 💰 SpendWise - Smart Personal Finance Manager
+# 💰 SpendWise - Premium Financial Manager
 
-A modern, feature-rich personal finance management application built with React, Firebase, and intelligent email notifications. Track expenses, manage budgets, and stay on top of your financial health with automated alerts.
+SpendWise is a sophisticated personal finance application that combines powerful tracking capabilities with a stunning, modern user interface. Built with the latest web technologies, it offers a seamless experience for managing expenses, tracking multiple account balances, and staying on top of your financial health with smart, automated alerts.
 
 ## 🌟 Live Demo
 
@@ -8,312 +8,132 @@ A modern, feature-rich personal finance management application built with React,
 
 ## ✨ Key Features
 
-### 📊 **Expense Tracking**
+### 🎨 **Premium User Experience**
+- **Modern Glassmorphism UI**: Beautiful, translucent interface elements with dynamic gradients.
+- **Responsive Design**: Flawless experience across desktop, tablet, and mobile devices.
+- **Micro-interactions**: Smooth animations and transitions for an engaging feel.
 
-- Add, edit, and categorize transactions
-- Support for both online and cash payments
-- Real-time balance calculations
-- Transaction history with filtering and search
+### 📊 **Smart Finance Tracking**
+- **Dual Balance System**: Separately track **Online** (Bank/Digital) and **Cash** balances.
+- **Real-time Updates**: Instant balance calculations and transaction history.
+- **Comprehensive Analytics**: Visual charts for spending breakdown by category and time.
+- **Budget Goals**: Set and monitor category-wise budget limits.
 
-### 💳 **Multi-Account Management**
+### 📧 **Intelligent Email Alerts**
+Automated email notifications keep you informed about critical financial events (powered by Gmail SMTP):
+- **⚠️ Low Balance Warning**: Sent when total balance drops below **₹1,000**.
+- **🚨 Critical Balance Alert**: Sent when total balance drops below **₹500**.
+- **📊 Daily Expense Alert**: Sent when daily spending exceeds **₹2,000**.
+- **⚖️ Balance Adjustments**: Instant confirmation receipts for any manual balance corrections.
 
-- Separate tracking for online and cash balances
-- Balance adjustment tools with audit trails
-- Automatic balance synchronization
+### 🔄 **Advanced Management**
+- **Recurring Transactions**: Automate regular expenses like subscriptions.
+- **Transaction History**: Filter, search, and manage past transactions.
+- **Export Options**: Download reports in PDF or Excel formats.
+- **Secure Authentication**: Robust user management via Firebase Auth.
 
-### 📧 **Smart Email Alerts**
-
-- **Low Balance Alerts** - When total balance drops below ₹1,000
-- **Critical Balance Alerts** - When balance falls below ₹500
-- **Daily Expense Alerts** - When daily spending exceeds ₹2,000
-- **Balance Adjustment Confirmations** - Email receipts for all balance changes
-- Beautiful HTML email templates with professional styling
-
-### 📈 **Analytics & Insights**
-
-- Visual spending charts and graphs
-- Category-wise expense breakdown
-- Monthly and weekly spending trends
-- Budget goal tracking and progress monitoring
-
-### 🎯 **Budget Management**
-
-- Set and track budget goals
-- Category-wise budget allocation
-- Progress indicators and alerts
-- Spending pattern analysis
-
-### 🔄 **Recurring Transactions**
-
-- Set up automatic recurring expenses
-- Monthly subscription tracking
-- Salary and income automation
-- Smart scheduling system
-
-### 📱 **Responsive Design**
-
-- Mobile-first responsive interface
-- Touch-friendly controls
-- Optimized for all screen sizes
-- Progressive Web App capabilities
-
-### 🔐 **Security & Authentication**
-
-- Firebase Authentication integration
-- Secure user data management
-- Real-time data synchronization
-- Privacy-focused design
+---
 
 ## 🛠️ Technology Stack
 
+SpendWise is built with a cutting-edge stack for performance and developer experience:
+
 ### **Frontend**
+- **React 19**: Leveraging the latest React features for efficient rendering.
+- **Vite**: Ultra-fast build tool and development server.
+- **Tailwind CSS v4**: The latest utility-first framework for rapid, beautiful styling.
+- **Lucide React**: Modern, consistent icon set.
+- **Recharts**: Composable charting library for React.
 
-- **React 19** - Modern UI library with latest features
-- **Vite** - Lightning-fast build tool and dev server
-- **Tailwind CSS** - Utility-first CSS framework
-- **Lucide React** - Beautiful icon library
-- **Recharts** - Responsive chart library
+### **Backend & Services**
+- **Firebase Firestore**: Real-time NoSQL cloud database.
+- **Firebase Authentication**: Secure identity platform.
+- **Vercel Functions**: Serverless API endpoints for email dispatch.
+- **Nodemailer**: Robust email sending for Node.js applications.
 
-### **Backend & Database**
-
-- **Firebase Firestore** - NoSQL cloud database
-- **Firebase Authentication** - User management
-- **Firebase Security Rules** - Data protection
-
-### **Email System**
-
-- **Gmail SMTP** - Reliable email delivery
-- **Nodemailer** - Email sending library
-- **Custom HTML Templates** - Professional email design
-
-### **Deployment & Hosting**
-
-- **Vercel** - Serverless deployment platform
-- **Vercel Functions** - API endpoints
-- **GitHub Integration** - Continuous deployment
-
-### **Additional Libraries**
-
-- **jsPDF** - PDF report generation
-- **XLSX** - Excel export functionality
-- **React Router** - Client-side routing
+---
 
 ## 🚀 Getting Started
 
-### Prerequisites
+Follow these steps to set up SpendWise locally.
 
-- Node.js 18+ and npm
-- Firebase project setup
-- Gmail account for email notifications
+### Prerequisites
+- Node.js 18+ installed.
+- A Firebase project with Firestore and Auth enabled.
+- A Gmail account with an App Password for email notifications.
 
 ### Installation
 
 1. **Clone the repository**
-
    ```bash
    git clone https://github.com/atharvabaodhankar/SpendWise.git
    cd SpendWise
    ```
 
 2. **Install dependencies**
-
    ```bash
    npm install
    ```
 
-3. **Environment Setup**
-   Create a `.env` file in the root directory:
+3. **Configure Environment Variables**
+   Create a `.env` file in the root directory and add your credentials:
 
    ```env
    # Firebase Configuration
-   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_API_KEY=your_api_key
    VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
    VITE_FIREBASE_PROJECT_ID=your_project_id
    VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    VITE_FIREBASE_APP_ID=your_app_id
-   VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
-   # Email Configuration
-   GMAIL_USER=your_gmail@gmail.com
-   GMAIL_APP_PASSWORD=your_16_character_app_password
+   # Email Service (Gmail SMTP)
+   GMAIL_USER=your_email@gmail.com
+   GMAIL_APP_PASSWORD=your_16_char_app_password
    ```
 
-4. **Firebase Setup**
-
-   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
-   - Enable Authentication (Email/Password)
-   - Create Firestore database
-   - Copy configuration to `.env` file
-
-5. **Gmail SMTP Setup**
-
-   - Enable 2-Step Verification on your Google Account
-   - Generate an App Password for Gmail
-   - Add credentials to `.env` file
-
-6. **Start Development Server**
-
+4. **Start Development Server**
    ```bash
    npm run dev
    ```
 
-7. **Build for Production**
+5. **Build for Production**
    ```bash
    npm run build
    ```
 
-## 📧 Email Alert System
+---
 
-SpendWise features a comprehensive email notification system that keeps users informed about their financial activities:
-
-### **Alert Types**
-
-- **🟡 Low Balance Alert** - Triggered when total balance < ₹1,000
-- **🔴 Critical Balance Alert** - Triggered when total balance < ₹500
-- **📊 Daily Expense Alert** - Triggered when daily expenses > ₹2,000
-- **⚖️ Balance Adjustment Confirmation** - Sent after any balance modification
-
-### **Email Features**
-
-- Professional HTML templates with responsive design
-- Real-time delivery via Gmail SMTP
-- Detailed transaction summaries
-- Actionable recommendations
-- Mobile-friendly formatting
-
-### **Configuration**
-
-The email system automatically triggers based on user actions:
-
-- Adding transactions that affect balance thresholds
-- Making balance adjustments
-- Exceeding daily spending limits
-
-## 🏗️ Project Structure
+## 📂 Project Structure
 
 ```
 SpendWise/
 ├── src/
-│   ├── components/          # Reusable UI components
-│   ├── pages/              # Main application pages
-│   ├── context/            # React context providers
-│   ├── firebase/           # Firebase configuration
-│   ├── utils/              # Utility functions & email alerts
-│   └── assets/             # Static assets
-├── api/                    # Vercel serverless functions
-│   ├── send-gmail-alert.js # Email notification API
-│   └── test-email.js       # Email testing endpoint
-├── public/                 # Public assets
-└── docs/                   # Documentation files
+│   ├── components/       # Reusable UI components (Forms, Lists, Charts)
+│   ├── pages/           # Main views (Dashboard, Analytics, Auth)
+│   ├── context/         # React Context for State (Auth, Notifications)
+│   ├── firebase/        # Firebase initialization and config
+│   ├── utils/           # Helpers (Email logic, Export functions)
+│   └── assets/          # Static images and styles
+├── api/                 # Serverless functions (Email sending)
+└── public/              # Public assets
 ```
 
 ## 🔧 API Endpoints
 
-### **Email Notifications**
+The application uses Vercel serverless functions for backend operations:
 
-- `POST /api/send-gmail-alert` - Send various types of email alerts
-- `POST /api/test-email` - Test email functionality
-
-### **Request Examples**
-
-```javascript
-// Balance Alert
-{
-  "type": "low_balance",
-  "userEmail": "user@example.com",
-  "data": { "balance": 750 }
-}
-
-// Balance Adjustment Confirmation
-{
-  "type": "balance_adjustment",
-  "userEmail": "user@example.com",
-  "data": {
-    "reason": "Initial setup",
-    "onlineAdjustment": 5000,
-    "cashAdjustment": 2000,
-    "previousOnlineBalance": 0,
-    "previousCashBalance": 0,
-    "newOnlineBalance": 5000,
-    "newCashBalance": 2000
-  }
-}
-```
-
-## 🎨 Features Showcase
-
-### **Dashboard Overview**
-
-- Real-time balance display
-- Recent transactions list
-- Quick action buttons
-- Spending insights
-
-### **Transaction Management**
-
-- Add income/expense with categories
-- Edit and delete transactions
-- Bulk operations support
-- Advanced filtering options
-
-### **Analytics Dashboard**
-
-- Interactive charts and graphs
-- Category-wise spending breakdown
-- Monthly/weekly trends
-- Export capabilities (PDF, Excel)
-
-### **Budget Planning**
-
-- Set category-wise budgets
-- Track progress with visual indicators
-- Receive alerts when approaching limits
-- Historical budget performance
-
-## 🚀 Deployment
-
-### **Vercel Deployment**
-
-1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard
-3. Deploy automatically on every push to main branch
-
-### **Environment Variables (Vercel)**
-
-Add these in your Vercel project settings:
-
-- `GMAIL_USER` - Your Gmail address
-- `GMAIL_APP_PASSWORD` - Gmail app password
-- All Firebase configuration variables
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Atharva Baodhankar**
-
-- GitHub: [@atharvabaodhankar](https://github.com/atharvabaodhankar)
-- LinkedIn: [Atharva Baodhankar](https://linkedin.com/in/atharvabaodhankar)
-
-## 🙏 Acknowledgments
-
-- Firebase for backend infrastructure
-- Vercel for hosting and serverless functions
-- Tailwind CSS for styling framework
-- Recharts for data visualization
-- Gmail SMTP for email delivery
+- **POST** `/api/send-gmail-alert`: Triggers email notifications based on user actions (alerts, confirmations).
+- **POST** `/api/test-email`: Utility endpoint to verify SMTP configuration.
 
 ---
 
-⭐ **Star this repository if you found it helpful!**
+## 🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+**Atharva Baodhankar**
+- GitHub: [@atharvabaodhankar](https://github.com/atharvabaodhankar)
