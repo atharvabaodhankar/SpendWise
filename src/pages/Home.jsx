@@ -169,7 +169,7 @@ export default function Home() {
         </div>
 
         {/* Dashboard Preview */}
-        <div className="mt-20 relative mx-auto max-w-5xl animate-slide-up" style={{ animationDelay: '0.4s' }}>
+        <div className="hidden md:block mt-20 relative mx-auto max-w-5xl animate-slide-up" style={{ animationDelay: '0.4s' }}>
           <div 
              ref={dashboardRef}
              className="relative rounded-3xl bg-white/40 p-3 ring-1 ring-white/60 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-transform duration-100 ease-out origin-top border border-white/50"
