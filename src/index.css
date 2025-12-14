@@ -355,6 +355,29 @@ textarea:focus-visible {
   transform: rotateX(12deg);
 }
 
-.rotate-x-0 {
-  transform: rotateX(0deg);
+
+/* Fluid Background Animation */
+@keyframes aurora {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-aurora {
+  background: linear-gradient(-45deg, #eff6ff, #dbeafe, #e0e7ff, #f3e8ff);
+  background-size: 400% 400%;
+  animation: aurora 15s ease infinite;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
