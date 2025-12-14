@@ -49,9 +49,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Wallet className="w-6 h-6 text-white" />
-              </div>
+              <img src="/logo.png" alt="SpendWise Logo" className="w-10 h-10 object-contain" />
               <span className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
                 SpendWise
               </span>
@@ -59,7 +57,6 @@ export default function Home() {
             
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-slate-600 hover:text-blue-600 transition-colors text-sm font-medium">Features</a>
-              <a href="#testimonials" className="text-slate-600 hover:text-blue-600 transition-colors text-sm font-medium">Testimonials</a>
               <a href="#pricing" className="text-slate-600 hover:text-blue-600 transition-colors text-sm font-medium">Pricing</a>
               <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
                 <Link

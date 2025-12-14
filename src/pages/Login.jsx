@@ -42,9 +42,7 @@ export default function Login() {
       {/* Left Side - Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white relative z-10">
         <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
-            <Wallet className="w-5 h-5 text-white" />
-          </div>
+          <img src="/logo.png" alt="SpendWise Logo" className="w-8 h-8 object-contain" />
           <span className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">SpendWise</span>
         </Link>
         
@@ -178,28 +176,17 @@ export default function Login() {
            
            <div className="absolute inset-0 flex flex-col items-center justify-center p-20 text-white z-10">
              <div className="max-w-xl text-center space-y-8">
-               <div className="relative">
-                 <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 opacity-30 blur-lg transition duration-1000 group-hover:opacity-100 group-hover:duration-200"></div>
-                 <div className="relative p-8 bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-                    <p className="text-lg font-medium italic text-slate-300">
-                      "SpendWise has completely transformed how I manage my finances. I've saved more in the last 3 months than I did in the entire last year!"
-                    </p>
-                    <div className="mt-6 flex items-center justify-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 p-0.5">
-                        <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold">AK</div>
-                      </div>
-                      <div className="text-left">
-                        <div className="font-semibold text-white">Alex K.</div>
-                        <div className="text-xs text-slate-400">Freelance Designer</div>
-                      </div>
-                    </div>
-                 </div>
-               </div>
-               
+
                <div>
-                  <h3 className="text-2xl font-bold mb-2">Smart Financial Tracking</h3>
-                  <p className="text-slate-400">Join over 50,000+ users who trust SpendWise.</p>
+                  <div className="mb-8 flex justify-center">
+                    <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-white/20 animate-fade-scale shadow-xl">
+                      <img src="/logo.png" alt="SpendWise Logo" className="w-16 h-16 object-contain drop-shadow-md" />
+                    </div>
+                  </div>
+                  <h3 className="text-3xl font-bold mb-4">Smart Financial Tracking</h3>
+                  <p className="text-slate-400 text-lg">Join over 50,000+ users who trust SpendWise.</p>
                </div>
+
              </div>
            </div>
         </div>

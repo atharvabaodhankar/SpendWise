@@ -47,9 +47,7 @@ export default function Signup() {
       {/* Left Side - Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white relative z-10">
         <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center group-hover:bg-green-600 transition-colors">
-            <Wallet className="w-5 h-5 text-white" />
-          </div>
+          <img src="/logo.png" alt="SpendWise Logo" className="w-8 h-8 object-contain" />
           <span className="text-xl font-bold text-slate-900 group-hover:text-green-600 transition-colors">SpendWise</span>
         </Link>
 
