@@ -598,13 +598,15 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Mobile Balance Manager */}
-        <BalanceManager
-          onlineBalance={onlineBalance}
-          cashBalance={cashBalance}
-          externalShowManager={showBalanceManager}
-          setExternalShowManager={setShowBalanceManager}
-        />
+        {/* Mobile Balance Manager - Only show on mobile to avoid double rendering on desktop */}
+        <div className="lg:hidden">
+          <BalanceManager
+            onlineBalance={onlineBalance}
+            cashBalance={cashBalance}
+            externalShowManager={showBalanceManager}
+            setExternalShowManager={setShowBalanceManager}
+          />
+        </div>
 
         {/* Mobile Quick Action - Floating Add Button */}
         <div className="lg:hidden fixed bottom-6 right-6 z-30">
