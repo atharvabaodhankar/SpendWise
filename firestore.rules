@@ -4,8 +4,11 @@ service cloud.firestore {
     
     // Transactions collection - users can only access their own transactions
     match /transactions/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, write: if request.auth != null && (
+        request.auth.uid == resource.data.userId || 
+        request.auth.uid in resource.data.splitWith
+      );
+      allow create: if request.auth != null;
     }
 
     // Budgets collection - users can only access their own budget
@@ -33,6 +36,42 @@ service cloud.firestore {
     // User preferences collection - users can only access their own preferences
     match /userPreferences/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Users collection (Public Profile) - Readable by authenticated users, writable only by owner
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // Friends subcollection
+      match /friends/{friendId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
+      }
+      
+      // Notifications subcollection
+      match /notifications/{notificationId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Friend Requests collection
+    match /friendRequests/{requestId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.senderId || 
+        request.auth.uid == resource.data.receiverId
+      );
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.senderId;
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == resource.data.senderId || 
+        request.auth.uid == resource.data.receiverId
+      );
+    }
+    
+    // Mail collection for email triggers (created by backend/client, readable by no one typically, but here we allow create)
+    match /mail/{mailId} {
+        allow create: if request.auth != null;
+        allow read, write: if false; // Only allow creation for triggers
     }
 
     // Deny all other access
