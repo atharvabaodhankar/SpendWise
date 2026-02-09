@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { X, UserPlus, Users, Inbox } from 'lucide-react';
+import { X, UserPlus, Users, Inbox, Wallet } from 'lucide-react';
 import FriendList from './FriendList';
 import FriendRequests from './FriendRequests';
 import AddFriendModal from './AddFriendModal';
+import DebtList from './DebtList';
 
 export default function FriendsManagerModal({ isOpen, onClose }) {
-  const [activeTab, setActiveTab] = useState('list'); // 'list' or 'requests'
+  const [activeTab, setActiveTab] = useState('list'); // 'list' or 'requests' or 'debts'
   const [showAddModal, setShowAddModal] = useState(false);
 
   if (!isOpen) return null;
@@ -57,11 +58,24 @@ export default function FriendsManagerModal({ isOpen, onClose }) {
               <Inbox className="w-4 h-4" />
               Requests
            </button>
+           <button
+              onClick={() => setActiveTab('debts')}
+              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                 activeTab === 'debts' 
+                    ? 'text-[var(--primary-600)] border-b-2 border-[var(--primary-600)]' 
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+           >
+              <Wallet className="w-4 h-4" />
+              Debts
+           </button>
         </div>
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 bg-[var(--bg-primary)]">
-           {activeTab === 'list' ? <FriendList /> : <FriendRequests />}
+           {activeTab === 'list' && <FriendList />}
+           {activeTab === 'requests' && <FriendRequests />}
+           {activeTab === 'debts' && <DebtList />}
         </div>
       </div>
       

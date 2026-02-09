@@ -113,16 +113,31 @@ export default function Dashboard() {
 
   const addTransaction = async (transactionData) => {
     try {
+      let transactionToSave = { ...transactionData };
+      let amountToDeduct = parseFloat(transactionData.amount);
+
+      // Handle Split Logic: Save "My Share" as amount, but deduct "Total" from balance
+      if (transactionData.isSplit && transactionData.splitDetails?.length > 0) {
+         const totalAmount = parseFloat(transactionData.amount);
+         const splitCount = transactionData.splitDetails.length + 1;
+         const myShare = (totalAmount / splitCount).toFixed(2);
+         
+         transactionToSave.amount = parseFloat(myShare);
+         transactionToSave.totalPaid = totalAmount; // Persist total paid for balance handling
+      } else {
+         transactionToSave.amount = parseFloat(transactionData.amount);
+      }
+
       // Add transaction to database
-      await addDoc(collection(db, "transactions"), {
-        ...transactionData,
+      const docRef = await addDoc(collection(db, "transactions"), {
+        ...transactionToSave,
         userId: currentUser.uid,
         createdAt: new Date(),
       });
 
       // Update current balance based on user's choice for historical transactions
       if (transactionData.affectCurrentBalance && currentBalances) {
-        const balanceChange = -transactionData.amount;
+        const balanceChange = -amountToDeduct; // Deduct the FULL amount paid
         const updatedBalances = {
           ...currentBalances,
           [transactionData.paymentMethod]:
@@ -145,7 +160,7 @@ export default function Dashboard() {
       const today = new Date().toISOString().split('T')[0];
       const todayExpenses = transactions
         .filter(t => t.type === 'expense' && t.date === today)
-        .reduce((sum, t) => sum + t.amount, 0) + transactionData.amount;
+        .reduce((sum, t) => sum + t.amount, 0) + transactionToSave.amount;
       
       await checkDailyExpenseAlert(currentUser.email, todayExpenses);
 
@@ -155,19 +170,37 @@ export default function Dashboard() {
       if (transactionData.isSplit && transactionData.splitDetails?.length > 0) {
          const splitAmount = (transactionData.amount / (transactionData.splitDetails.length + 1)).toFixed(2);
          
-         // Create Debt Records
-         const debtPromises = transactionData.splitDetails.map(friend => {
-            return addDoc(collection(db, 'debts'), {
+         // Create Debt Records & Mirror Transactions for Friends
+         const debtPromises = transactionData.splitDetails.map(async (friend) => {
+            // 1. Create Debt Record
+            await addDoc(collection(db, 'debts'), {
                debtorId: friend.friendId,
                creditorId: currentUser.uid,
                amount: parseFloat(splitAmount),
                description: transactionData.description || transactionData.category,
-               transactionId: 'docRef.id', // We need the ID of the transaction we just created. 
-               // Wait, addDoc returns a ref, let's fix the flow.
+               transactionId: docRef.id,
                status: 'unpaid',
                createdAt: new Date()
             });
+
+            // 2. Create Transaction Record for Friend (so it shows in their dashboard)
+            // We set affectCurrentBalance to false because they haven't paid it yet (it's a debt)
+            await addDoc(collection(db, 'transactions'), {
+               userId: friend.friendId,
+               amount: parseFloat(splitAmount),
+               type: 'expense',
+               category: transactionData.category,
+               description: `${transactionData.description || transactionData.category} (Split by ${currentUser.displayName || 'Friend'})`,
+               date: transactionData.date,
+               paymentMethod: 'owed', // Special method indicating it's unpaid/credit
+               isSplit: true,
+               paidBy: currentUser.uid,
+               createdAt: new Date(),
+               affectCurrentBalance: false 
+            });
          });
+         
+         Promise.all(debtPromises).catch(err => console.error("Error creating debts/mirror transactions:", err));
 
          const emailPromises = transactionData.splitDetails.map(friend => {
             return fetch('/api/send-email-gmail', {
@@ -185,7 +218,6 @@ export default function Dashboard() {
             });
          });
          
-         // We don't await this to keep UI snappy, or we can if we want to show specific success
          Promise.all(emailPromises).catch(err => console.error("Error sending split emails:", err));
          
          showSuccess(`Expense added & ${transactionData.splitDetails.length} friends notified!`);
