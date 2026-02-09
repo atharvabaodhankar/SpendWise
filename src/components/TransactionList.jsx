@@ -125,7 +125,7 @@ export default function TransactionList({ transactions, onDelete }) {
                 
                 <button
                   onClick={() => onDelete(transaction)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-tertiary)] hover:text-[var(--danger-500)] hover:bg-[var(--danger-50)] transition-colors opacity-0 group-hover:opacity-100"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-tertiary)] hover:text-[var(--danger-500)] hover:bg-[var(--danger-50)] transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                   title="Delete"
                 >
                   <Trash2 className="w-4 h-4" />

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, AlertTriangle, Users, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 const categories = ['Food', 'Transportation', 'Entertainment', 'Bills', 'Shopping', 'Healthcare', 'Education', 'Investment', 'Other'];
@@ -30,7 +30,29 @@ export default function TransactionForm({ onSubmit, onCancel }) {
       try {
          const q = query(collection(db, 'users', currentUser.uid, 'friends'), orderBy('createdAt', 'desc'));
          const snapshot = await getDocs(q);
-         const friendsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+         
+         // Fetch names for each friend from 'users' collection to ensure we have display names
+         const friendsData = await Promise.all(snapshot.docs.map(async (friendDoc) => {
+            const data = friendDoc.data();
+            const friendId = friendDoc.id;
+            
+            try {
+               const userSnap = await getDoc(doc(db, 'users', friendId));
+               if (userSnap.exists()) {
+                  const userData = userSnap.data();
+                  return { 
+                     id: friendId, 
+                     friendId,
+                     email: data.email, 
+                     displayName: userData.displayName || data.email 
+                  };
+               }
+            } catch (e) {
+               console.error("Error fetching friend profile:", e);
+            }
+            return { id: friendId, friendId, email: data.email, displayName: data.email };
+         }));
+         
          setFriends(friendsData);
       } catch (error) {
          console.error("Error fetching friends:", error);

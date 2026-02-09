@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { UserPlus, Check, X, User } from 'lucide-react';
 
@@ -20,11 +20,28 @@ export default function FriendRequests() {
       where('status', '==', 'pending')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const requestsData = [];
-      snapshot.forEach(doc => {
-        requestsData.push({ id: doc.id, ...doc.data() });
-      });
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      // Fetch names for each sender from 'users' collection
+      const requestsData = await Promise.all(snapshot.docs.map(async (requestDoc) => {
+         const data = requestDoc.data();
+         const senderId = data.senderId;
+         
+         try {
+            const userSnap = await getDoc(doc(db, 'users', senderId));
+            if (userSnap.exists()) {
+               const userData = userSnap.data();
+               return { 
+                  id: requestDoc.id, 
+                  ...data, 
+                  senderName: userData.displayName || data.senderEmail 
+               };
+            }
+         } catch (e) {
+            console.error("Error fetching sender profile:", e);
+         }
+         return { id: requestDoc.id, ...data, senderName: data.senderEmail };
+      }));
+      
       setRequests(requestsData);
       setLoading(false);
     });
@@ -109,8 +126,8 @@ export default function FriendRequests() {
                 <User className="w-5 h-5" />
              </div>
              <div>
-                <p className="font-semibold text-[var(--text-primary)]">{request.senderEmail}</p>
-                <p className="text-xs text-[var(--text-secondary)]">wants to be friends</p>
+                <p className="font-semibold text-[var(--text-primary)]">{request.senderName}</p>
+                <p className="text-xs text-[var(--text-secondary)]">{request.senderEmail}</p>
              </div>
           </div>
           <div className="flex gap-2">

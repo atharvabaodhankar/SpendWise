@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { User, Users } from 'lucide-react';
 
@@ -17,11 +17,28 @@ export default function FriendList() {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const friendsData = [];
-      snapshot.forEach(doc => {
-        friendsData.push({ id: doc.id, ...doc.data() });
-      });
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      // Fetch profiles for each friend to get their current display names
+      const friendsData = await Promise.all(snapshot.docs.map(async (friendDoc) => {
+         const data = friendDoc.data();
+         const friendId = friendDoc.id;
+         
+         try {
+            const userSnap = await getDoc(doc(db, 'users', friendId));
+            if (userSnap.exists()) {
+               const userData = userSnap.data();
+               return { 
+                  id: friendId, 
+                  ...data, 
+                  displayName: userData.displayName || data.email 
+               };
+            }
+         } catch (e) {
+            console.error("Error fetching friend profile:", e);
+         }
+         return { id: friendId, ...data, displayName: data.email };
+      }));
+      
       setFriends(friendsData);
       setLoading(false);
     });
