@@ -192,9 +192,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-[var(--primary-800)] to-[var(--primary-900)] rounded-lg flex items-center justify-center text-white shadow-md">
-                <span className="font-bold text-lg">S</span>
-              </div>
+              <img src="/logo.png" alt="SpendWise Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
               <span className="text-lg font-bold text-[var(--text-primary)] tracking-tight">SpendWise</span>
             </div>
 
