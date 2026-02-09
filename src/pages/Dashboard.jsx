@@ -12,6 +12,7 @@ import {
   deleteDoc,
   doc,
   setDoc,
+  getDoc,
 } from "firebase/firestore";
 import {
   PlusCircle,
@@ -36,6 +37,7 @@ import BalanceManager from "../components/BalanceManager";
 import InitialBalanceSetup from "../components/InitialBalanceSetup";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import { exportToPDF, exportToExcel } from "../utils/exportUtils";
+import SettingsModal from "../components/SettingsModal";
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
@@ -48,9 +50,25 @@ export default function Dashboard() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showBalanceManager, setShowBalanceManager] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [preferences, setPreferences] = useState({ showBalances: true });
 
   useEffect(() => {
     if (!currentUser) return;
+    
+    // Load user preferences
+    const loadPreferences = async () => {
+      try {
+        const docRef = doc(db, 'userPreferences', currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setPreferences(docSnap.data());
+        }
+      } catch (error) {
+        console.error("Error loading preferences:", error);
+      }
+    };
+    loadPreferences();
 
     // Load transactions
     const transactionsQuery = query(
@@ -209,6 +227,13 @@ export default function Dashboard() {
               >
                 <LogOut className="w-5 h-5" />
               </button>
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="text-[var(--text-secondary)] hover:text-[var(--primary-600)] transition-colors p-2 rounded-lg hover:bg-[var(--primary-50)]"
+                title="Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Mobile Menu Button */}
@@ -248,6 +273,7 @@ export default function Dashboard() {
                 <span>Analytics</span>
               </a>
               
+              {preferences.showBalances && (
               <button
                 onClick={() => { setShowBalanceManager(true); setShowMobileMenu(false); }}
                 className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-[var(--primary-50)] text-[var(--text-secondary)] font-medium"
@@ -255,7 +281,16 @@ export default function Dashboard() {
                 <Settings className="w-5 h-5" />
                 <span>Adjust Balance</span>
               </button>
+              )}
               
+              <button
+                onClick={() => { setShowSettingsModal(true); setShowMobileMenu(false); }}
+                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-[var(--primary-50)] text-[var(--text-secondary)] font-medium"
+              >
+                <Settings className="w-5 h-5" />
+                <span>Settings</span>
+              </button>
+
               <button
                 onClick={logout}
                 className="w-full flex items-center space-x-3 p-3 rounded-xl text-[var(--danger-500)] hover:bg-[var(--danger-50)] font-medium"
@@ -277,10 +312,12 @@ export default function Dashboard() {
           </div>
           
           <div className="hidden md:flex gap-3">
-             <BalanceManager
-              onlineBalance={onlineBalance}
-              cashBalance={cashBalance}
-            />
+             {preferences.showBalances && (
+              <BalanceManager
+               onlineBalance={onlineBalance}
+               cashBalance={cashBalance}
+             />
+             )}
              <a
               href="/analytics"
               className="btn-secondary flex items-center space-x-2"
@@ -299,8 +336,9 @@ export default function Dashboard() {
         </div>
 
         {/* Summary Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6`}>
            {/* Total Portfolio - Hero Card */}
+           {preferences.showBalances && (
            <div className="premium-card p-6 relative overflow-hidden bg-gradient-to-br from-[var(--primary-800)] to-[var(--primary-900)] text-white border-none col-span-1 md:col-span-2">
               <div className="relative z-10">
                 <div className="flex items-center space-x-3 mb-4 opacity-90">
@@ -327,8 +365,10 @@ export default function Dashboard() {
               <div className="absolute right-0 top-0 w-64 h-64 bg-[var(--accent-600)]/20 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
               <div className="absolute bottom-0 right-10 w-40 h-40 bg-[var(--primary-500)]/20 rounded-full blur-2xl"></div>
            </div>
+           )}
 
            {/* Online Balance */}
+           {preferences.showBalances && (
            <div className="premium-card p-6 flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
@@ -346,8 +386,10 @@ export default function Dashboard() {
                 <span className="ml-2">{Math.round((onlineBalance / (balance || 1)) * 100)}%</span>
               </div>
            </div>
+           )}
 
             {/* Cash Balance */}
+           {preferences.showBalances && (
            <div className="premium-card p-6 flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
@@ -365,6 +407,7 @@ export default function Dashboard() {
                 <span className="ml-2">{Math.round((cashBalance / (balance || 1)) * 100)}%</span>
               </div>
            </div>
+           )}
 
            {/* Monthly Expenses */}
            <div className="premium-card p-6 flex flex-col justify-between border-t-4 border-t-[var(--danger-500)]">
@@ -450,6 +493,12 @@ export default function Dashboard() {
         transaction={deleteConfirmation}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+      
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onUpdatePreferences={setPreferences}
       />
     </div>
   );
