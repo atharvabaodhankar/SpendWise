@@ -68,6 +68,15 @@ service cloud.firestore {
       );
     }
     
+    // Debts collection - accessible by debtor or creditor
+    match /debts/{debtId} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == resource.data.debtorId || 
+        request.auth.uid == resource.data.creditorId
+      );
+      allow create: if request.auth != null;
+    }
+    
     // Mail collection for email triggers (created by backend/client, readable by no one typically, but here we allow create)
     match /mail/{mailId} {
         allow create: if request.auth != null;
