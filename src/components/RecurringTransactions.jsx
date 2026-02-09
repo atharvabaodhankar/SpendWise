@@ -3,12 +3,17 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { db } from '../firebase/config';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { Repeat, Plus, Trash2, Play } from 'lucide-react';
+import { Repeat, Plus, Trash2, Play, CalendarClock, Check, X, CreditCard, Wallet } from 'lucide-react';
 
 const frequencies = {
   weekly: 'Weekly',
   monthly: 'Monthly',
   yearly: 'Yearly'
+};
+
+const categories = {
+  income: ['Salary', 'Freelance', 'Investment', 'Other'],
+  expense: ['Bills', 'Rent', 'Subscription', 'Insurance', 'Other']
 };
 
 export default function RecurringTransactions() {
@@ -25,11 +30,6 @@ export default function RecurringTransactions() {
     frequency: 'monthly',
     paymentMethod: 'online'
   });
-
-  const categories = {
-    income: ['Salary', 'Freelance', 'Investment', 'Other'],
-    expense: ['Bills', 'Rent', 'Subscription', 'Insurance', 'Other']
-  };
 
   useEffect(() => {
     if (!currentUser) return;
@@ -135,179 +135,195 @@ export default function RecurringTransactions() {
   };
 
   if (loading) {
-    return <div className="bg-white p-6 rounded-lg shadow-md">Loading recurring transactions...</div>;
+     return <div className="premium-card p-6 animate-pulse h-64"></div>;
   }
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-3 sm:space-y-0">
-        <div className="flex items-center space-x-2 min-w-0 flex-1">
-          <Repeat className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
-          <h2 className="text-lg sm:text-xl font-semibold truncate">Recurring Transactions</h2>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center justify-center space-x-2 transition-colors duration-200"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Add Recurring</span>
-          <span className="sm:hidden">Add</span>
-        </button>
+    <div className="premium-card overflow-hidden flex flex-col">
+       {/* Header */}
+      <div className="p-6 border-b border-[var(--card-border)] bg-[var(--bg-secondary)]/30 flex justify-between items-center">
+         <div className="flex items-center space-x-3">
+            <div className="p-2 bg-[var(--primary-100)] rounded-lg">
+               <Repeat className="w-5 h-5 text-[var(--primary-600)]" />
+            </div>
+            <div>
+               <h3 className="text-lg font-bold text-[var(--text-primary)]">Recurring</h3>
+               <p className="text-xs text-[var(--text-secondary)]">Automate regular payments</p>
+            </div>
+         </div>
+         
+         {!showForm && (
+            <button
+               onClick={() => setShowForm(true)}
+               className="p-2 rounded-lg bg-[var(--primary-50)] text-[var(--primary-600)] hover:bg-[var(--primary-100)] transition-colors"
+            >
+               <Plus className="w-4 h-4" />
+            </button>
+         )}
       </div>
 
-      {showForm && (
-        <div className="mb-6 p-3 sm:p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4 text-gray-900">Add Recurring Transaction</h3>
-          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  step="0.01"
-                  min="0"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {categories[formData.type].map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
-                <select
-                  name="frequency"
-                  value={formData.frequency}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {Object.entries(frequencies).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                <select
-                  name="paymentMethod"
-                  value={formData.paymentMethod}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="online">💳 Online</option>
-                  <option value="cash">💵 Cash</option>
-                </select>
-              </div>
+      <div className="p-6 overflow-y-auto max-h-[400px]">
+        {showForm ? (
+          <div className="animate-fade-scale">
+            <div className="flex justify-between items-center mb-4">
+               <h4 className="font-bold text-[var(--text-primary)]">New Recurring Item</h4>
+               <button onClick={() => setShowForm(false)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                  <X className="w-4 h-4" />
+               </button>
             </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="label-premium">Type</label>
+                    <div className="flex bg-[var(--bg-tertiary)] p-1 rounded-lg">
+                       <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, type: 'expense', category: categories.expense[0] }))}
+                          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all ${
+                             formData.type === 'expense' 
+                                ? 'bg-white shadow-sm text-[var(--danger-600)]' 
+                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          }`}
+                       >
+                          Expense
+                       </button>
+                       <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, type: 'income', category: categories.income[0] }))}
+                          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all ${
+                             formData.type === 'income' 
+                                ? 'bg-white shadow-sm text-[var(--success-600)]' 
+                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          }`}
+                       >
+                          Income
+                       </button>
+                    </div>
+                 </div>
+                 
+                 <div>
+                    <label className="label-premium">Amount</label>
+                    <input
+                       type="number"
+                       name="amount"
+                       value={formData.amount}
+                       onChange={handleChange}
+                       placeholder="0.00"
+                       required
+                       className="input-premium"
+                    />
+                 </div>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <input
-                type="text"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-2">
-              <button
-                type="submit"
-                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-200 text-base"
-              >
-                <span className="hidden sm:inline">Create Recurring Transaction</span>
-                <span className="sm:hidden">Create</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors duration-200 text-base"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {recurringTransactions.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No recurring transactions set up yet</p>
-          <p className="text-gray-400 text-sm">Create recurring transactions for bills, salary, and other regular payments</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {recurringTransactions.map((transaction) => (
-            <div key={transaction.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-gray-200 rounded-lg space-y-2 sm:space-y-0">
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
-                  <span className={`px-2 py-1 text-xs rounded-full flex-shrink-0 ${
-                    transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {transaction.type}
-                  </span>
-                  <span className="font-medium truncate">{transaction.description || transaction.category}</span>
-                  <span className="hidden sm:inline text-gray-500">•</span>
-                  <span className="text-gray-500 text-sm">{frequencies[transaction.frequency]}</span>
-                </div>
-                <div className="text-sm text-gray-600 mt-1 flex items-center space-x-2">
-                  <span>{transaction.category} • ₹{transaction.amount.toFixed(2)}</span>
-                  <span className="text-xs px-2 py-1 rounded-full bg-gray-100">
-                    {transaction.paymentMethod === 'online' ? '💳 Online' : '💵 Cash'}
-                  </span>
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="label-premium">Category</label>
+                    <select
+                       name="category"
+                       value={formData.category}
+                       onChange={handleChange}
+                       className="input-premium"
+                    >
+                       {categories[formData.type].map(category => (
+                          <option key={category} value={category}>{category}</option>
+                       ))}
+                    </select>
+                 </div>
+                 <div>
+                    <label className="label-premium">Frequency</label>
+                    <select
+                       name="frequency"
+                       value={formData.frequency}
+                       onChange={handleChange}
+                       className="input-premium"
+                    >
+                       {Object.entries(frequencies).map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                       ))}
+                    </select>
+                 </div>
               </div>
               
-              <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                <button
-                  onClick={() => executeNow(transaction)}
-                  className="text-blue-600 hover:text-blue-800 p-2 rounded-md hover:bg-blue-50 transition-colors duration-150"
-                  title="Execute now"
-                >
-                  <Play className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => deleteRecurring(transaction.id)}
-                  className="text-red-600 hover:text-red-800 p-2 rounded-md hover:bg-red-50 transition-colors duration-150"
-                  title="Delete recurring transaction"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+              <div>
+                 <label className="label-premium">Description</label>
+                 <input
+                    type="text"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="e.g. Netflix Subscription"
+                    className="input-premium"
+                 />
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+
+               <div className="pt-2">
+                  <button type="submit" className="btn-primary w-full justify-center">
+                     Create Automation
+                  </button>
+               </div>
+            </form>
+          </div>
+        ) : (
+           <div className="space-y-3">
+              {recurringTransactions.length === 0 ? (
+                 <div className="text-center py-6 text-[var(--text-tertiary)]">
+                    <CalendarClock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No recurring items yet.</p>
+                 </div>
+              ) : (
+                 recurringTransactions.map((transaction) => (
+                    <div 
+                       key={transaction.id} 
+                       className="group p-3 rounded-xl border border-[var(--card-border)] hover:border-[var(--primary-200)] hover:bg-[var(--primary-50)] transition-all bg-[var(--bg-secondary)]"
+                    >
+                       <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                             <span className={`w-2 h-2 rounded-full ${transaction.type === 'income' ? 'bg-[var(--success-500)]' : 'bg-[var(--danger-500)]'}`}></span>
+                             <h4 className="text-sm font-bold text-[var(--text-primary)]">
+                                {transaction.description || transaction.category}
+                             </h4>
+                          </div>
+                          <span className={`text-sm font-bold ${transaction.type === 'income' ? 'text-[var(--success-600)]' : 'text-[var(--text-primary)]'}`}>
+                             {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toFixed(0)}
+                          </span>
+                       </div>
+                       
+                       <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-semibold bg-[var(--bg-tertiary)] px-2 py-0.5 rounded text-[var(--text-secondary)] uppercase tracking-wider">
+                                {transaction.frequency}
+                             </span>
+                             {transaction.paymentMethod === 'online' ? (
+                                <CreditCard className="w-3 h-3 text-[var(--text-tertiary)]" />
+                             ) : (
+                                <Wallet className="w-3 h-3 text-[var(--text-tertiary)]" />
+                             )}
+                          </div>
+                          
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button
+                                onClick={() => executeNow(transaction)}
+                                className="p-1.5 rounded-lg text-[var(--primary-600)] hover:bg-white hover:shadow-sm"
+                                title="Run Now"
+                             >
+                                <Play className="w-3.5 h-3.5" />
+                             </button>
+                             <button
+                                onClick={() => deleteRecurring(transaction.id)}
+                                className="p-1.5 rounded-lg text-[var(--danger-600)] hover:bg-white hover:shadow-sm"
+                                title="Delete"
+                             >
+                                <Trash2 className="w-3.5 h-3.5" />
+                             </button>
+                          </div>
+                       </div>
+                    </div>
+                 ))
+              )}
+           </div>
+        )}
+      </div>
     </div>
   );
 }
