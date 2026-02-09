@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Wallet, Check, Save, Loader2 } from 'lucide-react';
+import { X, Wallet, Check, Save, Loader2, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -12,7 +12,8 @@ export default function SettingsModal({ isOpen, onClose, onUpdatePreferences }) 
   const [saving, setSaving] = useState(false);
   
   const [preferences, setPreferences] = useState({
-    showBalances: true
+    showBalances: true,
+    displayName: ''
   });
 
   useEffect(() => {
@@ -41,10 +42,39 @@ export default function SettingsModal({ isOpen, onClose, onUpdatePreferences }) 
     }
   };
 
+  // Load public profile data as well
+  useEffect(() => {
+     const loadProfile = async () => {
+        if (!currentUser) return;
+        try {
+           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+           if (userDoc.exists()) {
+              setPreferences(prev => ({
+                 ...prev,
+                 displayName: userDoc.data().displayName || ''
+              }));
+           }
+        } catch (error) {
+           console.error("Error loading profile:", error);
+        }
+     };
+     loadProfile();
+  }, [currentUser, isOpen]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      await setDoc(doc(db, 'userPreferences', currentUser.uid), preferences);
+      await setDoc(doc(db, 'userPreferences', currentUser.uid), {
+        showBalances: preferences.showBalances
+      });
+
+      // Save public profile
+      await setDoc(doc(db, 'users', currentUser.uid), {
+        displayName: preferences.displayName,
+        email: currentUser.email,
+        photoURL: currentUser.photoURL,
+        updatedAt: new Date()
+      }, { merge: true });
       
       if (onUpdatePreferences) {
         onUpdatePreferences(preferences);
@@ -88,6 +118,26 @@ export default function SettingsModal({ isOpen, onClose, onUpdatePreferences }) 
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Profile Settings */}
+              <div className="space-y-4 pb-6 border-b border-[var(--card-border)]">
+                 <div className="flex items-center gap-2 mb-1">
+                    <User className="w-4 h-4 text-[var(--primary-500)]" />
+                    <h3 className="font-semibold text-[var(--text-primary)]">Profile</h3>
+                 </div>
+                 
+                 <div className="space-y-2">
+                    <label className="text-sm text-[var(--text-secondary)]">Display Name</label>
+                    <input
+                       type="text"
+                       value={preferences.displayName || ''}
+                       onChange={(e) => setPreferences(prev => ({ ...prev, displayName: e.target.value }))}
+                       placeholder="Enter your name"
+                       className="w-full px-4 py-2 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--card-border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)]"
+                    />
+                    <p className="text-xs text-[var(--text-tertiary)]">This name will be visible to your friends.</p>
+                 </div>
+              </div>
+
               {/* Wallet Tracking Toggle */}
               <div className="flex items-start justify-between">
                 <div className="mr-4">

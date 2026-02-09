@@ -1,19 +1,45 @@
-import { useState } from 'react';
-import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, AlertTriangle, Users, Check } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 const categories = ['Food', 'Transportation', 'Entertainment', 'Bills', 'Shopping', 'Healthcare', 'Education', 'Investment', 'Other'];
 
 export default function TransactionForm({ onSubmit, onCancel }) {
+  const { currentUser } = useAuth();
   const [formData, setFormData] = useState({
     type: 'expense',
     amount: '',
     category: 'Food',
     description: '',
     date: new Date().toISOString().split('T')[0],
-    paymentMethod: 'online'
+    paymentMethod: 'online',
+    isSplit: false,
+    splitWith: [] // Array of friend IDs
   });
   
+  const [friends, setFriends] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
   const [affectCurrentBalance, setAffectCurrentBalance] = useState(false);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      if (!currentUser) return;
+      setLoadingFriends(true);
+      try {
+         const q = query(collection(db, 'users', currentUser.uid, 'friends'), orderBy('createdAt', 'desc'));
+         const snapshot = await getDocs(q);
+         const friendsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+         setFriends(friendsData);
+      } catch (error) {
+         console.error("Error fetching friends:", error);
+      } finally {
+         setLoadingFriends(false);
+      }
+    };
+    fetchFriends();
+  }, [currentUser]);
 
   const isHistoricalDate = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -22,11 +48,17 @@ export default function TransactionForm({ onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    const splitFriends = formData.isSplit 
+       ? friends.filter(f => formData.splitWith.includes(f.friendId))
+       : [];
+
     onSubmit({
       ...formData,
       amount: parseFloat(formData.amount),
       isHistorical: isHistoricalDate(),
-      affectCurrentBalance: isHistoricalDate() ? affectCurrentBalance : true
+      affectCurrentBalance: isHistoricalDate() ? affectCurrentBalance : true,
+      splitDetails: splitFriends
     });
   };
 
@@ -196,6 +228,74 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                  />
               </div>
            </div>
+
+            {/* Split Expense Section */}
+            <div className="space-y-3 pt-2 border-t border-[var(--card-border)]">
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                     <Users className="w-5 h-5 text-[var(--primary-500)]" />
+                     <span className="font-semibold text-[var(--text-primary)]">Split with Friends</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                     <input 
+                        type="checkbox" 
+                        checked={formData.isSplit} 
+                        onChange={e => setFormData(prev => ({ ...prev, isSplit: e.target.checked, splitWith: [] }))}
+                        className="sr-only peer" 
+                     />
+                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-500)]"></div>
+                  </label>
+               </div>
+
+               {formData.isSplit && (
+                  <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] space-y-3 animate-fade-in">
+                     {loadingFriends ? (
+                        <p className="text-sm text-[var(--text-secondary)]">Loading friends...</p>
+                     ) : friends.length > 0 ? (
+                        <>
+                           <p className="text-sm text-[var(--text-secondary)] mb-2">Select friends to split with:</p>
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                              {friends.map(friend => (
+                                 <div 
+                                    key={friend.friendId}
+                                    onClick={() => {
+                                       setFormData(prev => {
+                                          const isActive = prev.splitWith.includes(friend.friendId);
+                                          return {
+                                             ...prev,
+                                             splitWith: isActive 
+                                                ? prev.splitWith.filter(id => id !== friend.friendId)
+                                                : [...prev.splitWith, friend.friendId]
+                                          };
+                                       });
+                                    }}
+                                    className={`p-2 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
+                                       formData.splitWith.includes(friend.friendId)
+                                          ? 'border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)]'
+                                          : 'border-[var(--card-border)] bg-[var(--bg-primary)] hover:border-[var(--primary-300)]'
+                                    }`}
+                                 >
+                                    <span className="text-xs font-medium truncate">{friend.displayName || friend.email}</span>
+                                    {formData.splitWith.includes(friend.friendId) && <Check className="w-3.5 h-3.5" />}
+                                 </div>
+                              ))}
+                           </div>
+                           
+                           {formData.splitWith.length > 0 && (
+                              <div className="flex justify-between items-center pt-2 text-sm">
+                                 <span className="text-[var(--text-secondary)]">Your share:</span>
+                                 <span className="font-bold text-[var(--primary-600)]">
+                                    ₹{(parseFloat(formData.amount || 0) / (formData.splitWith.length + 1)).toFixed(2)}
+                                 </span>
+                              </div>
+                           )}
+                        </>
+                     ) : (
+                        <p className="text-sm text-[var(--text-tertiary)] italic">You haven't added any friends yet.</p>
+                     )}
+                  </div>
+               )}
+            </div>
 
            {/* Actions */}
            <div className="pt-4 flex gap-4">
