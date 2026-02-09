@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.13",
     "@tailwindcss/vite": "^4.1.13",
+    "dotenv": "^17.2.4",
     "firebase": "^12.3.0",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",

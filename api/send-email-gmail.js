@@ -1,5 +1,5 @@
 // Gmail SMTP email service - works with any email address
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -45,28 +45,136 @@ export default async function handler(req, res) {
         </div>
       `;
     } else if (type === 'friend_request') {
-      subject = 'New Friend Request - SpendWise';
+      subject = `🤝 Friend Request from ${data.senderName}`;
       html = `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-           <h2>You have a new friend request!</h2>
-           <p><strong>${data.senderName || 'Someone'}</strong> (${data.senderEmail}) wants to be your friend on SpendWise.</p>
-           <p>Log in to accept the request.</p>
-           <a href="${process.env.VITE_APP_URL || 'http://localhost:5173'}" style="display:inline-block; padding: 10px 20px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">Go to SpendWise</a>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">👋 New Friend Request</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb;">
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+              <strong>${data.senderName}</strong> (${data.senderEmail}) wants to connect with you on SpendWise!
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
+              <p style="color: #6b7280; margin: 0; font-size: 14px;">
+                Accept this request to split bills and track shared expenses together.
+              </p>
+            </div>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+              Log in to SpendWise to accept or decline this request.
+            </p>
+          </div>
+        </div>
+      `;
+    } else if (type === 'friend_accepted') {
+      subject = `✅ ${data.accepterName} accepted your friend request!`;
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Friend Request Accepted!</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb;">
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+              Great news! <strong>${data.accepterName}</strong> (${data.accepterEmail}) accepted your friend request.
+            </p>
+            <div style="background: #d1fae5; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+              <p style="color: #065f46; margin: 0; font-size: 14px;">
+                ✨ You can now split bills and manage shared expenses together!
+              </p>
+            </div>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+              Log in to SpendWise to start tracking your shared expenses.
+            </p>
+          </div>
         </div>
       `;
     } else if (type === 'bill_split') {
-       subject = `New Expense Split: ₹${data.amount} - SpendWise`;
-       html = `
-         <div style="font-family: Arial, sans-serif; padding: 20px;">
-            <h2>New Expense Split</h2>
-            <p><strong>${data.senderName}</strong> added you to a bill.</p>
-            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-               <p style="margin: 5px 0;"><strong>Note:</strong> ${data.description}</p>
-               <p style="margin: 5px 0;"><strong>Your Share:</strong> <span style="color: #e11d48; font-weight: bold;">₹${data.amount}</span></p>
+      subject = `💳 Bill Split: ₹${data.amount} from ${data.senderName}`;
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">💰 Bill Split Alert</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb;">
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+              <strong>${data.senderName}</strong> split a bill with you!
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f59e0b;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: #6b7280; font-size: 14px;">Description:</span>
+                <strong style="color: #374151;">${data.description}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid #e5e7eb;">
+                <span style="color: #6b7280; font-size: 14px;">Your Share:</span>
+                <strong style="color: #f59e0b; font-size: 20px;">₹${data.amount}</strong>
+              </div>
             </div>
-            <p>Please review and settle up when possible.</p>
-         </div>
-       `;
+            <div style="background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+              <p style="color: #92400e; margin: 0; font-size: 14px;">
+                📝 This expense has been added to your dashboard. You can mark it as paid when settled.
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (type === 'debt_marked_paid') {
+      subject = `✅ ${data.debtorName} marked ₹${data.amount} as paid`;
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">💵 Payment Notification</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb;">
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+              <strong>${data.debtorName}</strong> marked a payment as complete!
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #3b82f6;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: #6b7280; font-size: 14px;">Description:</span>
+                <strong style="color: #374151;">${data.description}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid #e5e7eb;">
+                <span style="color: #6b7280; font-size: 14px;">Amount:</span>
+                <strong style="color: #3b82f6; font-size: 20px;">₹${data.amount}</strong>
+              </div>
+            </div>
+            <div style="background: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+              <p style="color: #1e3a8a; margin: 0; font-size: 14px;">
+                ⏳ Please confirm receipt of this payment in your SpendWise dashboard to settle the debt.
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (type === 'payment_confirmed') {
+      subject = `🎉 Payment confirmed by ${data.creditorName}`;
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">✅ Debt Settled!</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb;">
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+              Great news! <strong>${data.creditorName}</strong> confirmed receipt of your payment.
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #10b981;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="color: #6b7280; font-size: 14px;">Description:</span>
+                <strong style="color: #374151;">${data.description}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid #e5e7eb;">
+                <span style="color: #6b7280; font-size: 14px;">Amount Settled:</span>
+                <strong style="color: #10b981; font-size: 20px;">₹${data.amount}</strong>
+              </div>
+            </div>
+            <div style="background: #d1fae5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+              <p style="color: #065f46; margin: 0; font-size: 14px;">
+                ✨ This debt has been cleared from your records. All settled up!
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
     } else {
       // Handle other alert types here
       subject = '⚠️ SpendWise Alert';

@@ -52,6 +52,25 @@ export default function FriendRequests() {
         friendId: currentUser.uid,
         createdAt: serverTimestamp()
       });
+
+      // Notify sender that request was accepted
+      try {
+        await fetch('/api/send-email-gmail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'friend_accepted',
+            userEmail: request.senderEmail,
+            data: {
+              accepterName: currentUser.displayName || currentUser.email,
+              accepterEmail: currentUser.email
+            }
+          })
+        });
+      } catch (emailError) {
+        console.error("Failed to send acceptance email:", emailError);
+        // Don't block the UI flow if email fails
+      }
       
       showSuccess(`You are now friends with ${request.senderEmail}`);
     } catch (error) {

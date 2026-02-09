@@ -75,7 +75,27 @@ export default function DebtList() {
       });
       showSuccess('Marked as paid. Waiting for friend to confirm.');
       
-      // Notify creditor via email (optional, using generic alert for now)
+      // Notify creditor via email
+      try {
+        const creditorDoc = await getDoc(doc(db, 'users', debt.creditorId));
+        if (creditorDoc.exists()) {
+          await fetch('/api/send-email-gmail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'debt_marked_paid',
+              userEmail: creditorDoc.data().email,
+              data: {
+                debtorName: currentUser.displayName || currentUser.email,
+                amount: debt.amount,
+                description: debt.description
+              }
+            })
+          });
+        }
+      } catch (emailError) {
+        console.error("Failed to send debt marked paid email:", emailError);
+      }
     } catch (error) {
       console.error("Error marking paid:", error);
       showError('Failed to update status.');
@@ -84,13 +104,32 @@ export default function DebtList() {
 
   const handleConfirmReceipt = async (debt) => {
     try {
-      // Option 1: Mark as 'paid' and keep history
-      // await updateDoc(doc(db, 'debts', debt.id), { status: 'paid' });
-      
-      // Option 2: Delete the debt record to clear it (simpler for MVP)
+      // Delete the debt record to clear it
       await deleteDoc(doc(db, 'debts', debt.id));
       
       showSuccess('Payment confirmed! Debt settled.');
+
+      // Notify debtor via email
+      try {
+        const debtorDoc = await getDoc(doc(db, 'users', debt.debtorId));
+        if (debtorDoc.exists()) {
+          await fetch('/api/send-email-gmail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'payment_confirmed',
+              userEmail: debtorDoc.data().email,
+              data: {
+                creditorName: currentUser.displayName || currentUser.email,
+                amount: debt.amount,
+                description: debt.description
+              }
+            })
+          });
+        }
+      } catch (emailError) {
+        console.error("Failed to send payment confirmed email:", emailError);
+      }
     } catch (error) {
       console.error("Error confirming receipt:", error);
       showError('Failed to confirm payment.');
