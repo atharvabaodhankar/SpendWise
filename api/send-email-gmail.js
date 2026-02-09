@@ -1,5 +1,5 @@
 // Gmail SMTP email service - works with any email address
-import nodemailer from 'nodemailer';
+const nodemailer = require('nodemailer');
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
