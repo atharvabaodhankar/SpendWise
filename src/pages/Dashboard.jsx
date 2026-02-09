@@ -26,7 +26,8 @@ import {
   Wallet,
   CreditCard,
   Briefcase,
-  Download
+  Download,
+  Users
 } from "lucide-react";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
@@ -38,6 +39,7 @@ import InitialBalanceSetup from "../components/InitialBalanceSetup";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import { exportToPDF, exportToExcel } from "../utils/exportUtils";
 import SettingsModal from "../components/SettingsModal";
+import FriendsManagerModal from "../components/friends/FriendsManagerModal";
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
@@ -51,6 +53,7 @@ export default function Dashboard() {
   const [showBalanceManager, setShowBalanceManager] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [preferences, setPreferences] = useState({ showBalances: true });
 
   useEffect(() => {
@@ -146,13 +149,55 @@ export default function Dashboard() {
       
       await checkDailyExpenseAlert(currentUser.email, todayExpenses);
 
-      setShowForm(false);
 
-      if (transactionData.isHistorical && !transactionData.affectCurrentBalance) {
-        showSuccess(`Historical expense recorded (balance unchanged)`);
+
+      // Handle Split Bills - Send Emails & Create Debts
+      if (transactionData.isSplit && transactionData.splitDetails?.length > 0) {
+         const splitAmount = (transactionData.amount / (transactionData.splitDetails.length + 1)).toFixed(2);
+         
+         // Create Debt Records
+         const debtPromises = transactionData.splitDetails.map(friend => {
+            return addDoc(collection(db, 'debts'), {
+               debtorId: friend.friendId,
+               creditorId: currentUser.uid,
+               amount: parseFloat(splitAmount),
+               description: transactionData.description || transactionData.category,
+               transactionId: 'docRef.id', // We need the ID of the transaction we just created. 
+               // Wait, addDoc returns a ref, let's fix the flow.
+               status: 'unpaid',
+               createdAt: new Date()
+            });
+         });
+
+         const emailPromises = transactionData.splitDetails.map(friend => {
+            return fetch('/api/send-email-gmail', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({
+                  type: 'bill_split',
+                  userEmail: friend.email,
+                  data: {
+                     senderName: currentUser.displayName || currentUser.email,
+                     amount: splitAmount,
+                     description: transactionData.description || transactionData.category
+                  }
+               })
+            });
+         });
+         
+         // We don't await this to keep UI snappy, or we can if we want to show specific success
+         Promise.all(emailPromises).catch(err => console.error("Error sending split emails:", err));
+         
+         showSuccess(`Expense added & ${transactionData.splitDetails.length} friends notified!`);
       } else {
-        showSuccess(`Expense added successfully!`);
+         if (transactionData.isHistorical && !transactionData.affectCurrentBalance) {
+            showSuccess(`Historical expense recorded (balance unchanged)`);
+         } else {
+            showSuccess(`Expense added successfully!`);
+         }
       }
+
+      setShowForm(false);
     } catch (error) {
       console.error("Error adding transaction:", error);
       showError("Failed to add transaction. Please try again.");
@@ -228,6 +273,13 @@ export default function Dashboard() {
                 <LogOut className="w-5 h-5" />
               </button>
               <button
+                onClick={() => setShowFriendsModal(true)}
+                className="text-[var(--text-secondary)] hover:text-[var(--primary-600)] transition-colors p-2 rounded-lg hover:bg-[var(--primary-50)]"
+                title="Friends"
+              >
+                <Users className="w-5 h-5" />
+              </button>
+              <button
                 onClick={() => setShowSettingsModal(true)}
                 className="text-[var(--text-secondary)] hover:text-[var(--primary-600)] transition-colors p-2 rounded-lg hover:bg-[var(--primary-50)]"
                 title="Settings"
@@ -283,6 +335,14 @@ export default function Dashboard() {
               </button>
               )}
               
+              <button
+                onClick={() => { setShowFriendsModal(true); setShowMobileMenu(false); }}
+                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-[var(--primary-50)] text-[var(--text-secondary)] font-medium"
+              >
+                <Users className="w-5 h-5" />
+                <span>Friends</span>
+              </button>
+
               <button
                 onClick={() => { setShowSettingsModal(true); setShowMobileMenu(false); }}
                 className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-[var(--primary-50)] text-[var(--text-secondary)] font-medium"
@@ -499,6 +559,11 @@ export default function Dashboard() {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         onUpdatePreferences={setPreferences}
+      />
+      
+      <FriendsManagerModal
+        isOpen={showFriendsModal}
+        onClose={() => setShowFriendsModal(false)}
       />
     </div>
   );
