@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, ArrowRight, Loader2, Wallet } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -38,20 +38,20 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="min-h-screen flex bg-[var(--bg-secondary)]">
       {/* Left Side - Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white relative z-10">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-[var(--card-bg)] border-r border-[var(--card-border)] relative z-10">
         <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 group">
           <img src="/logo.png" alt="SpendWise Logo" className="w-8 h-8 object-contain" />
-          <span className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">SpendWise</span>
+          <span className="text-xl font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-500)] transition-colors">SpendWise</span>
         </Link>
         
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
               Welcome back
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
               Please enter your details to sign in.
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function Login() {
                     type="button"
                     onClick={handleGoogleLogin}
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-slate-200 rounded-xl shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-[var(--card-border)] rounded-xl shadow-sm text-sm font-medium text-[var(--text-primary)] bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent-500)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -77,28 +77,28 @@ export default function Login() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200" />
+                  <div className="w-full border-t border-[var(--card-border)]" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-slate-500">Or sign in with email</span>
+                  <span className="px-2 bg-[var(--card-bg)] text-[var(--text-tertiary)]">Or sign in with email</span>
                 </div>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-700">{error}</p>
+                  <div className="bg-[var(--danger-50)] border border-[var(--danger-200)] rounded-lg p-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-[var(--danger-500)] shrink-0 mt-0.5" />
+                    <p className="text-sm text-[var(--danger-700)]">{error}</p>
                   </div>
                 )}
                 
                 <div className="space-y-1">
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="email" className="block text-sm font-medium text-[var(--text-secondary)]">
                     Email address
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-slate-400" />
+                      <Mail className="h-5 w-5 text-[var(--text-tertiary)]" />
                     </div>
                     <input
                       id="email"
@@ -108,19 +108,19 @@ export default function Login() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all"
+                      className="input-premium pl-10"
                       placeholder="you@example.com"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="password" className="block text-sm font-medium text-[var(--text-secondary)]">
                     Password
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-slate-400" />
+                      <Lock className="h-5 w-5 text-[var(--text-tertiary)]" />
                     </div>
                     <input
                       id="password"
@@ -130,7 +130,7 @@ export default function Login() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all"
+                      className="input-premium pl-10"
                       placeholder="••••••••"
                     />
                   </div>
@@ -139,7 +139,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg shadow-blue-600/30"
+                  className="w-full btn-primary flex justify-center items-center py-3"
                 >
                   {loading ? (
                     <div className="flex items-center">
@@ -156,9 +156,9 @@ export default function Login() {
               </form>
             </div>
 
-            <p className="mt-8 text-center text-sm text-slate-600">
+            <p className="mt-8 text-center text-sm text-[var(--text-secondary)]">
               Don't have an account?{' '}
-              <Link to="/signup" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">
+              <Link to="/signup" className="font-semibold text-[var(--accent-500)] hover:text-[var(--accent-400)] transition-colors">
                 Sign up for free
               </Link>
             </p>
@@ -167,24 +167,24 @@ export default function Login() {
       </div>
       
       {/* Right Side - Decorative */}
-      <div className="hidden lg:block relative w-0 flex-1 overflow-hidden">
-        <div className="absolute inset-0 h-full w-full bg-slate-900">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 to-purple-600/30 w-full h-full mix-blend-overlay" />
+      <div className="hidden lg:block relative w-0 flex-1 overflow-hidden bg-[var(--bg-secondary)]">
+        <div className="absolute inset-0 h-full w-full">
+           <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary-900)] to-[var(--bg-secondary)] w-full h-full" />
            {/* Abstract shapes */}
-           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[600px] h-[600px] rounded-full bg-blue-500/10 blur-3xl animate-pulse" />
-           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[600px] h-[600px] rounded-full bg-purple-500/10 blur-3xl animate-pulse delay-1000" />
+           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[600px] h-[600px] rounded-full bg-[var(--accent-600)]/10 blur-3xl animate-pulse" />
+           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[600px] h-[600px] rounded-full bg-[var(--accent-400)]/5 blur-3xl animate-pulse delay-1000" />
            
-           <div className="absolute inset-0 flex flex-col items-center justify-center p-20 text-white z-10">
+           <div className="absolute inset-0 flex flex-col items-center justify-center p-20 text-[var(--text-primary)] z-10">
              <div className="max-w-xl text-center space-y-8">
 
                <div>
                   <div className="mb-8 flex justify-center">
-                    <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-white/20 animate-fade-scale shadow-xl">
+                    <div className="w-24 h-24 bg-[var(--primary-800)] rounded-3xl flex items-center justify-center backdrop-blur-sm border border-[var(--primary-700)] animate-fade-scale shadow-xl">
                       <img src="/logo.png" alt="SpendWise Logo" className="w-16 h-16 object-contain drop-shadow-md" />
                     </div>
                   </div>
-                  <h3 className="text-3xl font-bold mb-4">Smart Financial Tracking</h3>
-                  <p className="text-slate-400 text-lg">Join over 50,000+ users who trust SpendWise.</p>
+                  <h3 className="text-3xl font-bold mb-4 text-[#f8fafc]">Smart Financial Tracking</h3>
+                  <p className="text-[var(--text-tertiary)] text-lg">Join over 50,000+ users who trust SpendWise.</p>
                </div>
 
              </div>
