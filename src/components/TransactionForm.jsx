@@ -22,6 +22,8 @@ export default function TransactionForm({ onSubmit, onCancel }) {
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [affectCurrentBalance, setAffectCurrentBalance] = useState(false);
+  const [splitMode, setSplitMode] = useState('equal'); // 'equal' or 'custom'
+  const [customAmounts, setCustomAmounts] = useState({}); // { friendId: amount }
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -72,7 +74,10 @@ export default function TransactionForm({ onSubmit, onCancel }) {
     e.preventDefault();
     
     const splitFriends = formData.isSplit 
-       ? friends.filter(f => formData.splitWith.includes(f.friendId))
+       ? friends.filter(f => formData.splitWith.includes(f.friendId)).map(friend => ({
+           ...friend,
+           customAmount: splitMode === 'custom' ? parseFloat(customAmounts[friend.friendId] || 0) : null
+         }))
        : [];
 
     onSubmit({
@@ -80,7 +85,8 @@ export default function TransactionForm({ onSubmit, onCancel }) {
       amount: parseFloat(formData.amount),
       isHistorical: isHistoricalDate(),
       affectCurrentBalance: isHistoricalDate() ? affectCurrentBalance : true,
-      splitDetails: splitFriends
+      splitDetails: splitFriends,
+      splitMode
     });
   };
 
@@ -275,40 +281,132 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                         <p className="text-sm text-[var(--text-secondary)]">Loading friends...</p>
                      ) : friends.length > 0 ? (
                         <>
-                           <p className="text-sm text-[var(--text-secondary)] mb-2">Select friends to split with:</p>
-                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-                              {friends.map(friend => (
-                                 <div 
-                                    key={friend.friendId}
-                                    onClick={() => {
-                                       setFormData(prev => {
-                                          const isActive = prev.splitWith.includes(friend.friendId);
-                                          return {
-                                             ...prev,
-                                             splitWith: isActive 
-                                                ? prev.splitWith.filter(id => id !== friend.friendId)
-                                                : [...prev.splitWith, friend.friendId]
-                                          };
-                                       });
-                                    }}
-                                    className={`p-2 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
-                                       formData.splitWith.includes(friend.friendId)
-                                          ? 'border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)]'
-                                          : 'border-[var(--card-border)] bg-[var(--bg-primary)] hover:border-[var(--primary-300)]'
+                           <div className="flex items-center justify-between mb-3">
+                              <p className="text-sm text-[var(--text-secondary)]">Select friends to split with:</p>
+                              <div className="flex gap-2 text-xs">
+                                 <button
+                                    type="button"
+                                    onClick={() => setSplitMode('equal')}
+                                    className={`px-3 py-1 rounded-lg transition-all ${
+                                       splitMode === 'equal'
+                                          ? 'bg-[var(--primary-500)] text-white'
+                                          : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:bg-[var(--card-bg)]'
                                     }`}
                                  >
-                                    <span className="text-xs font-medium truncate">{friend.displayName || friend.email}</span>
-                                    {formData.splitWith.includes(friend.friendId) && <Check className="w-3.5 h-3.5" />}
+                                    Equal Split
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={() => setSplitMode('custom')}
+                                    className={`px-3 py-1 rounded-lg transition-all ${
+                                       splitMode === 'custom'
+                                          ? 'bg-[var(--primary-500)] text-white'
+                                          : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:bg-[var(--card-bg)]'
+                                    }`}
+                                 >
+                                    Custom Amounts
+                                 </button>
+                              </div>
+                           </div>
+                           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                              {friends.map(friend => (
+                                 <div key={friend.friendId} className="space-y-1">
+                                    <div 
+                                       onClick={() => {
+                                          setFormData(prev => {
+                                             const isActive = prev.splitWith.includes(friend.friendId);
+                                             return {
+                                                ...prev,
+                                                splitWith: isActive 
+                                                   ? prev.splitWith.filter(id => id !== friend.friendId)
+                                                   : [...prev.splitWith, friend.friendId]
+                                             };
+                                          });
+                                       }}
+                                       className={`p-2 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
+                                          formData.splitWith.includes(friend.friendId)
+                                             ? 'border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)]'
+                                             : 'border-[var(--card-border)] bg-[var(--bg-primary)] hover:border-[var(--primary-300)]'
+                                       }`}
+                                    >
+                                       <span className="text-xs font-medium truncate">{friend.displayName || friend.email}</span>
+                                       {formData.splitWith.includes(friend.friendId) && <Check className="w-3.5 h-3.5" />}
+                                    </div>
+                                    
+                                    {/* Custom Amount Input */}
+                                    {splitMode === 'custom' && formData.splitWith.includes(friend.friendId) && (
+                                       <div className="pl-2 animate-fade-in">
+                                          <div className="relative">
+                                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[var(--text-tertiary)]">₹</span>
+                                             <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                value={customAmounts[friend.friendId] || ''}
+                                                onChange={(e) => setCustomAmounts(prev => ({
+                                                   ...prev,
+                                                   [friend.friendId]: e.target.value
+                                                }))}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="w-full pl-5 pr-2 py-1.5 text-xs rounded-lg border border-[var(--card-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]"
+                                             />
+                                          </div>
+                                       </div>
+                                    )}
                                  </div>
                               ))}
                            </div>
                            
                            {formData.splitWith.length > 0 && (
-                              <div className="flex justify-between items-center pt-2 text-sm">
-                                 <span className="text-[var(--text-secondary)]">Your share:</span>
-                                 <span className="font-bold text-[var(--primary-600)]">
-                                    ₹{(parseFloat(formData.amount || 0) / (formData.splitWith.length + 1)).toFixed(2)}
-                                 </span>
+                              <div className="pt-3 border-t border-[var(--card-border)] space-y-2">
+                                 {splitMode === 'custom' && (() => {
+                                    const totalAmount = parseFloat(formData.amount || 0);
+                                    const friendsTotal = formData.splitWith.reduce((sum, id) => 
+                                       sum + parseFloat(customAmounts[id] || 0), 0
+                                    );
+                                    const yourShare = totalAmount - friendsTotal;
+                                    
+                                    return (
+                                       <>
+                                          <div className="flex justify-between items-center text-xs">
+                                             <span className="text-[var(--text-tertiary)]">Friends total:</span>
+                                             <span className="font-medium">₹{friendsTotal.toFixed(2)}</span>
+                                          </div>
+                                          <div className="flex justify-between items-center text-sm">
+                                             <span className="text-[var(--text-secondary)]">Your share:</span>
+                                             <span className={`font-bold ${
+                                                yourShare >= 0 && yourShare <= totalAmount
+                                                   ? 'text-[var(--primary-600)]'
+                                                   : 'text-[var(--danger-500)]'
+                                             }`}>
+                                                ₹{yourShare.toFixed(2)}
+                                             </span>
+                                          </div>
+                                          {yourShare < 0 && (
+                                             <p className="text-xs text-[var(--danger-500)] flex items-center gap-1">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                Friends' total exceeds bill amount
+                                             </p>
+                                          )}
+                                          {yourShare > totalAmount && (
+                                             <p className="text-xs text-[var(--danger-500)] flex items-center gap-1">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                Your share exceeds bill amount
+                                             </p>
+                                          )}
+                                       </>
+                                    );
+                                 })()}
+                                 
+                                 {splitMode === 'equal' && (
+                                    <div className="flex justify-between items-center text-sm">
+                                       <span className="text-[var(--text-secondary)]">Your share:</span>
+                                       <span className="font-bold text-[var(--primary-600)]">
+                                          ₹{(parseFloat(formData.amount || 0) / (formData.splitWith.length + 1)).toFixed(2)}
+                                       </span>
+                                    </div>
+                                 )}
                               </div>
                            )}
                         </>

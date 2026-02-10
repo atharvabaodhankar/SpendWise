@@ -168,15 +168,18 @@ export default function Dashboard() {
 
       // Handle Split Bills - Send Emails & Create Debts
       if (transactionData.isSplit && transactionData.splitDetails?.length > 0) {
-         const splitAmount = (transactionData.amount / (transactionData.splitDetails.length + 1)).toFixed(2);
-         
          // Create Debt Records & Mirror Transactions for Friends
          const debtPromises = transactionData.splitDetails.map(async (friend) => {
+            // Calculate amount based on split mode
+            const friendAmount = transactionData.splitMode === 'custom' 
+               ? friend.customAmount 
+               : (transactionData.amount / (transactionData.splitDetails.length + 1));
+            
             // 1. Create Debt Record
             await addDoc(collection(db, 'debts'), {
                debtorId: friend.friendId,
                creditorId: currentUser.uid,
-               amount: parseFloat(splitAmount),
+               amount: parseFloat(friendAmount),
                description: transactionData.description || transactionData.category,
                transactionId: docRef.id,
                status: 'unpaid',
@@ -187,7 +190,7 @@ export default function Dashboard() {
             // We set affectCurrentBalance to false because they haven't paid it yet (it's a debt)
             await addDoc(collection(db, 'transactions'), {
                userId: friend.friendId,
-               amount: parseFloat(splitAmount),
+               amount: parseFloat(friendAmount),
                type: 'expense',
                category: transactionData.category,
                description: `${transactionData.description || transactionData.category} (Split by ${currentUser.displayName || 'Friend'})`,
@@ -203,6 +206,10 @@ export default function Dashboard() {
          Promise.all(debtPromises).catch(err => console.error("Error creating debts/mirror transactions:", err));
 
          const emailPromises = transactionData.splitDetails.map(friend => {
+            const friendAmount = transactionData.splitMode === 'custom' 
+               ? friend.customAmount 
+               : (transactionData.amount / (transactionData.splitDetails.length + 1));
+               
             return fetch('/api/send-email-gmail', {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
@@ -211,7 +218,7 @@ export default function Dashboard() {
                   userEmail: friend.email,
                   data: {
                      senderName: currentUser.displayName || currentUser.email,
-                     amount: splitAmount,
+                     amount: friendAmount.toFixed(2),
                      description: transactionData.description || transactionData.category
                   }
                })
