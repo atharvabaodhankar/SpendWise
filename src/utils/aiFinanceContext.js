@@ -162,8 +162,8 @@ export function buildAssistantContext({
       paymentMethodTotals,
       monthlyTotals,
     },
-    recentTransactions: normalizedTransactions.slice(0, 120),
-    transactionReference: normalizedTransactions.slice(0, 180).map((transaction) => ({
+    recentTransactions: normalizedTransactions.slice(0, 30),
+    transactionReference: normalizedTransactions.slice(0, 50).map((transaction) => ({
       id: transaction.id,
       label: transaction.description || transaction.category,
       date: transaction.date,

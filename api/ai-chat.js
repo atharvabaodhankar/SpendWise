@@ -149,7 +149,7 @@ export default async function handler(req, res) {
 
     const messages = [
       { role: 'system', content: buildSystemPrompt() },
-      ...conversation.slice(-8).map((item) => ({
+      ...conversation.slice(-4).map((item) => ({
         role: item.role === 'assistant' ? 'assistant' : 'user',
         content: item.content,
       })),
