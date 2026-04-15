@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:vercel": "vercel dev",
+    "dev:vercel": "vercel build && vercel dev --prebuilt",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -24,6 +24,7 @@
     "react-router-dom": "^7.9.1",
     "recharts": "^3.2.1",
     "resend": "^6.1.0",
+    "vercel": "^51.2.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

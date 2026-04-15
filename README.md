@@ -7,10 +7,16 @@ A comprehensive expense tracking application with social bill-splitting features
 Use Vercel's local runtime when you want frontend routes and serverless functions together:
 
 ```bash
-npm run dev:vercel
+vercel dev
 ```
 
-That will serve the React app and the `/api/*` serverless functions, including the Groq-powered AI endpoint at `/api/ai-chat`.
+This project overrides the framework preset in `vercel.json` so Vercel owns routing for both the SPA and `/api/*` functions locally.
+
+If you want an exact production-style local runtime from Vercel build output, use:
+
+```bash
+npm run dev:vercel
+```
 
 ## ✨ Features
 
