@@ -5,6 +5,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChevronLeft, LogOut, Filter, TrendingUp, PieChart as PieIcon, BarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import AiChatbot from '../components/AiChatbot';
 
 const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
 
@@ -215,6 +216,17 @@ export default function Analytics() {
                   </div>
                </div>
             </div>
+
+            <AiChatbot
+              mode="embedded"
+              title="Analytics AI"
+              subtitle="Ask for trends, categories, and instant record changes"
+              suggestions={[
+                'What are my top spending categories this month?',
+                'How much did I spend on non veg this month?',
+                'Update my latest sugar cane juice expense to 90 rupees',
+              ]}
+            />
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
