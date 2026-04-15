@@ -40,6 +40,7 @@ import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import { exportToPDF, exportToExcel } from "../utils/exportUtils";
 import SettingsModal from "../components/SettingsModal";
 import FriendsManagerModal from "../components/friends/FriendsManagerModal";
+import AiChatbot from "../components/AiChatbot";
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
@@ -603,6 +604,15 @@ export default function Dashboard() {
       <FriendsManagerModal
         isOpen={showFriendsModal}
         onClose={() => setShowFriendsModal(false)}
+      />
+
+      <AiChatbot
+        mode="floating"
+        suggestions={[
+          "Which food am I eating overly this month?",
+          "Add an expense of 120 for sugar cane juice paid by cash today",
+          "Delete my latest balance adjustment",
+        ]}
       />
     </div>
   );
