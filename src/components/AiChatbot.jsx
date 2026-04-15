@@ -10,7 +10,7 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { Bot, LoaderCircle, Send, Sparkles, X } from 'lucide-react';
+import { LoaderCircle, Send, X } from 'lucide-react';
 import { buildAssistantContext } from '../utils/aiFinanceContext';
 import {
   adjustBalanceFromAssistant,
@@ -190,7 +190,7 @@ export default function AiChatbot({
           className="flex items-center gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-3 shadow-[var(--shadow-lg)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-600)] text-white">
-            <Sparkles className="h-4 w-4" />
+            <img src="/logo.png" alt="SpendWise" className="h-5 w-5 object-contain" />
           </span>
           <div className="hidden text-left sm:block">
             <div className="text-sm font-semibold text-[var(--text-primary)]">SpendWise AI</div>
@@ -214,7 +214,7 @@ export default function AiChatbot({
       <div className="flex shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--bg-tertiary)] px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-600)] text-white">
-            <Sparkles className="h-4 w-4" />
+            <img src="/logo.png" alt="SpendWise" className="h-5 w-5 object-contain" />
           </div>
           <div>
             <p className="text-sm font-semibold text-[var(--text-primary)]">{title}</p>
@@ -263,7 +263,7 @@ export default function AiChatbot({
                 {/* Bot avatar */}
                 {!isUser && !isStatus && (
                   <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-600)] text-white">
-                    <Bot className="h-3.5 w-3.5" />
+                    <img src="/logo.png" alt="SpendWise" className="h-4 w-4 object-contain" />
                   </div>
                 )}
 
@@ -321,7 +321,7 @@ export default function AiChatbot({
           {isSending && (
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-600)] text-white">
-                <Bot className="h-3.5 w-3.5" />
+                <img src="/logo.png" alt="SpendWise" className="h-4 w-4 object-contain" />
               </div>
               <div className="flex items-center gap-2 rounded-2xl border border-[var(--card-border)] bg-[var(--bg-tertiary)] px-3.5 py-2.5">
                 <LoaderCircle className="h-3.5 w-3.5 animate-spin text-[var(--accent-500)]" />
