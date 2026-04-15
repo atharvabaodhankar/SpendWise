@@ -49,7 +49,7 @@ function normalizeTransactionInput(transaction, fallbackType = 'expense') {
     totalPaid:
       transaction.totalPaid !== undefined
         ? toNumber(transaction.totalPaid)
-        : undefined,
+        : toNumber(transaction.amount),
   };
 }
 
