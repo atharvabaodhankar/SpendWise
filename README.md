@@ -2,6 +2,16 @@
 
 A comprehensive expense tracking application with social bill-splitting features. Built with React, Firebase, and Vite.
 
+## Local Development
+
+Use Vercel's local runtime when you want frontend routes and serverless functions together:
+
+```bash
+npm run dev:vercel
+```
+
+That will serve the React app and the `/api/*` serverless functions, including the Groq-powered AI endpoint at `/api/ai-chat`.
+
 ## ✨ Features
 
 ### 📊 Expense Tracking
