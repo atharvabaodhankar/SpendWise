@@ -1,12 +1,24 @@
 // Handles one-click debt settlement from email link
 // Uses Firebase REST API (no admin SDK needed)
 
-const FIREBASE_PROJECT = process.env.VITE_FIREBASE_PROJECT_ID;
-const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT}/databases/(default)/documents`;
+function getFirestoreBase() {
+  const project = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+  if (!project) throw new Error('FIREBASE_PROJECT_ID env var not set.');
+  return `https://firestore.googleapis.com/v1/projects/${project}/databases/(default)/documents`;
+}
+
+function getApiKey() {
+  const key = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
+  if (!key) throw new Error('FIREBASE_API_KEY env var not set.');
+  return key;
+}
 
 async function firestoreGet(path) {
-  const res = await fetch(`${FIRESTORE_BASE}/${path}?key=${process.env.VITE_FIREBASE_API_KEY}`);
-  if (!res.ok) throw new Error(`Firestore GET failed: ${res.status}`);
+  const res = await fetch(`${getFirestoreBase()}/${path}?key=${getApiKey()}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Firestore GET failed ${res.status}: ${text}`);
+  }
   return res.json();
 }
 
@@ -19,10 +31,13 @@ async function firestorePatch(path, fields) {
   }
   const updateMask = Object.keys(fields).map((k) => `updateMask.fieldPaths=${k}`).join('&');
   const res = await fetch(
-    `${FIRESTORE_BASE}/${path}?${updateMask}&key=${process.env.VITE_FIREBASE_API_KEY}`,
+    `${getFirestoreBase()}/${path}?${updateMask}&key=${getApiKey()}`,
     { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
   );
-  if (!res.ok) throw new Error(`Firestore PATCH failed: ${res.status}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Firestore PATCH failed ${res.status}: ${text}`);
+  }
   return res.json();
 }
 
@@ -94,7 +109,11 @@ export default async function handler(req, res) {
     return res.status(200).send(successPage(description, amount));
   } catch (err) {
     console.error('settle-debt error:', err);
-    return res.status(500).send(errorPage('Something went wrong. Please try again.'));
+    return res.status(500).send(errorPage(
+      process.env.NODE_ENV === 'development'
+        ? err.message
+        : 'Something went wrong. Please try again or mark as paid from the SpendWise app.'
+    ));
   }
 }
 
