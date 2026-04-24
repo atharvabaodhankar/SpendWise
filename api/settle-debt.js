@@ -72,7 +72,12 @@ export default async function handler(req, res) {
       const debtorName = getField(debtorDoc, 'displayName') || getField(debtorDoc, 'email') || 'Your friend';
 
       if (creditorEmail) {
-        await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${process.env.PORT || 3000}`}/api/send-email-gmail`, {
+        const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+          ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+          : process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : `http://localhost:${process.env.PORT || 3000}`;
+        await fetch(`${baseUrl}/api/send-email-gmail`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
