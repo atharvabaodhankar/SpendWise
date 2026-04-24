@@ -169,15 +169,14 @@ export default function Dashboard() {
 
       // Handle Split Bills - Send Emails & Create Debts
       if (transactionData.isSplit && transactionData.splitDetails?.length > 0) {
-         // Create Debt Records & Mirror Transactions for Friends
-         const debtPromises = transactionData.splitDetails.map(async (friend) => {
-            // Calculate amount based on split mode
-            const friendAmount = transactionData.splitMode === 'custom' 
-               ? friend.customAmount 
+         // Create Debt Records, Mirror Transactions, and send emails with settle link
+         const splitPromises = transactionData.splitDetails.map(async (friend) => {
+            const friendAmount = transactionData.splitMode === 'custom'
+               ? friend.customAmount
                : (transactionData.amount / (transactionData.splitDetails.length + 1));
-            
-            // 1. Create Debt Record
-            await addDoc(collection(db, 'debts'), {
+
+            // 1. Create Debt Record and get its ID
+            const debtRef = await addDoc(collection(db, 'debts'), {
                debtorId: friend.friendId,
                creditorId: currentUser.uid,
                amount: parseFloat(friendAmount),
@@ -187,8 +186,7 @@ export default function Dashboard() {
                createdAt: new Date()
             });
 
-            // 2. Create Transaction Record for Friend (so it shows in their dashboard)
-            // We set affectCurrentBalance to false because they haven't paid it yet (it's a debt)
+            // 2. Create mirror transaction for friend
             await addDoc(collection(db, 'transactions'), {
                userId: friend.friendId,
                amount: parseFloat(friendAmount),
@@ -196,22 +194,16 @@ export default function Dashboard() {
                category: transactionData.category,
                description: `${transactionData.description || transactionData.category} (Split by ${currentUser.displayName || 'Friend'})`,
                date: transactionData.date,
-               paymentMethod: 'owed', // Special method indicating it's unpaid/credit
+               paymentMethod: 'owed',
                isSplit: true,
                paidBy: currentUser.uid,
                createdAt: new Date(),
-               affectCurrentBalance: false 
+               affectCurrentBalance: false
             });
-         });
-         
-         Promise.all(debtPromises).catch(err => console.error("Error creating debts/mirror transactions:", err));
 
-         const emailPromises = transactionData.splitDetails.map(friend => {
-            const friendAmount = transactionData.splitMode === 'custom' 
-               ? friend.customAmount 
-               : (transactionData.amount / (transactionData.splitDetails.length + 1));
-               
-            return fetch('/api/send-email-gmail', {
+            // 3. Generate settle token and send email with Pay button
+            const settleToken = btoa(`${debtRef.id}:${import.meta.env.VITE_SETTLE_SECRET || 'spendwise'}`).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            await fetch('/api/send-email-gmail', {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify({
@@ -219,16 +211,18 @@ export default function Dashboard() {
                   userEmail: friend.email,
                   data: {
                      senderName: currentUser.displayName || currentUser.email,
-                     amount: friendAmount.toFixed(2),
-                     description: transactionData.description || transactionData.category
+                     amount: parseFloat(friendAmount).toFixed(2),
+                     description: transactionData.description || transactionData.category,
+                     debtId: debtRef.id,
+                     settleToken,
                   }
                })
             });
          });
-         
-         Promise.all(emailPromises).catch(err => console.error("Error sending split emails:", err));
-         
-         showSuccess(`Expense added & ${transactionData.splitDetails.length} friends notified!`);
+
+         Promise.all(splitPromises)
+           .then(() => showSuccess(`Expense added & ${transactionData.splitDetails.length} friend(s) notified!`))
+           .catch(err => console.error("Error creating debts/sending emails:", err));
       } else {
          if (transactionData.isHistorical && !transactionData.affectCurrentBalance) {
             showSuccess(`Historical expense recorded (balance unchanged)`);

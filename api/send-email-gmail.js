@@ -90,6 +90,10 @@ export default async function handler(req, res) {
       `;
     } else if (type === 'bill_split') {
       subject = `💳 Bill Split: ₹${data.amount} from ${data.senderName}`;
+      const appUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+      const settleUrl = data.debtId && data.settleToken
+        ? `${appUrl}/api/settle-debt?debtId=${data.debtId}&token=${data.settleToken}`
+        : null;
       html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
@@ -109,9 +113,18 @@ export default async function handler(req, res) {
                 <strong style="color: #f59e0b; font-size: 20px;">₹${data.amount}</strong>
               </div>
             </div>
+            ${settleUrl ? `
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${settleUrl}"
+                 style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; text-decoration: none; padding: 16px 40px; border-radius: 50px; font-size: 16px; font-weight: 700; letter-spacing: 0.02em; box-shadow: 0 8px 20px rgba(16,185,129,0.35);">
+                ✅ Mark as Paid
+              </a>
+              <p style="color: #9ca3af; font-size: 12px; margin-top: 12px;">One click to notify ${data.senderName} that you've paid</p>
+            </div>
+            ` : ''}
             <div style="background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
               <p style="color: #92400e; margin: 0; font-size: 14px;">
-                📝 This expense has been added to your dashboard. You can mark it as paid when settled.
+                📝 This expense has been added to your SpendWise dashboard. You can also mark it as paid from the app.
               </p>
             </div>
           </div>

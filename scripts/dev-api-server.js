@@ -26,11 +26,18 @@ const server = http.createServer(async (req, res) => {
   for await (const chunk of req) body += chunk;
   try { req.body = JSON.parse(body); } catch { req.body = {}; }
 
+  // Expose query params
+  req.query = Object.fromEntries(url.searchParams.entries());
+
   // Wrap res with Express-like helpers
   res.status = (code) => { res.statusCode = code; return res; };
   res.json = (data) => {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify(data));
+  };
+  res.send = (data) => {
+    if (!res.getHeader('Content-Type')) res.setHeader('Content-Type', typeof data === 'string' ? 'text/html' : 'application/json');
+    res.end(typeof data === 'string' ? data : JSON.stringify(data));
   };
   res.setHeader('Content-Type', 'application/json');
 
