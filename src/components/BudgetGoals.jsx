@@ -98,16 +98,16 @@ export default function BudgetGoals() {
   }
 
   return (
-    <div className="premium-card overflow-hidden flex flex-col">
+    <div className="glass-card overflow-hidden flex flex-col border border-white/10 hover:border-white/20 transition-all">
        {/* Header */}
-      <div className="p-6 border-b border-[var(--card-border)] bg-[var(--bg-secondary)]/30 flex justify-between items-center">
+      <div className="p-6 border-b border-white/10 bg-[#0b1326]/50 flex justify-between items-center">
         <div className="flex items-center space-x-3">
-           <div className="p-2 bg-[var(--primary-100)] rounded-lg">
-             <Target className="w-5 h-5 text-[var(--primary-600)]" />
+           <div className="p-2.5 bg-[#10b981]/15 border border-[#10b981]/30 rounded-xl">
+             <Target className="w-5 h-5 text-[#10b981]" />
            </div>
            <div>
-             <h3 className="text-lg font-bold text-[var(--text-primary)]">Monthly Budget</h3>
-             <p className="text-xs text-[var(--text-secondary)]">
+             <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'Geist, sans-serif' }}>Monthly Budget</h3>
+             <p className="text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
                 {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
              </p>
            </div>
@@ -116,7 +116,7 @@ export default function BudgetGoals() {
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--primary-600)] transition-colors"
+            className="p-2 rounded-xl text-[#94a3b8] hover:bg-white/10 hover:text-white transition-all"
           >
             <Edit2 className="w-4 h-4" />
           </button>
@@ -124,7 +124,7 @@ export default function BudgetGoals() {
           <div className="flex space-x-1">
             <button
               onClick={saveBudget}
-              className="p-2 rounded-lg text-[var(--success-600)] hover:bg-[var(--success-50)] transition-colors"
+              className="p-2 rounded-xl text-[#10b981] hover:bg-[#10b981]/20 transition-all"
             >
               <Save className="w-4 h-4" />
             </button>
@@ -133,7 +133,7 @@ export default function BudgetGoals() {
                 setIsEditing(false);
                 setBudgetAmount(budget ? budget.monthlyLimit.toString() : '');
               }}
-              className="p-2 rounded-lg text-[var(--danger-600)] hover:bg-[var(--danger-50)] transition-colors"
+              className="p-2 rounded-xl text-[#f43f5e] hover:bg-[#f43f5e]/20 transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -143,75 +143,73 @@ export default function BudgetGoals() {
 
       <div className="p-6 flex-1 flex flex-col justify-center">
         {isEditing ? (
-          <div className="space-y-4 animate-fade-scale">
+          <div className="space-y-4 animate-slide-up">
             <div>
               <label className="label-premium">Monthly Limit (₹)</label>
               <div className="relative">
-                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] font-bold">₹</span>
+                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#10b981] font-bold">₹</span>
                  <input
                    type="number"
                    value={budgetAmount}
                    onChange={(e) => setBudgetAmount(e.target.value)}
                    step="100"
                    min="0"
-                   className="input-premium pl-8 text-lg font-bold"
+                   className="input-premium pl-9 text-lg font-bold"
                    placeholder="Enter limit"
                    autoFocus
                  />
               </div>
-              <p className="text-xs text-[var(--text-tertiary)] mt-2">
-                 Set a realistic target based on your income and fixed expenses.
+              <p className="text-xs text-[#64748b] mt-2">
+                 Set a monthly target to monitor daily limit alerts.
               </p>
             </div>
           </div>
         ) : budget ? (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-2">
-               <div className="relative w-32 h-32 flex items-center justify-center">
-                  {/* Radial Progress Placeholder (CSS-only approximation or complex SVG) */}
-                  {/* For simplicity/cleanliness, we'll use a circular representation */}
+               <div className="relative w-36 h-36 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90">
                      <circle
-                        className="text-[var(--bg-tertiary)]"
-                        strokeWidth="8"
+                        className="text-white/10"
+                        strokeWidth="10"
                         stroke="currentColor"
                         fill="transparent"
                         r="58"
-                        cx="64"
-                        cy="64"
+                        cx="72"
+                        cy="72"
                      />
                      <circle
-                        className={`${isOverBudget ? 'text-[var(--danger-500)]' : 'text-[var(--primary-500)]'} transition-all duration-1000 ease-out`}
-                        strokeWidth="8"
+                        className={`${isOverBudget ? 'text-[#f43f5e]' : 'text-[#10b981]'} transition-all duration-1000 ease-out`}
+                        strokeWidth="10"
                         strokeDasharray={365}
                         strokeDashoffset={365 - (Math.min(progressPercentage, 100) / 100) * 365}
                         strokeLinecap="round"
                         stroke="currentColor"
                         fill="transparent"
                         r="58"
-                        cx="64"
-                        cy="64"
+                        cx="72"
+                        cy="72"
                      />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                     <span className={`text-2xl font-bold ${isOverBudget ? 'text-[var(--danger-600)]' : 'text-[var(--text-primary)]'}`}>
+                     <span className={`text-3xl font-extrabold ${isOverBudget ? 'text-[#f43f5e]' : 'text-white'}`} style={{ fontFamily: 'Geist, sans-serif' }}>
                         {Math.round(progressPercentage)}%
                      </span>
-                     <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Used</span>
+                     <span className="text-[10px] text-[#94a3b8] uppercase tracking-widest font-semibold" style={{ fontFamily: 'Geist, sans-serif' }}>Used</span>
                   </div>
                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--card-border)]">
-                  <p className="text-xs text-[var(--text-secondary)] mb-1">Spent</p>
-                  <p className={`text-lg font-bold ${isOverBudget ? 'text-[var(--danger-600)]' : 'text-[var(--text-primary)]'}`}>
+               <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
+                  <p className="text-xs text-[#94a3b8] mb-1" style={{ fontFamily: 'Geist, sans-serif' }}>Spent</p>
+                  <p className={`text-lg font-bold ${isOverBudget ? 'text-[#f43f5e]' : 'text-white'}`} style={{ fontFamily: 'Geist, sans-serif' }}>
                      ₹{currentMonthExpenses.toFixed(0)}
                   </p>
                </div>
-               <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--card-border)]">
-                  <p className="text-xs text-[var(--text-secondary)] mb-1">Limit</p>
-                  <p className="text-lg font-bold text-[var(--text-primary)]">
+               <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
+                  <p className="text-xs text-[#94a3b8] mb-1" style={{ fontFamily: 'Geist, sans-serif' }}>Limit</p>
+                  <p className="text-lg font-bold text-white" style={{ fontFamily: 'Geist, sans-serif' }}>
                      ₹{budget.monthlyLimit.toFixed(0)}
                   </p>
                </div>
@@ -219,39 +217,39 @@ export default function BudgetGoals() {
 
             <div className="space-y-3">
                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[var(--text-secondary)]">Remaining Budget</span>
-                  <span className={`font-bold ${remaining < 0 ? 'text-[var(--danger-600)]' : 'text-[var(--success-600)]'}`}>
+                  <span className="text-[#94a3b8]">Remaining Budget</span>
+                  <span className={`font-bold ${remaining < 0 ? 'text-[#f43f5e]' : 'text-[#10b981]'}`} style={{ fontFamily: 'Geist, sans-serif' }}>
                      {remaining < 0 ? '-' : ''}₹{Math.abs(remaining).toFixed(2)}
                   </span>
                </div>
-               <div className="w-full bg-[var(--bg-tertiary)] rounded-full h-2 overflow-hidden">
+               <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
                   <div
                      className={`h-full rounded-full transition-all duration-500 ${
                         isOverBudget 
-                           ? 'bg-gradient-to-r from-rose-400 to-rose-600' 
-                           : 'bg-gradient-to-r from-emerald-400 to-emerald-600'
+                           ? 'bg-gradient-to-r from-[#f43f5e] to-[#e11d48] shadow-[0_0_10px_#f43f5e]' 
+                           : 'bg-gradient-to-r from-[#10b981] to-[#34d399] shadow-[0_0_10px_#10b981]'
                      }`}
                      style={{ width: `${Math.min(progressPercentage, 100)}%` }}
                   />
                </div>
                {isOverBudget && (
-                  <div className="flex items-start gap-2 text-xs text-rose-600 bg-rose-50 p-2 rounded-lg">
-                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                     <span>You have exceeded your monthly limit. Please review your expenses.</span>
+                  <div className="flex items-start gap-2.5 text-xs text-[#f43f5e] bg-[#f43f5e]/15 border border-[#f43f5e]/30 p-3 rounded-xl">
+                     <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                     <span>Monthly limit exceeded! Consider reviewing expenses.</span>
                   </div>
                )}
             </div>
           </div>
         ) : (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-[var(--primary-50)] rounded-full flex items-center justify-center mx-auto mb-4">
-              <PieChart className="w-8 h-8 text-[var(--primary-300)]" />
+            <div className="w-16 h-16 bg-[#10b981]/15 border border-[#10b981]/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <PieChart className="w-8 h-8 text-[#10b981]" />
             </div>
-            <h4 className="text-[var(--text-primary)] font-bold mb-1">No Budget Set</h4>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">Take control of your spending by setting a monthly limit.</p>
+            <h4 className="text-white font-bold mb-1" style={{ fontFamily: 'Geist, sans-serif' }}>No Budget Goal Set</h4>
+            <p className="text-sm text-[#94a3b8] mb-4">Set a monthly limit to start tracking spending health.</p>
             <button
               onClick={() => setIsEditing(true)}
-              className="btn-primary py-2 px-4 shadow-lg shadow-blue-500/20"
+              className="btn-primary py-2.5 px-5 shadow-lg shadow-[#10b981]/20"
             >
               Set Budget Goal
             </button>
