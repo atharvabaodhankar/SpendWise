@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, AlertTriangle, Users, Check } from 'lucide-react';
+import { X, Calendar, Tag, CreditCard, Banknote, AlignLeft, AlertTriangle, Users, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { collection, query, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -138,53 +138,55 @@ export default function TransactionForm({ onSubmit, onCancel }) {
               </div>
            </div>
 
-           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Category */}
-              <div className="space-y-2">
+              <div>
                  <label className="label-premium">Category</label>
                  <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                       <Tag className="w-4 h-4 text-[#94a3b8]" />
+                       <Tag className="w-3.5 h-3.5 text-[var(--slate-light)]" />
                     </div>
                     <select
                        name="category"
                        value={formData.category}
                        onChange={handleChange}
-                       className="input-premium pl-10 appearance-none bg-[#0b1326] text-white"
+                       className="input-premium pl-9 text-xs font-medium cursor-pointer"
                     >
                        {categories.map(cat => (
-                          <option key={cat} value={cat} className="bg-[#0b1326] text-white">{cat}</option>
+                          <option key={cat} value={cat}>{cat}</option>
                        ))}
                     </select>
                  </div>
               </div>
 
               {/* Payment Method */}
-              <div className="space-y-2">
+              <div>
                  <label className="label-premium">Payment Method</label>
                  <div className="grid grid-cols-2 gap-2">
-                    <div 
+                    <button
+                       type="button"
                        onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'online' }))}
-                       className={`cursor-pointer rounded-xl border p-3 flex flex-col items-center justify-center transition-all ${
+                       className={`py-2 px-3 rounded-md border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                           formData.paymentMethod === 'online' 
-                             ? 'border-[#6366f1] bg-[#6366f1]/20 text-white shadow-[0_0_12px_rgba(99,102,241,0.3)]' 
-                             : 'border-white/10 hover:border-white/20 text-[#94a3b8] bg-white/5'
+                             ? 'border-[var(--navy)] bg-[var(--navy)] text-white shadow-sm' 
+                             : 'border-[var(--slate-faint)] bg-[var(--white)] text-[var(--slate)] hover:border-[var(--slate-light)]'
                        }`}
                     >
-                       <CreditCard className="w-5 h-5 mb-1 text-[#818cf8]" />
-                       <span className="text-xs font-semibold" style={{ fontFamily: 'Geist, sans-serif' }}>Online</span>
-                    </div>
-                    <div 
+                       <CreditCard className="w-3.5 h-3.5" />
+                       <span>Online</span>
+                    </button>
+                    <button
+                       type="button"
                        onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'cash' }))}
-                       className={`cursor-pointer rounded-xl border p-3 flex flex-col items-center justify-center transition-all ${
+                       className={`py-2 px-3 rounded-md border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                           formData.paymentMethod === 'cash' 
-                             ? 'border-[#10b981] bg-[#10b981]/20 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
-                             : 'border-white/10 hover:border-white/20 text-[#94a3b8] bg-white/5'
+                             ? 'border-[var(--emerald)] bg-[var(--emerald)] text-white shadow-sm' 
+                             : 'border-[var(--slate-faint)] bg-[var(--white)] text-[var(--slate)] hover:border-[var(--slate-light)]'
                        }`}
                     >
-                       <DollarSign className="w-5 h-5 mb-1 text-[#10b981]" />
-                       <span className="text-xs font-semibold" style={{ fontFamily: 'Geist, sans-serif' }}>Cash</span>
-                    </div>
+                       <Banknote className="w-3.5 h-3.5" />
+                       <span>Cash</span>
+                    </button>
                  </div>
               </div>
            </div>

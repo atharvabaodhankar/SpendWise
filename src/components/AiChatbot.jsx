@@ -213,23 +213,23 @@ export default function AiChatbot({
   // ── Panel ────────────────────────────────────────────────────────────────
   const panelClass =
     mode === 'embedded'
-      ? 'flex flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#171f33]/70 backdrop-blur-2xl shadow-2xl h-[680px] max-h-[calc(100vh-10rem)]'
-      : 'fixed bottom-4 left-4 z-50 flex flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#171f33]/85 backdrop-blur-3xl shadow-2xl sm:bottom-6 sm:left-6 sm:h-[640px] sm:w-[420px] inset-x-3 top-20 sm:top-auto sm:inset-x-auto border-[#10b981]/30';
+      ? 'flex flex-col overflow-hidden statement-card shadow-2xl h-[640px] max-h-[calc(100vh-10rem)] p-0 border border-[var(--hairline)] bg-[var(--white)]'
+      : 'fixed bottom-4 left-4 z-50 flex flex-col overflow-hidden statement-card shadow-2xl sm:bottom-6 sm:left-6 sm:h-[620px] sm:w-[420px] inset-x-3 top-20 sm:top-auto sm:inset-x-auto p-0 border border-[var(--hairline)] bg-[var(--white)]';
 
   return (
     <div className={panelClass}>
 
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0b1326]/80 backdrop-blur-2xl px-4 py-3.5">
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--hairline)] bg-[var(--canvas)] px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#10b981]/20 to-[#6366f1]/20 border border-white/10 text-white shadow-lg shadow-[#10b981]/10">
-            <img src="/logo.png" alt="SpendWise" className="h-5 w-5 object-contain" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--navy)] text-white font-mono text-xs font-bold">
+            S
           </div>
           <div>
-            <p className="text-sm font-bold text-white tracking-wide" style={{ fontFamily: 'Geist, sans-serif' }}>{title}</p>
-            <div className="flex items-center gap-1.5">
-              <span className={`h-1.5 w-1.5 rounded-full ${loadingContext ? 'animate-pulse bg-[#94a3b8]' : 'bg-[#10b981] shadow-[0_0_8px_#10b981]'}`} />
-              <span className="text-[11px] text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
+            <p className="text-xs font-semibold text-[var(--navy)] uppercase tracking-wider">{title}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className={`h-1.5 w-1.5 rounded-full ${loadingContext ? 'animate-pulse bg-[var(--slate-light)]' : 'bg-[var(--emerald)]'}`} />
+              <span className="text-[10px] font-mono text-[var(--slate-light)]">
                 {loadingContext ? 'Syncing Firebase...' : subtitle}
               </span>
             </div>
@@ -239,22 +239,21 @@ export default function AiChatbot({
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#94a3b8] transition-all hover:text-white hover:bg-white/10 active:scale-95"
+            className="btn-statement p-1.5 rounded-md hover:border-[var(--rose)] hover:text-[var(--rose)]"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
 
       {/* Suggestion chips */}
-      <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-white/10 bg-[#0b1326]/50 px-4 py-2.5">
+      <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-[var(--hairline)] bg-[var(--canvas)]/50 px-4 py-2.5">
         {suggestions.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => void sendMessage(s)}
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#94a3b8] transition-all duration-150 hover:border-[#10b981]/40 hover:bg-[#10b981]/15 hover:text-[#10b981] active:scale-95"
-            style={{ fontFamily: 'Geist, sans-serif' }}
+            className="btn-statement text-[10px] py-1 px-2.5 hover:border-[var(--navy)] hover:text-[var(--navy)]"
           >
             {s}
           </button>
@@ -262,7 +261,7 @@ export default function AiChatbot({
       </div>
 
       {/* Messages — scrollable */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 bg-[var(--white)]">
         <div className="flex flex-col gap-3">
           {messages.map((message) => {
             const isUser = message.role === 'user';
@@ -272,24 +271,24 @@ export default function AiChatbot({
               <div key={message.id} className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
                 {/* Bot avatar */}
                 {!isUser && !isStatus && (
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[#10b981]/30 bg-[#10b981]/15 text-white">
-                    <img src="/logo.png" alt="SpendWise" className="h-4 w-4 object-contain" />
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--navy)] font-mono text-xs text-white">
+                    S
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  className={`max-w-[85%] rounded-lg px-4 py-3 text-xs leading-relaxed ${
                     isUser
-                      ? 'bg-gradient-to-r from-[#10b981] to-[#059669] text-white shadow-lg shadow-[#10b981]/20 font-medium'
+                      ? 'bg-[var(--navy)] text-white font-medium shadow-sm'
                       : isStatus
                         ? message.tone === 'error'
-                          ? 'border border-[#f43f5e]/30 bg-[#f43f5e]/15 text-[#f43f5e]'
-                          : 'border border-[#10b981]/30 bg-[#10b981]/15 text-[#10b981]'
-                        : 'border border-white/10 bg-[#0b1326]/70 text-[#f8fafc]'
+                          ? 'border border-[var(--rose)]/30 bg-rose-50 text-[var(--rose)]'
+                          : 'border border-[var(--emerald)]/30 bg-emerald-50 text-[var(--emerald-dark)]'
+                        : 'border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] shadow-sm'
                   }`}
                 >
                   {!isUser && !isStatus && (
-                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
+                    <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--slate-light)]">
                       Financial AI Assistant
                     </p>
                   )}
@@ -301,8 +300,7 @@ export default function AiChatbot({
                       {message.highlights.map((h) => (
                         <span
                           key={h}
-                          className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] text-[#94a3b8]"
-                          style={{ fontFamily: 'Geist, sans-serif' }}
+                          className="stamp-pill text-[9px] py-0.5 px-2"
                         >
                           {h}
                         </span>
@@ -317,8 +315,7 @@ export default function AiChatbot({
                           key={f}
                           type="button"
                           onClick={() => void sendMessage(f)}
-                          className="rounded-full border border-[#10b981]/30 bg-[#10b981]/10 px-2.5 py-1 text-[11px] text-[#10b981] transition-all duration-150 hover:bg-[#10b981]/25 active:scale-95"
-                          style={{ fontFamily: 'Geist, sans-serif' }}
+                          className="btn-statement text-[9px] py-1 px-2 hover:border-[var(--emerald)] hover:text-[var(--emerald)]"
                         >
                           {f}
                         </button>
@@ -332,12 +329,12 @@ export default function AiChatbot({
 
           {isSending && (
             <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[#10b981]/30 bg-[#10b981]/15 text-white">
-                <img src="/logo.png" alt="SpendWise" className="h-4 w-4 object-contain" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--navy)] font-mono text-xs text-white">
+                S
               </div>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0b1326]/70 px-4 py-3">
-                <LoaderCircle className="h-4 w-4 animate-spin text-[#10b981]" />
-                <span className="text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>Analyzing ledger...</span>
+              <div className="flex items-center gap-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] px-4 py-2.5">
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin text-[var(--navy)]" />
+                <span className="text-xs font-mono text-[var(--slate)]">Analyzing statement ledger...</span>
               </div>
             </div>
           )}
@@ -349,9 +346,9 @@ export default function AiChatbot({
       {/* Input */}
       <form
         onSubmit={(e) => { e.preventDefault(); void sendMessage(input); }}
-        className="shrink-0 border-t border-white/10 bg-[#0b1326]/80 backdrop-blur-2xl p-3"
+        className="shrink-0 border-t border-[var(--hairline)] bg-[var(--canvas)] p-3"
       >
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-2">
           <textarea
             value={input}
             rows={1}
@@ -359,17 +356,15 @@ export default function AiChatbot({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage(input); }
             }}
-            disabled={isSending || loadingContext}
             placeholder="Ask AI or type a command..."
-            className="input-premium min-h-[42px] flex-1 resize-none py-2.5 text-sm bg-[#0b1326] text-white"
-            style={{ scrollbarWidth: 'none' }}
+            className="input-premium py-2 px-3 text-xs"
           />
           <button
             type="submit"
-            disabled={isSending || loadingContext || !input.trim()}
-            className="btn-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg shadow-[#10b981]/20 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!input.trim() || isSending}
+            className="btn-statement-primary py-2 px-3 text-xs disabled:opacity-40"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3.5 w-3.5" />
           </button>
         </div>
       </form>

@@ -180,88 +180,84 @@ export default function Home() {
       </main>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 bg-[var(--bg-secondary)] relative">
-        <div className="container mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] mb-6">
-              Empowering Features for <br/> 
-              <span className="text-[var(--primary-500)]">Modern Finances</span>
-            </h2>
-            <p className="text-lg text-[var(--text-secondary)]">
-              Built with precision and care, SpendWise gives you the tools you need to succeed in today's digital economy.
-            </p>
-          </div>
+      <section id="features" className="py-20 max-w-[1120px] mx-auto px-6 border-t border-[var(--hairline)]">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold mb-2">High-Precision Tools</div>
+          <h2 className="text-3xl md:text-5xl font-semibold text-[var(--navy)] mb-4 tracking-tight">
+            Empowering Features for Modern Finances
+          </h2>
+          <p className="text-sm text-[var(--slate)] max-w-xl mx-auto">
+            Built with precision and care, SpendWise provides passbook rulers, debt splitting, and AI intelligence.
+          </p>
+        </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div 
-                key={index}
-                className="group p-8 rounded-3xl bg-[var(--bg-primary)] border border-[var(--card-border)] hover:border-[var(--accent-500)]/30 shadow-lg hover:shadow-[var(--accent-500)]/10 transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className={`w-14 h-14 rounded-2xl bg-[var(--${feature.color}-50)] dark:bg-[var(--${feature.color}-900)]/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className={`w-7 h-7 text-[var(--${feature.color}-600)] dark:text-[var(--${feature.color}-400)]`} />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feature, index) => (
+            <div 
+              key={index}
+              className="statement-card p-6 flex flex-col justify-between hover:border-[var(--navy)] transition-all"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-md bg-[var(--navy)] text-white flex items-center justify-center mb-4">
+                  <feature.icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">
+                <h3 className="text-base font-semibold text-[var(--navy)] mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-[var(--text-secondary)] leading-relaxed">
+                <p className="text-xs text-[var(--slate)] leading-relaxed">
                   {feature.description}
                 </p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[var(--primary-900)] dark:bg-[var(--bg-secondary)]">
-           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
-        </div>
-        
-        <div className="container mx-auto px-6 relative z-10 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-8 tracking-tight">
+      <section className="py-20 bg-[var(--navy)] text-white relative overflow-hidden my-12">
+        <div className="max-w-[1120px] mx-auto px-6 relative z-10 text-center">
+          <div className="text-[10px] tracking-[2px] text-[var(--emerald)] uppercase font-mono font-semibold mb-3">Instant Setup</div>
+          <h2 className="text-3xl md:text-5xl font-semibold text-white mb-4 tracking-tight">
             Ready to Transform Your Finances?
           </h2>
-          <p className="text-xl text-[var(--primary-200)] mb-10 max-w-2xl mx-auto">
-            Join thousands of smart spenders who have already taken control of their financial destiny.
+          <p className="text-sm text-[var(--slate-light)] mb-8 max-w-xl mx-auto">
+            Join thousands of smart spenders who have taken control of their financial outlays with SpendWise.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-             <button 
-               onClick={() => navigate('/signup')}
-               className="px-8 py-4 bg-white text-[var(--primary-900)] rounded-2xl font-bold text-lg hover:bg-[var(--primary-50)] transition-colors shadow-2xl"
-             >
-               Get Started Now
-             </button>
-             <button 
-                onClick={() => navigate('/login')}
-                className="px-8 py-4 bg-transparent border border-[var(--primary-700)] text-white rounded-2xl font-bold text-lg hover:bg-[var(--primary-800)]/50 transition-colors"
-             >
-               Sign In
-             </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button 
+              onClick={() => navigate('/signup')}
+              className="btn-statement-primary text-[11px] py-3.5 px-8 bg-white text-[var(--navy)] border-white hover:bg-[var(--canvas)]"
+            >
+              Get Started Now
+            </button>
+            <button 
+              onClick={() => navigate('/login')}
+              className="btn-statement text-[11px] py-3.5 px-8 text-white border-white/20 bg-transparent hover:bg-white/10"
+            >
+              Sign In To Account
+            </button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-[var(--bg-primary)] border-t border-[var(--card-border)] py-12">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+      <footer className="border-t border-[var(--hairline)] py-12">
+        <div className="max-w-[1120px] mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-3">
-              <div className="bg-[var(--primary-900)] p-2 rounded-lg text-white">
-                <Wallet className="w-5 h-5" />
+              <div className="w-7 h-7 bg-[var(--navy)] rounded-md flex items-center justify-center font-mono text-xs text-white">
+                S
               </div>
-              <span className="text-xl font-bold text-[var(--text-primary)]">SpendWise</span>
+              <span className="text-sm font-semibold tracking-wider text-[var(--navy)] uppercase">SpendWise</span>
             </div>
             
-            <div className="flex gap-8 text-[var(--text-secondary)] text-sm font-medium">
-              <a href="#" className="hover:text-[var(--accent-600)] transition-colors">Features</a>
-              <a href="#" className="hover:text-[var(--accent-600)] transition-colors">Pricing</a>
-              <a href="#" className="hover:text-[var(--accent-600)] transition-colors">About</a>
-              <a href="#" className="hover:text-[var(--accent-600)] transition-colors">Contact</a>
+            <div className="flex gap-6 text-xs text-[var(--slate)] font-medium">
+              <a href="#features" className="hover:text-[var(--navy)] transition-colors">Features</a>
+              <a href="/login" className="hover:text-[var(--navy)] transition-colors">Sign In</a>
+              <a href="/signup" className="hover:text-[var(--navy)] transition-colors">Register</a>
             </div>
 
-            <p className="text-[var(--text-tertiary)] text-sm">
+            <p className="text-xs text-[var(--slate-light)] font-mono">
               © 2026 SpendWise Inc. All rights reserved.
             </p>
           </div>
