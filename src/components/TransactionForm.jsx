@@ -99,17 +99,17 @@ export default function TransactionForm({ onSubmit, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-[var(--primary-900)]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-scale">
-      <div className="premium-card w-full max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up shadow-2xl">
+    <div className="fixed inset-0 bg-[#0b1326]/80 backdrop-blur-xl flex items-center justify-center z-50 p-4 animate-slide-up">
+      <div className="glass-modal w-full max-w-lg max-h-[90vh] overflow-y-auto border border-white/15 shadow-2xl">
         {/* Header */}
-        <div className="p-6 border-b border-[var(--card-border)] flex justify-between items-center bg-[var(--bg-primary)] sticky top-0 z-10">
+        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#0b1326]/80 backdrop-blur-2xl sticky top-0 z-10">
            <div>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Add Transaction</h2>
-              <p className="text-sm text-[var(--text-secondary)]">Track a new expense</p>
+              <h2 className="text-xl font-bold text-white tracking-tight" style={{ fontFamily: 'Geist, sans-serif' }}>Add Transaction</h2>
+              <p className="text-sm text-[#94a3b8]">Record a new expense or split entry</p>
            </div>
            <button
               onClick={onCancel}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--primary-50)] text-[var(--text-secondary)] hover:bg-[var(--primary-100)] transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-[#94a3b8] hover:text-white hover:bg-white/10 transition-all"
            >
               <X className="w-5 h-5" />
            </button>
@@ -121,7 +121,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
               <label className="label-premium">Amount</label>
               <div className="relative group">
                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-[var(--text-tertiary)] font-semibold text-lg">₹</span>
+                    <span className="text-[#10b981] font-bold text-xl">₹</span>
                  </div>
                  <input
                     type="number"
@@ -132,7 +132,8 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                     min="0"
                     required
                     placeholder="0.00"
-                    className="input-premium pl-10 text-xl font-bold tracking-wide"
+                    className="input-premium pl-10 text-2xl font-extrabold tracking-wide text-white"
+                    style={{ fontFamily: 'Geist, sans-serif' }}
                     autoFocus
                  />
               </div>
@@ -143,17 +144,17 @@ export default function TransactionForm({ onSubmit, onCancel }) {
               <div className="space-y-2">
                  <label className="label-premium">Category</label>
                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                       <Tag className="w-4 h-4 text-[var(--text-tertiary)]" />
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                       <Tag className="w-4 h-4 text-[#94a3b8]" />
                     </div>
                     <select
                        name="category"
                        value={formData.category}
                        onChange={handleChange}
-                       className="input-premium pl-10 appearance-none"
+                       className="input-premium pl-10 appearance-none bg-[#0b1326] text-white"
                     >
                        {categories.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
+                          <option key={cat} value={cat} className="bg-[#0b1326] text-white">{cat}</option>
                        ))}
                     </select>
                  </div>
@@ -165,36 +166,36 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                  <div className="grid grid-cols-2 gap-2">
                     <div 
                        onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'online' }))}
-                       className={`cursor-pointer rounded-xl border-2 p-3 flex flex-col items-center justify-center transition-all ${
+                       className={`cursor-pointer rounded-xl border p-3 flex flex-col items-center justify-center transition-all ${
                           formData.paymentMethod === 'online' 
-                             ? 'border-[var(--accent-500)] bg-[var(--accent-50)] text-[var(--accent-700)]' 
-                             : 'border-[var(--card-border)] hover:border-[var(--primary-300)]'
+                             ? 'border-[#6366f1] bg-[#6366f1]/20 text-white shadow-[0_0_12px_rgba(99,102,241,0.3)]' 
+                             : 'border-white/10 hover:border-white/20 text-[#94a3b8] bg-white/5'
                        }`}
                     >
-                       <CreditCard className="w-5 h-5 mb-1" />
-                       <span className="text-xs font-semibold">Online</span>
+                       <CreditCard className="w-5 h-5 mb-1 text-[#818cf8]" />
+                       <span className="text-xs font-semibold" style={{ fontFamily: 'Geist, sans-serif' }}>Online</span>
                     </div>
                     <div 
                        onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'cash' }))}
-                       className={`cursor-pointer rounded-xl border-2 p-3 flex flex-col items-center justify-center transition-all ${
+                       className={`cursor-pointer rounded-xl border p-3 flex flex-col items-center justify-center transition-all ${
                           formData.paymentMethod === 'cash' 
-                             ? 'border-[var(--success-500)] bg-[var(--success-50)] text-[var(--success-700)]' 
-                             : 'border-[var(--card-border)] hover:border-[var(--primary-300)]'
+                             ? 'border-[#10b981] bg-[#10b981]/20 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                             : 'border-white/10 hover:border-white/20 text-[#94a3b8] bg-white/5'
                        }`}
                     >
-                       <DollarSign className="w-5 h-5 mb-1" />
-                       <span className="text-xs font-semibold">Cash</span>
+                       <DollarSign className="w-5 h-5 mb-1 text-[#10b981]" />
+                       <span className="text-xs font-semibold" style={{ fontFamily: 'Geist, sans-serif' }}>Cash</span>
                     </div>
                  </div>
               </div>
            </div>
 
-           {/* Date & Split */}
+           {/* Date */}
            <div className="space-y-2">
               <label className="label-premium">Date</label>
               <div className="relative">
-                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar className="w-4 h-4 text-[var(--text-tertiary)]" />
+                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Calendar className="w-4 h-4 text-[#94a3b8]" />
                  </div>
                  <input
                     type="date"
@@ -202,7 +203,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                     value={formData.date}
                     onChange={handleChange}
                     required
-                    className={`input-premium pl-10 ${isHistoricalDate() ? 'border-amber-300 bg-amber-50/30' : ''}`}
+                    className={`input-premium pl-10 ${isHistoricalDate() ? 'border-[#f59e0b]/50 bg-[#f59e0b]/10' : ''}`}
                  />
               </div>
            </div>
