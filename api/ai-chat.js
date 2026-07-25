@@ -1,5 +1,11 @@
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const DEFAULT_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = process.env.GROQ_MODEL || 'qwen-2.5-72b-instruct';
+const FALLBACK_MODELS = [
+  DEFAULT_MODEL,
+  'qwen-2.5-72b-instruct',
+  'llama-3.1-8b-instant',
+  'llama3-70b-8192',
+];
 let keyCursor = 0;
 
 function getGroqKeys() {
@@ -104,29 +110,36 @@ async function requestAssistantCompletion(messages) {
     throw new Error('Missing GROQ_API_KEY environment variable.');
   }
 
+  const modelsToTry = [...new Set(FALLBACK_MODELS)];
   let lastError = null;
 
-  for (let attempt = 0; attempt < keys.length; attempt += 1) {
-    const index = (keyCursor + attempt) % keys.length;
-    const apiKey = keys[index];
+  for (const modelCandidate of modelsToTry) {
+    for (let attempt = 0; attempt < keys.length; attempt += 1) {
+      const index = (keyCursor + attempt) % keys.length;
+      const apiKey = keys[index];
 
-    try {
-      const response = await callGroq(
-        {
-          model: DEFAULT_MODEL,
-          temperature: 0.25,
-          response_format: { type: 'json_object' },
-          messages,
-        },
-        apiKey,
-      );
+      try {
+        const response = await callGroq(
+          {
+            model: modelCandidate,
+            temperature: 0.25,
+            response_format: { type: 'json_object' },
+            messages,
+          },
+          apiKey,
+        );
 
-      keyCursor = (index + 1) % keys.length;
-      return response;
-    } catch (error) {
-      lastError = error;
-      if (![401, 403, 429].includes(error.status)) {
-        break;
+        keyCursor = (index + 1) % keys.length;
+        return response;
+      } catch (error) {
+        lastError = error;
+        // If 404 or 400 (e.g. model deprecated/not found), break out of key loop to try next model
+        if (error.status === 400 || error.status === 404) {
+          break;
+        }
+        if (![401, 403, 429].includes(error.status)) {
+          break;
+        }
       }
     }
   }
