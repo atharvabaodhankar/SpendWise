@@ -182,10 +182,7 @@ export default function Signup() {
             </div>
 
             <p className="mt-8 text-center text-sm text-[var(--slate)]">
-              Already have an account?{' '}
-              <Link to="/login" className="font-semibold text-[var(--navy)] hover:underline">
-                Sign in
-              </Link>
+              Already have an account? <Link to="/login" className="font-semibold text-[var(--navy)] hover:underline">Sign in</Link>
             </p>
           </div>
         </div>
