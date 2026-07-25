@@ -1,9 +1,9 @@
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const DEFAULT_MODEL = process.env.GROQ_MODEL || 'qwen-2.5-72b-instruct';
+const DEFAULT_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 const FALLBACK_MODELS = [
   DEFAULT_MODEL,
-  'qwen-2.5-72b-instruct',
   'llama-3.1-8b-instant',
+  'qwen-2.5-72b-instruct',
   'llama3-70b-8192',
 ];
 let keyCursor = 0;
