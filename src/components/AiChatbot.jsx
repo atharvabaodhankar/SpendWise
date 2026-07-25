@@ -136,10 +136,14 @@ export default function AiChatbot({
     setInput('');
     setIsSending(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
     try {
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           message: trimmed,
           conversation: nextMessages
@@ -148,11 +152,12 @@ export default function AiChatbot({
           context: buildAssistantContext({ transactions, budget, balances }),
         }),
       });
+      clearTimeout(timeoutId);
 
       const raw = await response.text();
       let payload = {};
       try { payload = raw ? JSON.parse(raw) : {}; } catch {
-        throw new Error(response.ok ? 'Unreadable response.' : `Request failed with ${response.status}.`);
+        throw new Error(response.ok ? 'Unreadable response from AI server.' : `Server returned status ${response.status}. Make sure vercel dev is running.`);
       }
       if (!response.ok) throw new Error(payload.error || payload.details || 'AI request failed.');
 
@@ -170,11 +175,15 @@ export default function AiChatbot({
       if (payload.actions?.length) await executeActions(payload.actions);
     } catch (error) {
       console.error('SpendWise AI error:', error);
+      const isAbort = error.name === 'AbortError';
+      const msg = isAbort
+        ? 'AI request timed out. Please ensure vercel dev is running.'
+        : (error.message || 'SpendWise AI could not finish that request right now.');
       setMessages((prev) => [
         ...prev,
-        createStatusMessage(error.message || 'SpendWise AI could not finish that request right now.', 'error'),
+        createStatusMessage(msg, 'error'),
       ]);
-      showError(error.message || 'SpendWise AI could not finish that request right now.');
+      showError(msg);
     } finally {
       setIsSending(false);
     }

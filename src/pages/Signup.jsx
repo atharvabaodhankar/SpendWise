@@ -187,9 +187,8 @@ export default function Signup() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
 // Icon component needed for signup explicitly
 function ShieldCheckIcon(props) {
