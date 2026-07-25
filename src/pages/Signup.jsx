@@ -43,23 +43,19 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[var(--bg-secondary)]">
-      {/* Left Side - Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-[var(--card-bg)] border-r border-[var(--card-border)] relative z-10">
-        <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 group">
-          <img src="/logo.png" alt="SpendWise Logo" className="w-8 h-8 object-contain" />
-          <span className="text-xl font-bold text-[var(--text-primary)] group-hover:text-[var(--success-500)] transition-colors">SpendWise</span>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] px-6 py-12">
+      <div className="w-full max-w-md statement-card p-8 shadow-xl">
+        <Link to="/" className="flex items-center gap-3 mb-8">
+          <div className="w-8 h-8 bg-[var(--navy)] rounded-md flex items-center justify-center font-mono text-sm font-medium text-white shadow-md">
+            S
+          </div>
+          <span className="text-base font-semibold tracking-wider text-[var(--navy)] uppercase">SpendWise</span>
         </Link>
         
-        <div className="mx-auto w-full max-w-sm lg:w-96">
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
-              Create your account
-            </h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Start your journey to financial freedom today.
-            </p>
-          </div>
+        <div className="mb-6">
+          <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold">Account Registration</div>
+          <h2 className="text-2xl font-semibold text-[var(--navy)] tracking-tight mt-1">Create your statement account</h2>
+        </div>
 
           <div className="mt-8">
             <div className="space-y-6">
@@ -185,53 +181,13 @@ export default function Signup() {
               </form>
             </div>
 
-            <p className="mt-8 text-center text-sm text-[var(--text-secondary)]">
+            <p className="mt-8 text-center text-sm text-[var(--slate)]">
               Already have an account?{' '}
-              <Link to="/login" className="font-semibold text-[var(--success-500)] hover:text-[var(--success-600)] transition-colors">
+              <Link to="/login" className="font-semibold text-[var(--navy)] hover:underline">
                 Sign in
               </Link>
             </p>
           </div>
-        </div>
-      </div>
-      
-      {/* Right Side - Decorative */}
-      <div className="hidden lg:block relative w-0 flex-1 overflow-hidden bg-[var(--bg-secondary)]">
-        <div className="absolute inset-0 h-full w-full">
-           <div className="absolute inset-0 bg-gradient-to-bl from-[var(--primary-900)] to-[var(--bg-secondary)] w-full h-full" />
-           {/* Abstract shapes */}
-           <div className="absolute bottom-0 right-0 -mr-20 -mb-20 w-[600px] h-[600px] rounded-full bg-[var(--success-500)]/10 blur-3xl animate-pulse" />
-           <div className="absolute top-0 left-0 -ml-20 -mt-20 w-[600px] h-[600px] rounded-full bg-[var(--accent-500)]/10 blur-3xl animate-pulse delay-700" />
-           
-           <div className="absolute inset-0 flex flex-col items-center justify-center p-20 text-[var(--text-primary)] z-10">
-             <div className="max-w-xl text-center space-y-12">
-               <div className="grid grid-cols-2 gap-6">
-                 <div className="p-6 bg-[var(--primary-800)]/40 backdrop-blur-md rounded-2xl border border-[var(--primary-700)] transform hover:-translate-y-1 transition-transform">
-                   <div className="w-10 h-10 bg-[var(--success-500)]/20 rounded-lg flex items-center justify-center mb-4 text-[var(--success-500)]">
-                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                     </svg>
-                   </div>
-                   <h3 className="font-bold mb-1 text-[#f8fafc]">Track Growth</h3>
-                   <p className="text-xs text-[var(--text-tertiary)]">Watch your savings grow with real-time analytics.</p>
-                 </div>
-                 <div className="p-6 bg-[var(--primary-800)]/40 backdrop-blur-md rounded-2xl border border-[var(--primary-700)] transform hover:-translate-y-1 transition-transform delay-100">
-                   <div className="w-10 h-10 bg-[var(--accent-500)]/20 rounded-lg flex items-center justify-center mb-4 text-[var(--accent-500)]">
-                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                     </svg>
-                   </div>
-                   <h3 className="font-bold mb-1 text-[#f8fafc]">Stay Secure</h3>
-                   <p className="text-xs text-[var(--text-tertiary)]">Bank-level encryption keeps your data safe.</p>
-                 </div>
-               </div>
-               
-               <div>
-                  <h3 className="text-3xl font-bold mb-4 text-[#f8fafc]">Join the Revolution</h3>
-                  <p className="text-[var(--text-tertiary)] text-lg">Stop stressing about finances and start living your life. We'll handle the numbers.</p>
-               </div>
-             </div>
-           </div>
         </div>
       </div>
     </div>

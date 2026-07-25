@@ -95,126 +95,92 @@ export default function Analytics() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-[#0b1326] pb-20">
-      {/* Navbar */}
-      <header className="glass-panel sticky top-0 z-40 border-b border-white/10 bg-[#0b1326]/80 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo area */}
-            <div className="flex items-center space-x-4">
-              <Link to="/dashboard" className="btn-secondary p-2 rounded-xl border-white/10 hover:border-white/20">
-                 <ChevronLeft className="w-5 h-5 text-white" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-bold text-white tracking-tight" style={{ fontFamily: 'Geist, sans-serif' }}>
-                  Financial Analytics
-                </h1>
-                <p className="text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
-                  Category distributions & trend reports
-                </p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[var(--canvas)] text-[var(--slate)] font-sans antialiased pb-20">
+      {/* Header */}
+      <header className="flex items-center justify-between max-w-[1120px] mx-auto px-6 py-8 border-b border-[var(--hairline)] mb-8">
+        <div className="flex items-center space-x-4">
+          <Link to="/dashboard" className="btn-statement text-[10px] py-2 px-3 flex items-center gap-1">
+            <ChevronLeft className="w-4 h-4" /> Statement
+          </Link>
+          <div className="brand-text">
+            <div className="text-lg font-semibold tracking-wider text-[var(--navy)] uppercase">Financial Analytics</div>
+            <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-medium mt-0.5">Distribution & trend reports</div>
+          </div>
+        </div>
 
-            {/* Actions */}
-            <div className="flex items-center space-x-3">
-               <div className="hidden md:block text-right mr-2">
-                 <p className="text-xs font-semibold text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>LOGGED IN AS</p>
-                 <p className="text-sm font-bold text-white">
-                   {currentUser.email?.split('@')[0]}
-                 </p>
-               </div>
-               <button
-                 onClick={logout}
-                 className="btn-danger p-2 rounded-xl text-white"
-                 title="Logout"
-               >
-                 <LogOut className="w-5 h-5" />
-               </button>
+        <div className="flex items-center space-x-4">
+          <div className="hidden sm:block text-right">
+            <div className="text-[9px] tracking-[1.5px] text-[var(--slate-light)] uppercase font-semibold">Logged in as</div>
+            <div className="font-mono text-xs text-[var(--navy-muted)] mt-0.5 font-medium">
+              {currentUser.email?.split('@')[0]}
             </div>
           </div>
+          <button onClick={logout} className="btn-statement text-[10px] hover:border-[var(--rose)] hover:text-[var(--rose)]">
+            Logout
+          </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="max-w-[1120px] mx-auto px-6 space-y-8">
         {transactions.length === 0 ? (
-          <div className="glass-card text-center p-12 animate-slide-up flex flex-col items-center justify-center min-h-[400px] border border-white/10">
-             <div className="w-24 h-24 mb-6 bg-[#6366f1]/15 border border-[#6366f1]/30 rounded-3xl flex items-center justify-center">
-                <BarChart2 className="w-12 h-12 text-[#818cf8]" />
-             </div>
-             <h3 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Geist, sans-serif' }}>No data to analyze</h3>
-             <p className="text-[#94a3b8] max-w-sm mb-8">
-                Start adding expenses to generate intelligent visualizations and reports.
-             </p>
-             <Link 
-                to="/dashboard"
-                className="btn-primary"
-             >
-                Go to Dashboard
-             </Link>
+          <div className="statement-card text-center p-12 flex flex-col items-center justify-center min-h-[350px]">
+            <div className="w-16 h-16 mb-4 bg-[var(--slate-faint)] rounded-lg flex items-center justify-center">
+              <BarChart2 className="w-8 h-8 text-[var(--slate-light)]" />
+            </div>
+            <h3 className="text-lg font-semibold text-[var(--navy)] mb-1">No data to analyze</h3>
+            <p className="text-xs text-[var(--slate-light)] max-w-sm mb-6">
+              Start recording expenses on your statement to generate analytics.
+            </p>
+            <Link to="/dashboard" className="btn-statement-primary text-[10px]">
+              Go to Statement
+            </Link>
           </div>
         ) : (
-          <div className="space-y-6 animate-slide-up">
+          <div className="space-y-8">
             {/* Controls Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-               <div>
-                  <h2 className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: 'Geist, sans-serif' }}>Visual Overview</h2>
-                  <p className="text-[#94a3b8] text-sm">Deep-dive into expense metrics</p>
-               </div>
-               
-               <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                     <Filter className="w-4 h-4 text-[#94a3b8]" />
-                  </div>
-                  <select
-                     value={selectedMonth}
-                     onChange={(e) => setSelectedMonth(e.target.value)}
-                     className="input-premium pl-10 pr-10 py-2.5 min-w-[200px] bg-[#0b1326] text-white"
-                  >
-                     <option value="all" className="bg-[#0b1326] text-white">All Time</option>
-                     {availableMonths.map(month => (
-                        <option key={month} value={month} className="bg-[#0b1326] text-white">{month}</option>
-                     ))}
-                  </select>
-               </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--hairline)]">
+              <div>
+                <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold">Visual Breakdown</div>
+                <h2 className="text-2xl font-semibold text-[var(--navy)] tracking-tight mt-1">Expense Metrics</h2>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-[var(--slate-light)] uppercase">Filter:</span>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="input-premium py-2 px-4 text-xs font-mono min-w-[180px]"
+                >
+                  <option value="all">All Time</option>
+                  {availableMonths.map(month => (
+                    <option key={month} value={month}>{month}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="glass-card p-6 flex items-center space-x-4 border border-white/10 hover:border-[#f43f5e]/30 transition-all">
-                  <div className="p-4 rounded-2xl bg-[#f43f5e]/15 border border-[#f43f5e]/30 text-[#f43f5e]">
-                     <TrendingUp className="w-7 h-7" />
-                  </div>
-                  <div>
-                     <p className="text-xs font-semibold text-[#94a3b8] uppercase" style={{ fontFamily: 'Geist, sans-serif' }}>Total Outlays</p>
-                     <h3 className="text-2xl font-extrabold text-white mt-1" style={{ fontFamily: 'Geist, sans-serif' }}>
-                        ₹{totalExpenses.toFixed(2)}
-                     </h3>
-                  </div>
-               </div>
-               
-               <div className="glass-card p-6 flex items-center space-x-4 border border-white/10 hover:border-[#6366f1]/30 transition-all">
-                  <div className="p-4 rounded-2xl bg-[#6366f1]/15 border border-[#6366f1]/30 text-[#818cf8]">
-                     <PieIcon className="w-7 h-7" />
-                  </div>
-                  <div>
-                     <p className="text-xs font-semibold text-[#94a3b8] uppercase" style={{ fontFamily: 'Geist, sans-serif' }}>Active Categories</p>
-                     <h3 className="text-2xl font-extrabold text-white mt-1" style={{ fontFamily: 'Geist, sans-serif' }}>
-                        {Object.keys(expensesByCategory).length}
-                     </h3>
-                  </div>
-               </div>
+              <div className="statement-card p-6">
+                <div className="text-[10px] tracking-[1.5px] uppercase text-[var(--slate-light)] font-semibold">Total Outlays</div>
+                <div className="font-mono text-3xl font-semibold text-[var(--navy)] mt-2 tabular-nums">
+                  ₹{totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+              
+              <div className="statement-card p-6">
+                <div className="text-[10px] tracking-[1.5px] uppercase text-[var(--slate-light)] font-semibold">Active Categories</div>
+                <div className="font-mono text-3xl font-semibold text-[var(--navy)] mt-2 tabular-nums">
+                  {Object.keys(expensesByCategory).length}
+                </div>
+              </div>
 
-               <div className="glass-card p-6 flex items-center space-x-4 border border-white/10 hover:border-[#10b981]/30 transition-all">
-                  <div className="p-4 rounded-2xl bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981]">
-                     <BarChart2 className="w-7 h-7" />
-                  </div>
-                  <div>
-                     <p className="text-xs font-semibold text-[#94a3b8] uppercase" style={{ fontFamily: 'Geist, sans-serif' }}>Avg. per Category</p>
-                     <h3 className="text-2xl font-extrabold text-white mt-1" style={{ fontFamily: 'Geist, sans-serif' }}>
-                        ₹{avgPerCategory.toFixed(2)}
-                     </h3>
-                  </div>
-               </div>
+              <div className="statement-card p-6">
+                <div className="text-[10px] tracking-[1.5px] uppercase text-[var(--slate-light)] font-semibold">Avg per Category</div>
+                <div className="font-mono text-3xl font-semibold text-[var(--navy)] mt-2 tabular-nums">
+                  ₹{avgPerCategory.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
             </div>
 
             <AiChatbot

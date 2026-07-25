@@ -267,10 +267,26 @@ export default function Dashboard() {
   const cashBalance = currentBalances ? currentBalances.cash : 0;
   const balance = onlineBalance + cashBalance;
 
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
+
+  const uniqueCategories = [...new Set(transactions.map(t => t.category))].length;
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-secondary)]">
-        <div className="w-12 h-12 border-4 border-[var(--primary-200)] border-t-[var(--accent-500)] rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+        <div className="w-10 h-10 border-2 border-[var(--slate-faint)] border-t-[var(--navy)] rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -282,283 +298,132 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-secondary)] pb-20">
-      {/* Obsidian Glass Navbar */}
-      <header className="glass-panel sticky top-0 z-40 border-b border-white/10 bg-[#0b1326]/80 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-tr from-[#10b981]/20 to-[#6366f1]/20 rounded-xl border border-white/10 shadow-lg shadow-[#10b981]/10">
-                <img src="/logo.png" alt="SpendWise Logo" className="w-7 h-7 object-contain drop-shadow-md" />
-              </div>
-              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-[#f8fafc] to-[#94a3b8] bg-clip-text text-transparent" style={{ fontFamily: 'Geist, sans-serif' }}>SpendWise</span>
+    <div className="min-h-screen bg-[var(--canvas)] text-[var(--slate)] font-sans antialiased transition-colors duration-200">
+      <div className="max-w-[1120px] mx-auto px-6 py-12 md:py-16 pb-24">
+        
+        {/* Header */}
+        <header className="flex items-center justify-between pb-8 border-b border-[var(--hairline)] mb-12">
+          {/* Brand Identity */}
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-[var(--navy)] rounded-md flex items-center justify-center font-mono text-lg font-medium text-white shadow-md">
+              S
             </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-5">
-              <div className="text-right mr-3">
-                <p className="text-xs text-[#94a3b8] font-medium" style={{ fontFamily: 'Geist, sans-serif' }}>SIGNED IN AS</p>
-                <p className="text-sm font-semibold text-white tracking-wide">{currentUser.email?.split("@")[0]}</p>
-              </div>
-              
-              <button
-                onClick={() => setShowFriendsModal(true)}
-                className="btn-secondary p-2.5 rounded-xl hover:border-[#6366f1]/40 hover:text-[#818cf8] transition-all"
-                title="Friends & Bill Split"
-              >
-                <Users className="w-5 h-5" />
-              </button>
-              
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="btn-secondary p-2.5 rounded-xl hover:border-white/20 hover:text-white transition-all"
-                title="Settings"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={logout}
-                className="btn-secondary p-2.5 rounded-xl hover:border-[#f43f5e]/40 hover:text-[#f43f5e] transition-all"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="text-[#94a3b8] p-2 hover:text-white"
-              >
-                {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
+            <div className="brand-text">
+              <div className="text-lg font-semibold tracking-wider text-[var(--navy)] uppercase">SpendWise</div>
+              <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-medium mt-0.5">Statement view</div>
             </div>
           </div>
-        </div>
 
-        {/* Mobile Menu */}
-        {showMobileMenu && (
-          <div className="md:hidden border-t border-white/10 bg-[#0b1326]/95 backdrop-blur-2xl absolute w-full z-50 animate-slide-up">
-            <div className="px-4 py-6 space-y-4">
-              <div className="pb-4 border-b border-white/10">
-                <p className="text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>SIGNED IN AS</p>
-                <p className="text-base font-semibold text-white">{currentUser.email}</p>
+          {/* User Account & Actions */}
+          <div className="flex items-center space-x-6">
+            <div className="hidden sm:block text-right">
+              <div className="text-[9px] tracking-[1.5px] text-[var(--slate-light)] uppercase font-semibold">Signed in as</div>
+              <div className="font-mono text-xs text-[var(--navy-muted)] mt-1 font-medium tracking-tight">
+                {currentUser.email?.split("@")[0]}
               </div>
-              
-              <button
-                onClick={() => { setShowForm(true); setShowMobileMenu(false); }}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-primary justify-center"
-              >
-                <PlusCircle className="w-5 h-5" />
-                <span>Add Expense</span>
-              </button>
-              
-              <a
-                href="/analytics"
-                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-secondary"
-              >
-                <BarChart3 className="w-5 h-5 text-[#818cf8]" />
-                <span>Analytics</span>
-              </a>
-              
-              {preferences.showBalances && (
-              <button
-                onClick={() => { setShowBalanceManager(true); setShowMobileMenu(false); }}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-secondary"
-              >
-                <Wallet className="w-5 h-5 text-[#10b981]" />
-                <span>Adjust Balance</span>
-              </button>
-              )}
-              
-              <button
-                onClick={() => { setShowFriendsModal(true); setShowMobileMenu(false); }}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-secondary"
-              >
-                <Users className="w-5 h-5 text-[#818cf8]" />
-                <span>Friends & Bills</span>
-              </button>
-
-              <button
-                onClick={() => { setShowSettingsModal(true); setShowMobileMenu(false); }}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-secondary"
-              >
-                <Settings className="w-5 h-5" />
-                <span>Settings</span>
-              </button>
-
-              <button
-                onClick={logout}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-danger justify-center"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Logout</span>
-              </button>
             </div>
-          </div>
-        )}
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Dashboard Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight" style={{ fontFamily: 'Geist, sans-serif' }}>Financial Overview</h1>
-            <p className="text-[#94a3b8] text-sm mt-1">Real-time command center for your spending and wallets</p>
-          </div>
-          
-          <div className="hidden md:flex gap-3">
-             {preferences.showBalances && (
-              <BalanceManager
-               onlineBalance={onlineBalance}
-               cashBalance={cashBalance}
-             />
-             )}
-             <a
-              href="/analytics"
-              className="btn-secondary flex items-center space-x-2 border-white/10 hover:border-[#6366f1]/40"
-            >
-              <BarChart3 className="w-4 h-4 text-[#818cf8]" />
-              <span>Analytics</span>
-            </a>
+            {/* Theme Toggle */}
             <button
-              onClick={() => setShowForm(true)}
-              className="btn-primary flex items-center space-x-2"
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-md border border-[var(--slate-faint)] bg-[var(--white)] text-[var(--slate)] hover:text-[var(--navy)] hover:border-[var(--slate-light)] transition-all"
+              title="Toggle Light/Dark Theme"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Add Expense</span>
+              {darkMode ? '☀️' : '🌙'}
+            </button>
+
+            <button
+              onClick={() => setShowFriendsModal(true)}
+              className="hidden md:flex items-center gap-1.5 btn-statement text-[10px]"
+              title="Friends & Bill Split"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Friends</span>
+            </button>
+
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="hidden md:flex items-center gap-1.5 btn-statement text-[10px]"
+              title="Settings"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Settings</span>
+            </button>
+
+            <button
+              onClick={logout}
+              className="btn-statement text-[10px] hover:border-[var(--rose)] hover:text-[var(--rose)]"
+              title="Logout"
+            >
+              <LogOut className="w-3.5 h-3.5 inline mr-1" />
+              <span>Logout</span>
             </button>
           </div>
+        </header>
+
+        {/* Statement Hero Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-8">
+          <div>
+            <div className="text-xs tracking-[2px] text-[var(--slate-light)] uppercase mb-3 font-semibold">
+              Cumulative outlay — all time
+            </div>
+            <div className="font-mono text-5xl md:text-6xl font-semibold tracking-[-2px] text-[var(--navy)] tabular-nums">
+              ₹{totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </div>
+            <div className="text-sm text-[var(--slate)] mt-3 font-normal">
+              {transactions.length} entries recorded across {uniqueCategories || 1} categories
+            </div>
+            <div className="flex flex-wrap items-center gap-3 mt-6">
+              <a href="/analytics" className="btn-statement">
+                View analytics
+              </a>
+              <button onClick={() => setShowForm(true)} className="btn-statement-primary">
+                ＋ Add expense
+              </button>
+              {preferences.showBalances && (
+                <button onClick={() => setShowBalanceManager(true)} className="btn-statement">
+                  Adjust balance
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="stamp-pill self-start md:self-auto">
+            Tracking active
+          </div>
         </div>
 
-        {/* Summary Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           {/* Total Portfolio - Hero Obsidian Glass Card */}
-           {preferences.showBalances && (
-           <div className="glass-card p-6 relative overflow-hidden border border-[#10b981]/30 col-span-1 md:col-span-2 shadow-2xl shadow-[#10b981]/5">
-              <div className="relative z-10">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-2.5 bg-[#10b981]/15 border border-[#10b981]/30 rounded-xl backdrop-blur-md">
-                    <Briefcase className="w-5 h-5 text-[#10b981]" />
-                  </div>
-                  <span className="font-semibold text-xs tracking-wider text-[#94a3b8] uppercase" style={{ fontFamily: 'Geist, sans-serif' }}>TOTAL PORTFOLIO BALANCE</span>
-                </div>
-                <div className="flex items-baseline space-x-1">
-                  <span className="text-4xl md:text-5xl font-extrabold tracking-tight text-white" style={{ fontFamily: 'Geist, sans-serif' }}>
-                    ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                 <div className="mt-6 flex flex-wrap gap-4 text-xs font-semibold text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
-                    <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
-                      <div className="w-2 h-2 rounded-full bg-[#6366f1] shadow-[0_0_8px_#6366f1]"></div>
-                      <span>Online: ₹{onlineBalance.toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
-                       <div className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_8px_#10b981]"></div>
-                      <span>Cash: ₹{cashBalance.toLocaleString('en-IN')}</span>
-                    </div>
-                 </div>
-              </div>
-              {/* Glowing Background Radial Accents */}
-              <div className="absolute right-0 top-0 w-72 h-72 bg-[#6366f1]/15 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
-              <div className="absolute bottom-0 right-10 w-48 h-48 bg-[#10b981]/15 rounded-full blur-3xl pointer-events-none"></div>
-           </div>
-           )}
+        <hr className="border-none border-t border-[var(--hairline)] my-8 mb-12" />
 
-           {/* Online Balance */}
-           {preferences.showBalances && (
-           <div className="glass-card p-6 flex flex-col justify-between hover:border-[#6366f1]/40 transition-all">
-              <div className="flex items-start justify-between">
-                <div>
-                   <p className="label-premium">Online Wallet</p>
-                   <h3 className="text-2xl font-bold text-white mt-2" style={{ fontFamily: 'Geist, sans-serif' }}>₹{onlineBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
-                </div>
-                <div className="p-2.5 bg-[#6366f1]/15 text-[#818cf8] border border-[#6366f1]/30 rounded-xl">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
-                <span className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                   <div style={{ width: `${(onlineBalance / (balance || 1)) * 100}%` }} className="bg-gradient-to-r from-[#6366f1] to-[#818cf8] h-full rounded-full shadow-[0_0_8px_#6366f1]"></div>
-                </span>
-                <span className="ml-3 font-semibold text-white">{Math.round((onlineBalance / (balance || 1)) * 100)}%</span>
-              </div>
-           </div>
-           )}
+        {/* Main Statement Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-12 lg:gap-16">
+          {/* Left Column: Recent Entries Ledger */}
+          <div className="space-y-6">
+            <div className="flex items-baseline justify-between pb-3 border-b border-[var(--hairline)]">
+              <h2 className="text-xs tracking-[2px] uppercase text-[var(--navy)] font-semibold m-0">
+                Recent entries
+              </h2>
+              <span className="font-mono text-[10px] text-[var(--slate-light)]">
+                {transactions.length} total records
+              </span>
+            </div>
 
-            {/* Cash Balance */}
-           {preferences.showBalances && (
-           <div className="glass-card p-6 flex flex-col justify-between hover:border-[#10b981]/40 transition-all">
-              <div className="flex items-start justify-between">
-                <div>
-                   <p className="label-premium">Cash Wallet</p>
-                   <h3 className="text-2xl font-bold text-white mt-2" style={{ fontFamily: 'Geist, sans-serif' }}>₹{cashBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
-                </div>
-                <div className="p-2.5 bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/30 rounded-xl">
-                  <Wallet className="w-5 h-5" />
-                </div>
-              </div>
-               <div className="mt-4 flex items-center text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
-                <span className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                   <div style={{ width: `${(cashBalance / (balance || 1)) * 100}%` }} className="bg-gradient-to-r from-[#10b981] to-[#34d399] h-full rounded-full shadow-[0_0_8px_#10b981]"></div>
-                </span>
-                <span className="ml-3 font-semibold text-white">{Math.round((cashBalance / (balance || 1)) * 100)}%</span>
-              </div>
-           </div>
-           )}
+            <TransactionList
+              transactions={transactions}
+              onDelete={handleDeleteRequest}
+            />
+          </div>
 
-           {/* Total Expenses */}
-           <div className="glass-card p-6 flex flex-col justify-between border-t-2 border-t-[#f43f5e]/60 hover:border-[#f43f5e]/40 transition-all">
-               <div className="flex items-start justify-between">
-                <div>
-                   <p className="label-premium">Total Expenses</p>
-                   <h3 className="text-2xl font-bold text-white mt-2" style={{ fontFamily: 'Geist, sans-serif' }}>₹{totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
-                </div>
-                <div className="p-2.5 bg-[#f43f5e]/15 text-[#f43f5e] border border-[#f43f5e]/30 rounded-xl">
-                  <TrendingDown className="w-5 h-5" />
-                </div>
-              </div>
-               <div className="mt-2 text-xs text-[#64748b]">
-                  Cumulative recorded outlays
-               </div>
-           </div>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-           {/* Left Column: Transactions List */}
-           <div className="xl:col-span-2 space-y-6">
-              <div className="flex items-center justify-between">
-                 <h2 className="text-xl font-bold text-white tracking-tight" style={{ fontFamily: 'Geist, sans-serif' }}>Recent Transactions</h2>
-                 <div className="flex gap-2">
-                    <button 
-                      onClick={() => exportToPDF(transactions)}
-                      className="btn-secondary text-xs font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-white/10 hover:border-white/20"
-                    >
-                      <Download className="w-3.5 h-3.5 text-[#10b981]" /> PDF
-                    </button>
-                     <button 
-                      onClick={() => exportToExcel(transactions)}
-                      className="btn-secondary text-xs font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-white/10 hover:border-white/20"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-[#818cf8]" /> Excel
-                    </button>
-                 </div>
-              </div>
-              <TransactionList
-                transactions={transactions}
-                onDelete={handleDeleteRequest}
-              />
-           </div>
-
-           {/* Right Column: Budgets & Recurring */}
-           <div className="space-y-8">
-              <BudgetGoals />
-              <RecurringTransactions />
-           </div>
+          {/* Right Column: Passbook & Balance Cards */}
+          <div className="space-y-10">
+            <BudgetGoals />
+            
+            {preferences.showBalances && (
+              <BalanceTracker onlineBalance={onlineBalance} cashBalance={cashBalance} totalBalance={balance} />
+            )}
+            
+            <RecurringTransactions />
+          </div>
         </div>
       </div>
 
@@ -566,7 +431,7 @@ export default function Dashboard() {
       <div className="md:hidden fixed bottom-6 right-6 z-30">
         <button
           onClick={() => setShowForm(true)}
-          className="w-14 h-14 bg-[var(--primary-900)] text-white rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+          className="w-14 h-14 bg-[var(--navy)] text-white rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
         >
           <PlusCircle className="w-6 h-6" />
         </button>
@@ -580,9 +445,8 @@ export default function Dashboard() {
         />
       )}
       
-      {/* Mobile Balance Manager */}
       {showBalanceManager && (
-         <BalanceManager
+        <BalanceManager
           onlineBalance={onlineBalance}
           cashBalance={cashBalance}
           externalShowManager={showBalanceManager}
@@ -610,11 +474,13 @@ export default function Dashboard() {
       <AiChatbot
         mode="floating"
         suggestions={[
-          "Which food am I eating overly this month?",
+          "Which category is my largest outlay this month?",
           "Add an expense of 120 for sugar cane juice paid by cash today",
-          "Delete my latest balance adjustment",
+          "What is my remaining budget?",
         ]}
       />
     </div>
+  );
+}</div>
   );
 }

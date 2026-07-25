@@ -38,23 +38,19 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[var(--bg-secondary)]">
-      {/* Left Side - Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-[var(--card-bg)] border-r border-[var(--card-border)] relative z-10">
-        <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 group">
-          <img src="/logo.png" alt="SpendWise Logo" className="w-8 h-8 object-contain" />
-          <span className="text-xl font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-500)] transition-colors">SpendWise</span>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] px-6 py-12">
+      <div className="w-full max-w-md statement-card p-8 shadow-xl">
+        <Link to="/" className="flex items-center gap-3 mb-8">
+          <div className="w-8 h-8 bg-[var(--navy)] rounded-md flex items-center justify-center font-mono text-sm font-medium text-white shadow-md">
+            S
+          </div>
+          <span className="text-base font-semibold tracking-wider text-[var(--navy)] uppercase">SpendWise</span>
         </Link>
         
-        <div className="mx-auto w-full max-w-sm lg:w-96">
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
-              Welcome back
-            </h2>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Please enter your details to sign in.
-            </p>
-          </div>
+        <div className="mb-6">
+          <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold">Account Login</div>
+          <h2 className="text-2xl font-semibold text-[var(--navy)] tracking-tight mt-1">Sign in to your statement</h2>
+        </div>
 
           <div className="mt-8">
             <div className="space-y-6">

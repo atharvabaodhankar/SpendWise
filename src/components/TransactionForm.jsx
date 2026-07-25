@@ -99,29 +99,29 @@ export default function TransactionForm({ onSubmit, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0b1326]/80 backdrop-blur-xl flex items-center justify-center z-50 p-4 animate-slide-up">
-      <div className="glass-modal w-full max-w-lg max-h-[90vh] overflow-y-auto border border-white/15 shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[var(--white)] w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-[var(--hairline)] shadow-2xl">
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#0b1326]/80 backdrop-blur-2xl sticky top-0 z-10">
+        <div className="p-6 border-b border-[var(--hairline)] flex justify-between items-center bg-[var(--white)] sticky top-0 z-10">
            <div>
-              <h2 className="text-xl font-bold text-white tracking-tight" style={{ fontFamily: 'Geist, sans-serif' }}>Add Transaction</h2>
-              <p className="text-sm text-[#94a3b8]">Record a new expense or split entry</p>
+              <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold">Ledger Entry</div>
+              <h2 className="text-xl font-semibold text-[var(--navy)] tracking-tight mt-0.5">Add Transaction</h2>
            </div>
            <button
               onClick={onCancel}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-[#94a3b8] hover:text-white hover:bg-white/10 transition-all"
+              className="w-8 h-8 flex items-center justify-center rounded-md border border-[var(--slate-faint)] text-[var(--slate-light)] hover:text-[var(--navy)] transition-all"
            >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
            </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
            {/* Amount Input */}
            <div className="space-y-2">
-              <label className="label-premium">Amount</label>
+              <label className="label-premium">Amount (₹)</label>
               <div className="relative group">
                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-[#10b981] font-bold text-xl">₹</span>
+                    <span className="text-[var(--navy)] font-mono font-bold text-xl">₹</span>
                  </div>
                  <input
                     type="number"
@@ -132,8 +132,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                     min="0"
                     required
                     placeholder="0.00"
-                    className="input-premium pl-10 text-2xl font-extrabold tracking-wide text-white"
-                    style={{ fontFamily: 'Geist, sans-serif' }}
+                    className="input-premium pl-10 text-2xl font-mono font-semibold tracking-tight text-[var(--navy)]"
                     autoFocus
                  />
               </div>

@@ -70,138 +70,79 @@ const BalanceTracker = ({
 
   if (!hasDiscrepancy) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+      <div className="passbook-card py-4 px-6 flex items-center justify-between border border-[var(--hairline)]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-green-600" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-green-800">Balances in Sync</h3>
-            <p className="text-sm text-green-600">Your current and transaction balances match perfectly!</p>
-          </div>
+          <div className="w-2 h-2 rounded-full bg-[var(--emerald)]"></div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--slate)] font-sans">
+            Wallets in sync
+          </span>
         </div>
+        <span className="font-mono text-xs text-[var(--slate-light)]">
+          Online: ₹{(currentBalances?.online || 0).toLocaleString('en-IN')} | Cash: ₹{(currentBalances?.cash || 0).toLocaleString('en-IN')}
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-          <AlertTriangle className="w-5 h-5 text-amber-600" />
+    <div className="passbook-card border border-[var(--hairline)]">
+      <div className="flex items-start justify-between pb-3 border-b border-[var(--hairline)] mb-4">
+        <div>
+          <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold">Wallet Status</div>
+          <h3 className="text-base font-semibold text-[var(--navy)] mt-0.5">Balance Discrepancy Detected</h3>
         </div>
-        
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-amber-800">Balance Discrepancy Detected</h3>
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className="text-amber-600 hover:text-amber-700 transition-colors"
-            >
-              <Info className="w-4 h-4" />
-            </button>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="text-xs text-[var(--slate-light)] hover:text-[var(--navy)] transition-colors font-mono"
+        >
+          {showDetails ? 'Hide details' : 'View breakdown'}
+        </button>
+      </div>
+
+      <p className="text-xs text-[var(--slate)] mb-4 leading-relaxed">
+        Your current recorded wallet balance differs from calculated transaction totals.
+      </p>
+
+      {showDetails && (
+        <div className="p-4 bg-[var(--canvas)] rounded-md border border-[var(--hairline)] mb-4 space-y-3 font-mono text-xs">
+          <div className="flex justify-between py-1 border-b border-dashed border-[var(--hairline)]">
+            <span className="text-[var(--slate)]">Current Online:</span>
+            <span className="text-[var(--navy)] font-semibold">₹{(currentBalances?.online || 0).toFixed(2)}</span>
           </div>
-          
-          <p className="text-sm text-amber-700 mb-4">
-            Your current balance doesn't match your transaction history. This usually happens when:
-          </p>
-          
-          <ul className="text-sm text-amber-700 mb-4 space-y-1">
-            <li>• You added historical transactions</li>
-            <li>• You made transactions outside the app</li>
-            <li>• You started tracking mid-way through your spending</li>
-          </ul>
-
-          {showDetails && (
-            <div className="bg-white rounded-lg p-4 mb-4 border border-amber-200">
-              <h4 className="font-medium text-amber-800 mb-3">Balance Comparison:</h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-blue-500" />
-                    <span className="font-medium text-gray-700">Online Balance</span>
-                  </div>
-                  <div className="pl-6 space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Current:</span>
-                      <span className="font-medium">₹{(currentBalances?.online || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">From Transactions:</span>
-                      <span className="font-medium">₹{transactionOnlineBalance.toFixed(2)}</span>
-                    </div>
-                    {onlineDiscrepancy && (
-                      <div className="flex justify-between text-sm font-medium text-amber-600">
-                        <span>Difference:</span>
-                        <span>₹{Math.abs((currentBalances?.online || 0) - transactionOnlineBalance).toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Wallet className="w-4 h-4 text-green-500" />
-                    <span className="font-medium text-gray-700">Cash Balance</span>
-                  </div>
-                  <div className="pl-6 space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Current:</span>
-                      <span className="font-medium">₹{(currentBalances?.cash || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">From Transactions:</span>
-                      <span className="font-medium">₹{transactionCashBalance.toFixed(2)}</span>
-                    </div>
-                    {cashDiscrepancy && (
-                      <div className="flex justify-between text-sm font-medium text-amber-600">
-                        <span>Difference:</span>
-                        <span>₹{Math.abs((currentBalances?.cash || 0) - transactionCashBalance).toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={syncToCurrentBalance}
-              disabled={syncing}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              {syncing ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <DollarSign className="w-4 h-4" />
-              )}
-              Keep Current Balance
-            </button>
-            
-            <button
-              onClick={syncToTransactionBalance}
-              disabled={syncing}
-              className="flex-1 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              {syncing ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <TrendingUp className="w-4 h-4" />
-              )}
-              Use Transaction Balance
-            </button>
+          <div className="flex justify-between py-1 border-b border-dashed border-[var(--hairline)]">
+            <span className="text-[var(--slate)]">Transaction Online:</span>
+            <span className="text-[var(--navy)] font-semibold">₹{transactionOnlineBalance.toFixed(2)}</span>
           </div>
-          
-          <div className="mt-3 text-xs text-amber-600">
-            <strong>Tip:</strong> Choose "Keep Current Balance" if your current balance is accurate. 
-            Choose "Use Transaction Balance" if all your transactions are recorded correctly.
+          <div className="flex justify-between py-1 border-b border-dashed border-[var(--hairline)]">
+            <span className="text-[var(--slate)]">Current Cash:</span>
+            <span className="text-[var(--navy)] font-semibold">₹{(currentBalances?.cash || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between py-1">
+            <span className="text-[var(--slate)]">Transaction Cash:</span>
+            <span className="text-[var(--navy)] font-semibold">₹{transactionCashBalance.toFixed(2)}</span>
           </div>
         </div>
+      )}
+
+      <div className="flex gap-3">
+        <button
+          onClick={syncToCurrentBalance}
+          disabled={syncing}
+          className="btn-statement text-[10px] flex-1"
+        >
+          Keep Current Balance
+        </button>
+        <button
+          onClick={syncToTransactionBalance}
+          disabled={syncing}
+          className="btn-statement-primary text-[10px] flex-1"
+        >
+          Sync To Transactions
+        </button>
       </div>
     </div>
   );
+};
 };
 
 export default BalanceTracker;
