@@ -135,7 +135,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full btn-primary flex justify-center items-center py-3"
+                  className="w-full btn-statement-primary flex justify-center items-center py-3"
                 >
                   {loading ? (
                     <div className="flex items-center">
@@ -152,39 +152,10 @@ export default function Login() {
               </form>
             </div>
 
-            <p className="mt-8 text-center text-sm text-[var(--text-secondary)]">
-              Don't have an account?{' '}
-              <Link to="/signup" className="font-semibold text-[var(--accent-500)] hover:text-[var(--accent-400)] transition-colors">
-                Sign up for free
-              </Link>
+            <p className="mt-8 text-center text-sm text-[var(--slate)]">
+              Don&apos;t have an account? <Link to="/signup" className="font-semibold text-[var(--navy)] hover:underline">Sign up for free</Link>
             </p>
           </div>
-        </div>
-      </div>
-      
-      {/* Right Side - Decorative */}
-      <div className="hidden lg:block relative w-0 flex-1 overflow-hidden bg-[var(--bg-secondary)]">
-        <div className="absolute inset-0 h-full w-full">
-           <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary-900)] to-[var(--bg-secondary)] w-full h-full" />
-           {/* Abstract shapes */}
-           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[600px] h-[600px] rounded-full bg-[var(--accent-600)]/10 blur-3xl animate-pulse" />
-           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[600px] h-[600px] rounded-full bg-[var(--accent-400)]/5 blur-3xl animate-pulse delay-1000" />
-           
-           <div className="absolute inset-0 flex flex-col items-center justify-center p-20 text-[var(--text-primary)] z-10">
-             <div className="max-w-xl text-center space-y-8">
-
-               <div>
-                  <div className="mb-8 flex justify-center">
-                    <div className="w-24 h-24 bg-[var(--primary-800)] rounded-3xl flex items-center justify-center backdrop-blur-sm border border-[var(--primary-700)] animate-fade-scale shadow-xl">
-                      <img src="/logo.png" alt="SpendWise Logo" className="w-16 h-16 object-contain drop-shadow-md" />
-                    </div>
-                  </div>
-                  <h3 className="text-3xl font-bold mb-4 text-[#f8fafc]">Smart Financial Tracking</h3>
-                  <p className="text-[var(--text-tertiary)] text-lg">Join over 50,000+ users who trust SpendWise.</p>
-               </div>
-
-             </div>
-           </div>
         </div>
       </div>
     </div>
