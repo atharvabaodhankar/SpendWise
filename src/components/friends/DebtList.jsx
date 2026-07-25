@@ -139,9 +139,9 @@ export default function DebtList() {
   if (loading) return <div className="p-4 text-center text-[var(--text-secondary)]">Loading debts...</div>;
 
   if (youOwe.length === 0 && owedToYou.length === 0) return (
-     <div className="flex flex-col items-center justify-center p-8 text-[var(--text-tertiary)]">
-        <CheckCircle className="w-12 h-12 mb-3 opacity-20" />
-        <p>All settled up! No debts.</p>
+     <div className="flex flex-col items-center justify-center p-8 text-[#94a3b8]">
+        <CheckCircle className="w-12 h-12 mb-3 text-[#10b981]/40" />
+        <p style={{ fontFamily: 'Geist, sans-serif' }}>All settled up! No active debts.</p>
      </div>
   );
 
@@ -150,29 +150,29 @@ export default function DebtList() {
       {/* YOU OWE */}
       {youOwe.length > 0 && (
          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-[var(--danger-500)] flex items-center gap-2">
+            <h3 className="text-xs font-bold text-[#f43f5e] uppercase tracking-wider flex items-center gap-2" style={{ fontFamily: 'Geist, sans-serif' }}>
                <TrendingDown className="w-4 h-4" /> You Owe
             </h3>
             {youOwe.map(debt => (
-               <div key={debt.id} className="p-4 rounded-xl border border-[var(--danger-200)] bg-[var(--danger-50)]/30 flex justify-between items-center">
+               <div key={debt.id} className="p-4 rounded-2xl border border-[#f43f5e]/30 bg-[#f43f5e]/10 backdrop-blur-md flex justify-between items-center">
                   <div>
-                     <p className="font-semibold text-[var(--text-primary)]">{debt.otherUserName}</p>
-                     <p className="text-sm text-[var(--text-secondary)]">{debt.description}</p>
-                     <p className="text-lg font-bold text-[var(--danger-600)] mt-1">₹{debt.amount}</p>
+                     <p className="font-semibold text-white">{debt.otherUserName}</p>
+                     <p className="text-xs text-[#94a3b8]">{debt.description}</p>
+                     <p className="text-lg font-extrabold text-[#f43f5e] mt-1" style={{ fontFamily: 'Geist, sans-serif' }}>₹{debt.amount}</p>
                   </div>
                   <div>
                      {debt.status === 'pending_confirmation' ? (
-                        <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">
-                           <Clock className="w-3 h-3" /> Pending
+                        <span className="badge badge-warning flex items-center gap-1.5 px-3 py-1">
+                           <Clock className="w-3 h-3" /> Pending Confirmation
                         </span>
-                     ) : (
+                      ) : (
                         <button
                            onClick={() => handleMarkPaid(debt)}
-                           className="px-3 py-1.5 rounded-lg bg-[var(--primary-600)] text-white text-sm font-medium hover:bg-[var(--primary-700)] transition-colors"
+                           className="btn-accent text-xs font-semibold px-4 py-2"
                         >
                            Mark Paid
                         </button>
-                     )}
+                      )}
                   </div>
                </div>
             ))}
@@ -182,27 +182,27 @@ export default function DebtList() {
       {/* OWED TO YOU */}
       {owedToYou.length > 0 && (
          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-[var(--success-500)] flex items-center gap-2">
+            <h3 className="text-xs font-bold text-[#10b981] uppercase tracking-wider flex items-center gap-2" style={{ fontFamily: 'Geist, sans-serif' }}>
                <TrendingUp className="w-4 h-4" /> Owed to You
             </h3>
             {owedToYou.map(debt => (
-               <div key={debt.id} className="p-4 rounded-xl border border-[var(--success-200)] bg-[var(--success-50)]/30 flex justify-between items-center">
+               <div key={debt.id} className="p-4 rounded-2xl border border-[#10b981]/30 bg-[#10b981]/10 backdrop-blur-md flex justify-between items-center">
                   <div>
-                     <p className="font-semibold text-[var(--text-primary)]">{debt.otherUserName}</p>
-                     <p className="text-sm text-[var(--text-secondary)]">{debt.description}</p>
-                     <p className="text-lg font-bold text-[var(--success-600)] mt-1">₹{debt.amount}</p>
+                     <p className="font-semibold text-white">{debt.otherUserName}</p>
+                     <p className="text-xs text-[#94a3b8]">{debt.description}</p>
+                     <p className="text-lg font-extrabold text-[#10b981] mt-1" style={{ fontFamily: 'Geist, sans-serif' }}>₹{debt.amount}</p>
                   </div>
                   <div>
                      {debt.status === 'pending_confirmation' ? (
                         <button
                            onClick={() => handleConfirmReceipt(debt)}
-                           className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--success-600)] text-white text-sm font-medium hover:bg-[var(--success-700)] transition-colors"
+                           className="btn-primary text-xs font-semibold flex items-center gap-1.5 px-4 py-2"
                         >
-                           <Check className="w-4 h-4" /> Confirm
+                           <Check className="w-4 h-4" /> Confirm Receipt
                         </button>
-                     ) : (
-                        <span className="text-xs text-[var(--text-tertiary)] italic">Waiting for payment</span>
-                     )}
+                      ) : (
+                        <span className="text-xs text-[#64748b] italic" style={{ fontFamily: 'Geist, sans-serif' }}>Awaiting repayment</span>
+                      )}
                   </div>
                </div>
             ))}

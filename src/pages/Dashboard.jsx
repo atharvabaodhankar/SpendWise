@@ -283,42 +283,47 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-secondary)] pb-20">
-      {/* Premium Navbar */}
-      <header className="glass-panel sticky top-0 z-40">
+      {/* Obsidian Glass Navbar */}
+      <header className="glass-panel sticky top-0 z-40 border-b border-white/10 bg-[#0b1326]/80 backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <img src="/logo.png" alt="SpendWise Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
-              <span className="text-lg font-bold text-[var(--text-primary)] tracking-tight">SpendWise</span>
+              <div className="p-2 bg-gradient-to-tr from-[#10b981]/20 to-[#6366f1]/20 rounded-xl border border-white/10 shadow-lg shadow-[#10b981]/10">
+                <img src="/logo.png" alt="SpendWise Logo" className="w-7 h-7 object-contain drop-shadow-md" />
+              </div>
+              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-[#f8fafc] to-[#94a3b8] bg-clip-text text-transparent" style={{ fontFamily: 'Geist, sans-serif' }}>SpendWise</span>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
-               <div className="text-right mr-2">
-                <p className="text-xs text-[var(--text-secondary)] font-medium">Signed in as</p>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{currentUser.email?.split("@")[0]}</p>
+            <div className="hidden md:flex items-center space-x-5">
+              <div className="text-right mr-3">
+                <p className="text-xs text-[#94a3b8] font-medium" style={{ fontFamily: 'Geist, sans-serif' }}>SIGNED IN AS</p>
+                <p className="text-sm font-semibold text-white tracking-wide">{currentUser.email?.split("@")[0]}</p>
               </div>
-              <button
-                onClick={logout}
-                className="text-[var(--text-secondary)] hover:text-[var(--danger-500)] transition-colors p-2 rounded-lg hover:bg-[var(--danger-50)]"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
+              
               <button
                 onClick={() => setShowFriendsModal(true)}
-                className="text-[var(--text-secondary)] hover:text-[var(--primary-600)] transition-colors p-2 rounded-lg hover:bg-[var(--primary-50)]"
-                title="Friends"
+                className="btn-secondary p-2.5 rounded-xl hover:border-[#6366f1]/40 hover:text-[#818cf8] transition-all"
+                title="Friends & Bill Split"
               >
                 <Users className="w-5 h-5" />
               </button>
+              
               <button
                 onClick={() => setShowSettingsModal(true)}
-                className="text-[var(--text-secondary)] hover:text-[var(--primary-600)] transition-colors p-2 rounded-lg hover:bg-[var(--primary-50)]"
+                className="btn-secondary p-2.5 rounded-xl hover:border-white/20 hover:text-white transition-all"
                 title="Settings"
               >
                 <Settings className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={logout}
+                className="btn-secondary p-2.5 rounded-xl hover:border-[#f43f5e]/40 hover:text-[#f43f5e] transition-all"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
               </button>
             </div>
 
@@ -326,7 +331,7 @@ export default function Dashboard() {
             <div className="md:hidden">
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="text-[var(--text-secondary)] p-2"
+                className="text-[#94a3b8] p-2 hover:text-white"
               >
                 {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -336,16 +341,16 @@ export default function Dashboard() {
 
         {/* Mobile Menu */}
         {showMobileMenu && (
-          <div className="md:hidden border-t border-[var(--glass-border)] bg-[var(--bg-secondary)]/95 backdrop-blur-xl absolute w-full z-50 animate-slide-down">
+          <div className="md:hidden border-t border-white/10 bg-[#0b1326]/95 backdrop-blur-2xl absolute w-full z-50 animate-slide-up">
             <div className="px-4 py-6 space-y-4">
-               <div className="pb-4 border-b border-[var(--primary-100)]">
-                <p className="text-sm text-[var(--text-secondary)]">Signed in as</p>
-                <p className="text-lg font-semibold text-[var(--text-primary)]">{currentUser.email}</p>
+              <div className="pb-4 border-b border-white/10">
+                <p className="text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>SIGNED IN AS</p>
+                <p className="text-base font-semibold text-white">{currentUser.email}</p>
               </div>
               
               <button
                 onClick={() => { setShowForm(true); setShowMobileMenu(false); }}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl bg-[var(--primary-50)] text-[var(--primary-800)] font-medium"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-primary justify-center"
               >
                 <PlusCircle className="w-5 h-5" />
                 <span>Add Expense</span>
@@ -353,33 +358,33 @@ export default function Dashboard() {
               
               <a
                 href="/analytics"
-                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-[var(--primary-50)] text-[var(--text-secondary)] font-medium"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-secondary"
               >
-                <BarChart3 className="w-5 h-5" />
+                <BarChart3 className="w-5 h-5 text-[#818cf8]" />
                 <span>Analytics</span>
               </a>
               
               {preferences.showBalances && (
               <button
                 onClick={() => { setShowBalanceManager(true); setShowMobileMenu(false); }}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-[var(--primary-50)] text-[var(--text-secondary)] font-medium"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-secondary"
               >
-                <Settings className="w-5 h-5" />
+                <Wallet className="w-5 h-5 text-[#10b981]" />
                 <span>Adjust Balance</span>
               </button>
               )}
               
               <button
                 onClick={() => { setShowFriendsModal(true); setShowMobileMenu(false); }}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-[var(--primary-50)] text-[var(--text-secondary)] font-medium"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-secondary"
               >
-                <Users className="w-5 h-5" />
-                <span>Friends</span>
+                <Users className="w-5 h-5 text-[#818cf8]" />
+                <span>Friends & Bills</span>
               </button>
 
               <button
                 onClick={() => { setShowSettingsModal(true); setShowMobileMenu(false); }}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-[var(--primary-50)] text-[var(--text-secondary)] font-medium"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-secondary"
               >
                 <Settings className="w-5 h-5" />
                 <span>Settings</span>
@@ -387,7 +392,7 @@ export default function Dashboard() {
 
               <button
                 onClick={logout}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl text-[var(--danger-500)] hover:bg-[var(--danger-50)] font-medium"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl btn-danger justify-center"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Logout</span>
@@ -401,8 +406,8 @@ export default function Dashboard() {
         {/* Dashboard Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">Overview</h1>
-            <p className="text-[var(--text-secondary)] text-sm mt-1">Track your financial health</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight" style={{ fontFamily: 'Geist, sans-serif' }}>Financial Overview</h1>
+            <p className="text-[#94a3b8] text-sm mt-1">Real-time command center for your spending and wallets</p>
           </div>
           
           <div className="hidden md:flex gap-3">
@@ -414,9 +419,9 @@ export default function Dashboard() {
              )}
              <a
               href="/analytics"
-              className="btn-secondary flex items-center space-x-2"
+              className="btn-secondary flex items-center space-x-2 border-white/10 hover:border-[#6366f1]/40"
             >
-              <BarChart3 className="w-4 h-4" />
+              <BarChart3 className="w-4 h-4 text-[#818cf8]" />
               <span>Analytics</span>
             </a>
             <button
@@ -430,92 +435,94 @@ export default function Dashboard() {
         </div>
 
         {/* Summary Cards Grid */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6`}>
-           {/* Total Portfolio - Hero Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           {/* Total Portfolio - Hero Obsidian Glass Card */}
            {preferences.showBalances && (
-           <div className="premium-card p-6 relative overflow-hidden bg-gradient-to-br from-[var(--primary-800)] to-[var(--primary-900)] text-white border-none col-span-1 md:col-span-2">
+           <div className="glass-card p-6 relative overflow-hidden border border-[#10b981]/30 col-span-1 md:col-span-2 shadow-2xl shadow-[#10b981]/5">
               <div className="relative z-10">
-                <div className="flex items-center space-x-3 mb-4 opacity-90">
-                  <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                    <Briefcase className="w-5 h-5 text-white" />
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-2.5 bg-[#10b981]/15 border border-[#10b981]/30 rounded-xl backdrop-blur-md">
+                    <Briefcase className="w-5 h-5 text-[#10b981]" />
                   </div>
-                  <span className="font-medium text-sm tracking-wide">TOTAL PORTFOLIO</span>
+                  <span className="font-semibold text-xs tracking-wider text-[#94a3b8] uppercase" style={{ fontFamily: 'Geist, sans-serif' }}>TOTAL PORTFOLIO BALANCE</span>
                 </div>
                 <div className="flex items-baseline space-x-1">
-                  <span className="text-4xl font-bold tracking-tight">₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-4xl md:text-5xl font-extrabold tracking-tight text-white" style={{ fontFamily: 'Geist, sans-serif' }}>
+                    ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
-                 <div className="mt-6 flex space-x-6 text-sm text-[var(--primary-200)]">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-[var(--accent-400)]"></div>
+                 <div className="mt-6 flex flex-wrap gap-4 text-xs font-semibold text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
+                    <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
+                      <div className="w-2 h-2 rounded-full bg-[#6366f1] shadow-[0_0_8px_#6366f1]"></div>
                       <span>Online: ₹{onlineBalance.toLocaleString('en-IN')}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                       <div className="w-2 h-2 rounded-full bg-[var(--success-400)]"></div>
+                    <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
+                       <div className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_8px_#10b981]"></div>
                       <span>Cash: ₹{cashBalance.toLocaleString('en-IN')}</span>
                     </div>
                  </div>
               </div>
-              {/* Decorative shapes */}
-              <div className="absolute right-0 top-0 w-64 h-64 bg-[var(--accent-600)]/20 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
-              <div className="absolute bottom-0 right-10 w-40 h-40 bg-[var(--primary-500)]/20 rounded-full blur-2xl"></div>
+              {/* Glowing Background Radial Accents */}
+              <div className="absolute right-0 top-0 w-72 h-72 bg-[#6366f1]/15 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
+              <div className="absolute bottom-0 right-10 w-48 h-48 bg-[#10b981]/15 rounded-full blur-3xl pointer-events-none"></div>
            </div>
            )}
 
            {/* Online Balance */}
            {preferences.showBalances && (
-           <div className="premium-card p-6 flex flex-col justify-between">
+           <div className="glass-card p-6 flex flex-col justify-between hover:border-[#6366f1]/40 transition-all">
               <div className="flex items-start justify-between">
                 <div>
-                   <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Online</p>
-                   <h3 className="text-2xl font-bold text-[var(--text-primary)] mt-2">₹{onlineBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
+                   <p className="label-premium">Online Wallet</p>
+                   <h3 className="text-2xl font-bold text-white mt-2" style={{ fontFamily: 'Geist, sans-serif' }}>₹{onlineBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
                 </div>
-                <div className="p-2 bg-[var(--accent-50)] text-[var(--accent-600)] rounded-lg">
+                <div className="p-2.5 bg-[#6366f1]/15 text-[#818cf8] border border-[#6366f1]/30 rounded-xl">
                   <CreditCard className="w-5 h-5" />
                 </div>
               </div>
-              <div className="mt-4 flex items-center text-xs text-[var(--text-secondary)]">
-                <span className="w-full bg-[var(--primary-100)] h-1 rounded-full overflow-hidden">
-                   <div style={{ width: `${(onlineBalance / (balance || 1)) * 100}%` }} className="bg-[var(--accent-500)] h-full rounded-full"></div>
+              <div className="mt-4 flex items-center text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
+                <span className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                   <div style={{ width: `${(onlineBalance / (balance || 1)) * 100}%` }} className="bg-gradient-to-r from-[#6366f1] to-[#818cf8] h-full rounded-full shadow-[0_0_8px_#6366f1]"></div>
                 </span>
-                <span className="ml-2">{Math.round((onlineBalance / (balance || 1)) * 100)}%</span>
+                <span className="ml-3 font-semibold text-white">{Math.round((onlineBalance / (balance || 1)) * 100)}%</span>
               </div>
            </div>
            )}
 
             {/* Cash Balance */}
            {preferences.showBalances && (
-           <div className="premium-card p-6 flex flex-col justify-between">
+           <div className="glass-card p-6 flex flex-col justify-between hover:border-[#10b981]/40 transition-all">
               <div className="flex items-start justify-between">
                 <div>
-                   <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Cash</p>
-                   <h3 className="text-2xl font-bold text-[var(--text-primary)] mt-2">₹{cashBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
+                   <p className="label-premium">Cash Wallet</p>
+                   <h3 className="text-2xl font-bold text-white mt-2" style={{ fontFamily: 'Geist, sans-serif' }}>₹{cashBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
                 </div>
-                <div className="p-2 bg-[var(--success-50)] text-[var(--success-600)] rounded-lg">
+                <div className="p-2.5 bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/30 rounded-xl">
                   <Wallet className="w-5 h-5" />
                 </div>
               </div>
-               <div className="mt-4 flex items-center text-xs text-[var(--text-secondary)]">
-                <span className="w-full bg-[var(--primary-100)] h-1 rounded-full overflow-hidden">
-                   <div style={{ width: `${(cashBalance / (balance || 1)) * 100}%` }} className="bg-[var(--success-500)] h-full rounded-full"></div>
+               <div className="mt-4 flex items-center text-xs text-[#94a3b8]" style={{ fontFamily: 'Geist, sans-serif' }}>
+                <span className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                   <div style={{ width: `${(cashBalance / (balance || 1)) * 100}%` }} className="bg-gradient-to-r from-[#10b981] to-[#34d399] h-full rounded-full shadow-[0_0_8px_#10b981]"></div>
                 </span>
-                <span className="ml-2">{Math.round((cashBalance / (balance || 1)) * 100)}%</span>
+                <span className="ml-3 font-semibold text-white">{Math.round((cashBalance / (balance || 1)) * 100)}%</span>
               </div>
            </div>
            )}
 
-           {/* Monthly Expenses */}
-           <div className="premium-card p-6 flex flex-col justify-between border-t-4 border-t-[var(--danger-500)]">
+           {/* Total Expenses */}
+           <div className="glass-card p-6 flex flex-col justify-between border-t-2 border-t-[#f43f5e]/60 hover:border-[#f43f5e]/40 transition-all">
                <div className="flex items-start justify-between">
                 <div>
-                   <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Total Expenses</p>
-                   <h3 className="text-2xl font-bold text-[var(--text-primary)] mt-2">₹{totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
+                   <p className="label-premium">Total Expenses</p>
+                   <h3 className="text-2xl font-bold text-white mt-2" style={{ fontFamily: 'Geist, sans-serif' }}>₹{totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
                 </div>
-                <div className="p-2 bg-[var(--danger-50)] text-[var(--danger-500)] rounded-lg">
+                <div className="p-2.5 bg-[#f43f5e]/15 text-[#f43f5e] border border-[#f43f5e]/30 rounded-xl">
                   <TrendingDown className="w-5 h-5" />
                 </div>
               </div>
-               <div className="mt-2 text-xs text-[var(--text-secondary)]">
-                  Lifetime spending
+               <div className="mt-2 text-xs text-[#64748b]">
+                  Cumulative recorded outlays
                </div>
            </div>
         </div>
@@ -525,19 +532,19 @@ export default function Dashboard() {
            {/* Left Column: Transactions List */}
            <div className="xl:col-span-2 space-y-6">
               <div className="flex items-center justify-between">
-                 <h2 className="text-lg font-semibold text-[var(--text-primary)]">Recent Transactions</h2>
+                 <h2 className="text-xl font-bold text-white tracking-tight" style={{ fontFamily: 'Geist, sans-serif' }}>Recent Transactions</h2>
                  <div className="flex gap-2">
                     <button 
                       onClick={() => exportToPDF(transactions)}
-                      className="text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--primary-600)] flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-[var(--primary-50)] transition-colors"
+                      className="btn-secondary text-xs font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-white/10 hover:border-white/20"
                     >
-                      <Download className="w-3.5 h-3.5" /> PDF
+                      <Download className="w-3.5 h-3.5 text-[#10b981]" /> PDF
                     </button>
                      <button 
                       onClick={() => exportToExcel(transactions)}
-                      className="text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--primary-600)] flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-[var(--primary-50)] transition-colors"
+                      className="btn-secondary text-xs font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-white/10 hover:border-white/20"
                     >
-                      <FileText className="w-3.5 h-3.5" /> Excel
+                      <FileText className="w-3.5 h-3.5 text-[#818cf8]" /> Excel
                     </button>
                  </div>
               </div>
