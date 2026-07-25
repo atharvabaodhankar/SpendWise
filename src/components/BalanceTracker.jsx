@@ -143,6 +143,5 @@ const BalanceTracker = ({
     </div>
   );
 };
-};
 
 export default BalanceTracker;

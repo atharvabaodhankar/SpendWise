@@ -34,6 +34,7 @@ import {
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
 import BudgetGoals from "../components/BudgetGoals";
+import BalanceTracker from "../components/BalanceTracker";
 import { checkBalanceAlert, checkDailyExpenseAlert } from '../utils/emailAlerts';
 import RecurringTransactions from "../components/RecurringTransactions";
 import BalanceManager from "../components/BalanceManager";
