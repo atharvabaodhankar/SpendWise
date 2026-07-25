@@ -98,66 +98,67 @@ export default function SettingsModal({ isOpen, onClose, onUpdatePreferences }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-[var(--card-bg)] rounded-2xl shadow-2xl w-full max-w-md border border-[var(--card-border)] overflow-hidden animate-scale-up">
+      <div className="statement-card shadow-2xl w-full max-w-md overflow-hidden p-6">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[var(--card-border)] flex justify-between items-center bg-[var(--bg-secondary)]">
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">Settings</h2>
+        <div className="flex justify-between items-center pb-4 border-b border-[var(--hairline)] mb-6">
+          <div>
+            <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold">Preferences</div>
+            <h2 className="text-xl font-semibold text-[var(--navy)]">Statement Settings</h2>
+          </div>
           <button 
             onClick={onClose}
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1 rounded-lg hover:bg-[var(--bg-tertiary)]"
+            className="btn-statement p-1.5 rounded-md hover:border-[var(--rose)] hover:text-[var(--rose)]"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-[var(--primary-400)]" />
+              <Loader2 className="w-6 h-6 animate-spin text-[var(--navy)]" />
             </div>
           ) : (
             <div className="space-y-6">
               {/* Profile Settings */}
-              <div className="space-y-4 pb-6 border-b border-[var(--card-border)]">
-                 <div className="flex items-center gap-2 mb-1">
-                    <User className="w-4 h-4 text-[var(--primary-500)]" />
-                    <h3 className="font-semibold text-[var(--text-primary)]">Profile</h3>
-                 </div>
-                 
-                 <div className="space-y-2">
-                    <label className="text-sm text-[var(--text-secondary)]">Display Name</label>
-                    <input
-                       type="text"
-                       value={preferences.displayName || ''}
-                       onChange={(e) => setPreferences(prev => ({ ...prev, displayName: e.target.value }))}
-                       placeholder="Enter your name"
-                       className="w-full px-4 py-2 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--card-border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)]"
-                    />
-                    <p className="text-xs text-[var(--text-tertiary)]">This name will be visible to your friends.</p>
-                 </div>
+              <div className="space-y-3 pb-6 border-b border-[var(--hairline)]">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-[var(--navy)]" />
+                  <h3 className="font-semibold text-xs text-[var(--navy)] uppercase tracking-wider">Public Profile</h3>
+                </div>
+                
+                <div>
+                  <label className="label-premium">Display Name</label>
+                  <input
+                    type="text"
+                    value={preferences.displayName || ''}
+                    onChange={(e) => setPreferences(prev => ({ ...prev, displayName: e.target.value }))}
+                    placeholder="Enter display name"
+                    className="input-premium text-xs"
+                  />
+                  <p className="text-[10px] text-[var(--slate-light)] mt-1">This name will be visible to your bill-splitting friends.</p>
+                </div>
               </div>
 
               {/* Wallet Tracking Toggle */}
               <div className="flex items-start justify-between">
                 <div className="mr-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <Wallet className="w-4 h-4 text-[var(--primary-500)]" />
-                    <h3 className="font-semibold text-[var(--text-primary)]">Wallet Balance Tracking</h3>
+                    <Wallet className="w-4 h-4 text-[var(--navy)]" />
+                    <h3 className="font-semibold text-xs text-[var(--navy)] uppercase tracking-wider">Passbook Balances</h3>
                   </div>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Show "Total Portfolio", "Online", and "Cash" balances on the dashboard. 
-                    <br/><span className="text-xs text-[var(--text-tertiary)] opacity-80">Disable this if you only want to track income/expenses without managing current balances.</span>
+                  <p className="text-xs text-[var(--slate)] leading-relaxed">
+                    Display current Online & Cash balance cards on the statement ledger.
                   </p>
                 </div>
                 
                 <button 
                   onClick={handleToggleBalances}
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    preferences.showBalances ? 'bg-[var(--accent-500)]' : 'bg-[var(--primary-200)] dark:bg-[var(--primary-700)]'
+                    preferences.showBalances ? 'bg-[var(--navy)]' : 'bg-[var(--slate-faint)]'
                   }`}
                 >
-                  <span className="sr-only">Use setting</span>
                   <span
                     aria-hidden="true"
                     className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
@@ -171,26 +172,26 @@ export default function SettingsModal({ isOpen, onClose, onUpdatePreferences }) 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[var(--card-border)] bg-[var(--bg-secondary)] flex justify-end gap-3">
+        <div className="pt-6 mt-6 border-t border-[var(--hairline)] flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            className="btn-statement text-[10px] py-2 px-4"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={loading || saving}
-            className="btn-primary px-4 py-2 text-sm flex items-center gap-2"
+            className="btn-statement-primary text-[10px] py-2 px-4 flex items-center gap-2"
           >
             {saving ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 Saving...
               </>
             ) : (
               <>
-                <Save className="w-4 h-4" />
+                <Save className="w-3.5 h-3.5" />
                 Save Changes
               </>
             )}

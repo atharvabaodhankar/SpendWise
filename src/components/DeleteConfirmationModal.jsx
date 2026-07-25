@@ -1,4 +1,4 @@
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, X, CreditCard, Banknote } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function DeleteConfirmationModal({ transaction, onConfirm, onCancel }) {
@@ -76,12 +76,13 @@ export default function DeleteConfirmationModal({ transaction, onConfirm, onCanc
                         year: 'numeric'
                       })}</span>
                     </div>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
                       transaction.paymentMethod === 'online' 
                         ? 'bg-[var(--accent-50)] text-[var(--accent-700)] border border-[var(--accent-200)]' 
                         : 'bg-[var(--primary-100)] text-[var(--primary-700)] border border-[var(--primary-200)]'
                     }`}>
-                      {transaction.paymentMethod === 'online' ? '💳 Online' : '💵 Cash'}
+                      {transaction.paymentMethod === 'online' ? <CreditCard className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
+                      {transaction.paymentMethod === 'online' ? 'Online' : 'Cash'}
                     </span>
                   </div>
                   

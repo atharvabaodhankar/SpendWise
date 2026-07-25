@@ -27,7 +27,9 @@ import {
   CreditCard,
   Briefcase,
   Download,
-  Users
+  Users,
+  Sun,
+  Moon
 } from "lucide-react";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
@@ -326,10 +328,10 @@ export default function Dashboard() {
             {/* Theme Toggle */}
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-md border border-[var(--slate-faint)] bg-[var(--white)] text-[var(--slate)] hover:text-[var(--navy)] hover:border-[var(--slate-light)] transition-all"
+              className="p-2 rounded-md border border-[var(--slate-faint)] bg-[var(--white)] text-[var(--slate)] hover:text-[var(--navy)] hover:border-[var(--slate-light)] transition-all flex items-center justify-center"
               title="Toggle Light/Dark Theme"
             >
-              {darkMode ? '☀️' : '🌙'}
+              {darkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-[var(--navy)]" />}
             </button>
 
             <button

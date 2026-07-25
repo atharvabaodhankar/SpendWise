@@ -135,40 +135,40 @@ export default function RecurringTransactions() {
   };
 
   if (loading) {
-     return <div className="premium-card p-6 animate-pulse h-64"></div>;
+     return <div className="statement-card p-6 animate-pulse h-48"></div>;
   }
 
   return (
-    <div className="premium-card overflow-hidden flex flex-col">
+    <div className="statement-card overflow-hidden flex flex-col">
        {/* Header */}
-      <div className="p-6 border-b border-[var(--card-border)] bg-[var(--bg-secondary)]/30 flex justify-between items-center">
+      <div className="flex justify-between items-center pb-4 border-b border-[var(--hairline)] mb-4">
          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-[var(--primary-100)] rounded-lg">
-               <Repeat className="w-5 h-5 text-[var(--primary-600)]" />
+            <div className="w-8 h-8 rounded-md bg-[var(--navy)] text-white flex items-center justify-center font-mono text-xs">
+               S
             </div>
             <div>
-               <h3 className="text-lg font-bold text-[var(--text-primary)]">Recurring</h3>
-               <p className="text-xs text-[var(--text-secondary)]">Automate regular payments</p>
+               <div className="text-[9px] tracking-[1.5px] text-[var(--slate-light)] uppercase font-semibold">Automations</div>
+               <h3 className="text-sm font-semibold text-[var(--navy)]">Recurring Entries</h3>
             </div>
          </div>
          
          {!showForm && (
             <button
                onClick={() => setShowForm(true)}
-               className="p-2 rounded-lg bg-[var(--primary-50)] text-[var(--primary-600)] hover:bg-[var(--primary-100)] transition-colors"
+               className="btn-statement text-[10px] py-1.5 px-3 flex items-center gap-1"
             >
-               <Plus className="w-4 h-4" />
+               <Plus className="w-3.5 h-3.5" /> New
             </button>
          )}
       </div>
 
-      <div className="p-6 overflow-y-auto max-h-[400px]">
+      <div className="overflow-y-auto max-h-[350px]">
         {showForm ? (
           <div className="animate-fade-scale">
             <div className="flex justify-between items-center mb-4">
-               <h4 className="font-bold text-[var(--text-primary)]">New Recurring Item</h4>
-               <button onClick={() => setShowForm(false)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
-                  <X className="w-4 h-4" />
+               <h4 className="font-semibold text-xs text-[var(--navy)] uppercase tracking-wider">New Recurring Entry</h4>
+               <button onClick={() => setShowForm(false)} className="btn-statement p-1 text-[var(--slate)] hover:text-[var(--rose)]">
+                  <X className="w-3.5 h-3.5" />
                </button>
             </div>
             
@@ -176,14 +176,14 @@ export default function RecurringTransactions() {
               <div className="grid grid-cols-2 gap-4">
                  <div>
                     <label className="label-premium">Type</label>
-                    <div className="flex bg-[var(--bg-tertiary)] p-1 rounded-lg">
+                    <div className="flex bg-[var(--canvas)] p-1 rounded-md border border-[var(--hairline)]">
                        <button
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, type: 'expense', category: categories.expense[0] }))}
-                          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all ${
+                          className={`flex-1 text-[10px] font-semibold py-1 rounded transition-all uppercase font-mono ${
                              formData.type === 'expense' 
-                                ? 'bg-white shadow-sm text-[var(--danger-600)]' 
-                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                ? 'bg-[var(--navy)] text-white shadow-sm' 
+                                : 'text-[var(--slate)] hover:text-[var(--navy)]'
                           }`}
                        >
                           Expense
@@ -191,10 +191,10 @@ export default function RecurringTransactions() {
                        <button
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, type: 'income', category: categories.income[0] }))}
-                          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all ${
+                          className={`flex-1 text-[10px] font-semibold py-1 rounded transition-all uppercase font-mono ${
                              formData.type === 'income' 
-                                ? 'bg-white shadow-sm text-[var(--success-600)]' 
-                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                ? 'bg-[var(--emerald)] text-white shadow-sm' 
+                                : 'text-[var(--slate)] hover:text-[var(--navy)]'
                           }`}
                        >
                           Income
@@ -211,7 +211,7 @@ export default function RecurringTransactions() {
                        onChange={handleChange}
                        placeholder="0.00"
                        required
-                       className="input-premium"
+                       className="input-premium text-xs font-mono"
                     />
                  </div>
               </div>
@@ -223,7 +223,7 @@ export default function RecurringTransactions() {
                        name="category"
                        value={formData.category}
                        onChange={handleChange}
-                       className="input-premium"
+                       className="input-premium text-xs"
                     >
                        {categories[formData.type].map(category => (
                           <option key={category} value={category}>{category}</option>
@@ -236,7 +236,7 @@ export default function RecurringTransactions() {
                        name="frequency"
                        value={formData.frequency}
                        onChange={handleChange}
-                       className="input-premium"
+                       className="input-premium text-xs font-mono"
                     >
                        {Object.entries(frequencies).map(([key, label]) => (
                           <option key={key} value={key}>{label}</option>
@@ -253,68 +253,61 @@ export default function RecurringTransactions() {
                     value={formData.description}
                     onChange={handleChange}
                     placeholder="e.g. Netflix Subscription"
-                    className="input-premium"
+                    className="input-premium text-xs"
                  />
               </div>
 
                <div className="pt-2">
-                  <button type="submit" className="btn-primary w-full justify-center">
+                  <button type="submit" className="btn-statement-primary text-[10px] w-full justify-center py-2.5">
                      Create Automation
                   </button>
                </div>
             </form>
           </div>
         ) : (
-           <div className="space-y-3">
+           <div className="space-y-2">
               {recurringTransactions.length === 0 ? (
-                 <div className="text-center py-6 text-[var(--text-tertiary)]">
-                    <CalendarClock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No recurring items yet.</p>
+                 <div className="text-center py-6 text-[var(--slate-light)]">
+                    <CalendarClock className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-xs">No recurring automations set.</p>
                  </div>
               ) : (
                  recurringTransactions.map((transaction) => (
                     <div 
                        key={transaction.id} 
-                       className="group p-3 rounded-xl border border-[var(--card-border)] hover:border-[var(--primary-200)] hover:bg-[var(--primary-50)] transition-all bg-[var(--bg-secondary)]"
+                       className="ledger-row p-3 text-xs flex items-center justify-between group"
                     >
-                       <div className="flex justify-between items-start mb-2">
+                       <div>
                           <div className="flex items-center gap-2">
-                             <span className={`w-2 h-2 rounded-full ${transaction.type === 'income' ? 'bg-[var(--success-500)]' : 'bg-[var(--danger-500)]'}`}></span>
-                             <h4 className="text-sm font-bold text-[var(--text-primary)]">
+                             <span className="font-semibold text-[var(--navy)]">
                                 {transaction.description || transaction.category}
-                             </h4>
-                          </div>
-                          <span className={`text-sm font-bold ${transaction.type === 'income' ? 'text-[var(--success-600)]' : 'text-[var(--text-primary)]'}`}>
-                             {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toFixed(0)}
-                          </span>
-                       </div>
-                       
-                       <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                             <span className="text-[10px] font-semibold bg-[var(--bg-tertiary)] px-2 py-0.5 rounded text-[var(--text-secondary)] uppercase tracking-wider">
-                                {transaction.frequency}
                              </span>
-                             {transaction.paymentMethod === 'online' ? (
-                                <CreditCard className="w-3 h-3 text-[var(--text-tertiary)]" />
-                             ) : (
-                                <Wallet className="w-3 h-3 text-[var(--text-tertiary)]" />
-                             )}
+                             <span className="method-pill text-[8px] py-0.5 px-1.5">{transaction.frequency}</span>
                           </div>
+                          <div className="text-[10px] text-[var(--slate-light)] uppercase tracking-wider font-mono mt-0.5">
+                             {transaction.category} • {transaction.paymentMethod}
+                          </div>
+                       </div>
+
+                       <div className="flex items-center gap-3">
+                          <span className={`font-mono font-semibold tabular-nums ${transaction.type === 'income' ? 'text-[var(--emerald)]' : 'text-[var(--rose)]'}`}>
+                             {transaction.type === 'income' ? '+' : '−'}₹{transaction.amount.toFixed(2)}
+                          </span>
                           
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1">
                              <button
                                 onClick={() => executeNow(transaction)}
-                                className="p-1.5 rounded-lg text-[var(--primary-600)] hover:bg-white hover:shadow-sm"
+                                className="btn-statement p-1 hover:border-[var(--emerald)] hover:text-[var(--emerald)]"
                                 title="Run Now"
                              >
-                                <Play className="w-3.5 h-3.5" />
+                                <Play className="w-3 h-3" />
                              </button>
                              <button
                                 onClick={() => deleteRecurring(transaction.id)}
-                                className="p-1.5 rounded-lg text-[var(--danger-600)] hover:bg-white hover:shadow-sm"
+                                className="btn-statement p-1 hover:border-[var(--rose)] hover:text-[var(--rose)]"
                                 title="Delete"
                              >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3 h-3" />
                              </button>
                           </div>
                        </div>

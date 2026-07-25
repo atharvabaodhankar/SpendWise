@@ -222,7 +222,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
                           <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
                              affectCurrentBalance ? 'bg-amber-600 border-amber-600' : 'border-amber-400 bg-white'
                           }`}>
-                             {affectCurrentBalance && <span className="text-white text-xs">✓</span>}
+                             {affectCurrentBalance && <Check className="w-3.5 h-3.5 text-white" />}
                           </div>
                           <input 
                              type="checkbox" 
