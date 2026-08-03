@@ -121,7 +121,7 @@ export default function Home() {
             </h1>
             
             <p className="text-base text-[var(--slate)] mb-8 leading-relaxed">
-              Track daily outlays, split bills with friends, and monitor your monthly budget ruler with a clean, high-precision passbook layout.
+              Track daily outlays, split bills with friends, and monitor your monthly budget ruler with a clean, high-precision expense tracker layout.
             </p>
             
             <div className="flex flex-wrap items-center gap-4">
@@ -187,7 +187,7 @@ export default function Home() {
             Empowering Features for Modern Finances
           </h2>
           <p className="text-sm text-[var(--slate)] max-w-xl mx-auto">
-            Built with precision and care, SpendWise provides passbook rulers, debt splitting, and AI intelligence.
+            Built with precision and care, SpendWise provides expense tracker tools, debt splitting, and AI intelligence.
           </p>
         </div>
 

@@ -72,7 +72,7 @@ export default function InitialBalanceSetup({ onComplete }) {
             Welcome to SpendWise
           </h1>
           <p className="text-xs text-[var(--slate)] mt-1">
-            Set up your initial passbook balances to begin statement tracking
+            Set up your initial account balances to begin expense tracking
           </p>
         </div>
 

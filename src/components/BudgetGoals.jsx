@@ -154,7 +154,7 @@ export default function BudgetGoals() {
               />
             </div>
             <p className="text-xs text-[var(--slate-light)] mt-2">
-              Set a monthly limit to track spending health on your passbook.
+              Set a monthly limit to track spending health on your dashboard.
             </p>
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function BudgetGoals() {
             <PieChart className="w-6 h-6 text-[var(--slate-light)]" />
           </div>
           <h4 className="text-sm font-semibold text-[var(--navy)] mb-1">No Budget Goal Set</h4>
-          <p className="text-xs text-[var(--slate-light)] mb-4">Set a monthly limit to activate passbook tracking.</p>
+          <p className="text-xs text-[var(--slate-light)] mb-4">Set a monthly limit to activate budget tracking.</p>
           <button
             onClick={() => setIsEditing(true)}
             className="btn-statement text-[10px]"

@@ -73,10 +73,11 @@ export default function TransactionList({ transactions, onDelete }) {
             {/* Delete Trigger */}
             <button
               onClick={() => onDelete(transaction)}
-              className="p-1 rounded text-[var(--slate-light)] hover:text-[var(--rose)] opacity-0 group-hover:opacity-100 transition-opacity"
+              className="p-1.5 rounded-md text-[var(--slate-light)] hover:text-[var(--rose)] hover:bg-[var(--rose-faint)] sm:opacity-0 sm:group-hover:opacity-100 opacity-100 transition-all flex-shrink-0"
               title="Delete record"
+              aria-label="Delete transaction"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
         );
