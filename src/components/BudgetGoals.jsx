@@ -72,7 +72,9 @@ export default function BudgetGoals() {
     }
   };
 
-  const progressPercentage = budget ? (currentMonthExpenses / budget.monthlyLimit) * 100 : 0;
+  const progressPercentage = budget && budget.monthlyLimit > 0
+    ? (currentMonthExpenses / budget.monthlyLimit) * 100
+    : 0;
   const isOverBudget = progressPercentage > 100;
   const remaining = budget ? budget.monthlyLimit - currentMonthExpenses : 0;
 
@@ -205,10 +207,10 @@ export default function BudgetGoals() {
           {/* Usage % Readout */}
           <div className="text-center pt-6 mt-4 border-t border-[var(--hairline)]">
             <div className="font-mono text-4xl font-semibold tracking-tight text-[var(--navy)] tabular-nums">
-              {Math.round(progressPercentage)}%
+              {budget.monthlyLimit > 0 ? `${Math.round(progressPercentage)}%` : "—"}
             </div>
             <div className="text-[10px] tracking-[2px] uppercase text-[var(--slate-light)] font-semibold mt-1">
-              Of limit used
+              {budget.monthlyLimit > 0 ? "Of limit used" : "No limit set"}
             </div>
           </div>
         </div>
