@@ -310,4 +310,54 @@
   background: var(--slate-light);
 }
 
+/* Glass card (legacy alias → statement-card) */
+.glass-card {
+  background: var(--white);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: var(--shadow-statement);
+}
+
+/* Mobile-specific responsive tweaks */
+@media (max-width: 640px) {
+  .statement-card,
+  .passbook-card,
+  .glass-card {
+    padding: 20px;
+    border-radius: 10px;
+  }
+
+  .btn-statement,
+  .btn-secondary,
+  .btn-statement-primary,
+  .btn-primary {
+    padding: 10px 16px;
+    font-size: 10px;
+  }
+
+  .stamp-pill {
+    font-size: 9px;
+    padding: 6px 12px;
+    letter-spacing: 1.5px;
+  }
+
+  .ledger-row {
+    padding: 12px 0;
+    gap: 12px;
+  }
+}
+
+/* Safe area padding for mobile chat */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Smooth bounce animation for typing dots */
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+}
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import SpendWiseLogo from '../components/SpendWiseLogo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -40,10 +41,8 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] px-6 py-12">
       <div className="w-full max-w-md statement-card p-8 shadow-xl">
-        <Link to="/" className="flex items-center gap-3 mb-8">
-          <div className="w-8 h-8 bg-[var(--navy)] rounded-md flex items-center justify-center font-mono text-sm font-medium text-white shadow-md">
-            S
-          </div>
+        <Link to="/" className="flex items-center gap-2.5 mb-8">
+          <SpendWiseLogo size={32} />
           <span className="text-base font-semibold tracking-wider text-[var(--navy)] uppercase">SpendWise</span>
         </Link>
         

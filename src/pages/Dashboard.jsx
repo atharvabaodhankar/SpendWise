@@ -10,7 +10,8 @@ import {
   PlusCircle, TrendingUp, TrendingDown, BarChart3,
   Settings, LogOut, Wallet, CreditCard, Users,
   Sun, Moon, Download, ChevronRight, Zap,
-  ArrowUpRight, ArrowDownLeft, Activity
+  ArrowUpRight, ArrowDownLeft, Activity,
+  Menu, X
 } from "lucide-react";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
@@ -25,6 +26,7 @@ import { exportToPDF, exportToExcel } from "../utils/exportUtils";
 import SettingsModal from "../components/SettingsModal";
 import FriendsManagerModal from "../components/friends/FriendsManagerModal";
 import AiChatbot from "../components/AiChatbot";
+import SpendWiseLogo from "../components/SpendWiseLogo";
 
 export default function Dashboard() {
   const { currentUser, logout } = useAuth();
@@ -39,6 +41,7 @@ export default function Dashboard() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [preferences, setPreferences] = useState({ showBalances: true });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
 
@@ -51,6 +54,16 @@ export default function Dashboard() {
       localStorage.setItem("theme", "light");
     }
   }, [darkMode]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -209,14 +222,12 @@ export default function Dashboard() {
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
 
           {/* Brand */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-8 h-8 bg-[var(--navy)] rounded-lg flex items-center justify-center shadow-sm">
-              <span className="font-mono text-sm font-bold text-white">S</span>
-            </div>
+          <div className="flex items-center gap-2.5 flex-shrink-0">
+            <SpendWiseLogo size={32} />
             <span className="font-semibold text-[var(--navy)] tracking-tight text-base hidden sm:block">SpendWise</span>
           </div>
 
-          {/* Nav links */}
+          {/* Nav links — desktop */}
           <div className="hidden md:flex items-center gap-1">
             <span className="px-3 py-1.5 rounded-md text-xs font-semibold text-[var(--navy)] bg-[var(--slate-faint)]">Dashboard</span>
             <a href="/analytics" className="px-3 py-1.5 rounded-md text-xs font-medium text-[var(--slate)] hover:text-[var(--navy)] hover:bg-[var(--canvas)] transition-all flex items-center gap-1.5">
@@ -245,21 +256,97 @@ export default function Dashboard() {
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--hairline)] bg-[var(--white)] text-xs font-medium text-[var(--slate)] hover:border-[var(--rose)] hover:text-[var(--rose)] transition-all">
               <LogOut className="w-3.5 h-3.5" /> Logout
             </button>
-            {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-[var(--navy)] flex items-center justify-center flex-shrink-0">
+
+            {/* Avatar — desktop */}
+            <div className="hidden sm:flex w-8 h-8 rounded-full bg-[var(--navy)] items-center justify-center flex-shrink-0">
               <span className="text-[10px] font-bold text-white font-mono">{initials}</span>
             </div>
+
+            {/* Hamburger — mobile */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="sm:hidden w-9 h-9 rounded-lg border border-[var(--hairline)] bg-[var(--white)] flex items-center justify-center hover:border-[var(--slate-light)] transition-all"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5 text-[var(--slate)]" /> : <Menu className="w-5 h-5 text-[var(--slate)]" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile dropdown menu */}
+        <div
+          className={`sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+            mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="px-4 pb-4 pt-2 space-y-1 border-t border-[var(--hairline)] bg-[var(--white)]">
+            {/* User info */}
+            <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-lg bg-[var(--canvas)]">
+              <div className="w-9 h-9 rounded-full bg-[var(--navy)] flex items-center justify-center flex-shrink-0">
+                <span className="text-[11px] font-bold text-white font-mono">{initials}</span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-[var(--navy)]">{username}</div>
+                <div className="text-[10px] text-[var(--slate-light)] font-mono">{currentUser?.email}</div>
+              </div>
+            </div>
+
+            {/* Nav links */}
+            <div className="px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--navy)] bg-[var(--slate-faint)]">
+              Dashboard
+            </div>
+            <a href="/analytics"
+              className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)] transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <BarChart3 className="w-4 h-4" /> Analytics
+            </a>
+
+            {/* Divider */}
+            <div className="border-t border-[var(--hairline)] my-2" />
+
+            {/* Action buttons */}
+            <button
+              onClick={() => { setMobileMenuOpen(false); setShowFriendsModal(true); }}
+              className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)] transition-all text-left"
+            >
+              <Users className="w-4 h-4" /> Friends & Splits
+            </button>
+            <button
+              onClick={() => { setMobileMenuOpen(false); setShowSettingsModal(true); }}
+              className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)] transition-all text-left"
+            >
+              <Settings className="w-4 h-4" /> Settings
+            </button>
+
+            {/* Divider */}
+            <div className="border-t border-[var(--hairline)] my-2" />
+
+            <button
+              onClick={() => { setMobileMenuOpen(false); logout(); }}
+              className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--rose)] hover:bg-rose-50 transition-all text-left"
+            >
+              <LogOut className="w-4 h-4" /> Logout
+            </button>
           </div>
         </div>
       </nav>
 
+      {/* Mobile menu backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm sm:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* ── MAIN ── */}
-      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 pb-28 space-y-8">
+      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-28 space-y-6 sm:space-y-8">
 
         {/* Greeting */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-[var(--navy)] tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-semibold text-[var(--navy)] tracking-tight">
               Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, {username.split(" ")[0]}
             </h1>
             <p className="text-sm text-[var(--slate-light)] mt-0.5">
@@ -281,11 +368,11 @@ export default function Dashboard() {
 
         {/* ── WALLET CARDS ── */}
         {preferences.showBalances && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
 
             {/* Total Balance */}
             <button onClick={() => setShowBalanceManager(true)}
-              className="group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--navy)]"
+              className="group relative overflow-hidden rounded-2xl p-5 sm:p-6 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--navy)]"
               style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E3A5F 100%)" }}>
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{ background: "linear-gradient(135deg, #1E293B 0%, #1E3A5F 100%)" }} />
@@ -297,7 +384,7 @@ export default function Dashboard() {
                   <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/80 transition-colors" />
                 </div>
                 <div className="text-[10px] tracking-[2px] uppercase text-white/50 mb-1 font-mono">Total balance</div>
-                <div className="font-mono text-3xl font-bold text-white tabular-nums tracking-tight">
+                <div className="font-mono text-2xl sm:text-3xl font-bold text-white tabular-nums tracking-tight">
                   ₹{totalBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </div>
               </div>
@@ -305,7 +392,7 @@ export default function Dashboard() {
 
             {/* Online */}
             <button onClick={() => setShowBalanceManager(true)}
-              className="group relative overflow-hidden rounded-2xl p-6 text-left bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+              className="group relative overflow-hidden rounded-2xl p-5 sm:p-6 text-left bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
                   <CreditCard className="w-4 h-4 text-blue-600" />
@@ -313,14 +400,14 @@ export default function Dashboard() {
                 <ChevronRight className="w-4 h-4 text-[var(--slate-faint)] group-hover:text-blue-400 transition-colors" />
               </div>
               <div className="text-[10px] tracking-[2px] uppercase text-[var(--slate-light)] mb-1 font-mono">Online</div>
-              <div className="font-mono text-2xl font-bold text-[var(--navy)] tabular-nums">
+              <div className="font-mono text-xl sm:text-2xl font-bold text-[var(--navy)] tabular-nums">
                 ₹{onlineBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </div>
             </button>
 
             {/* Cash */}
             <button onClick={() => setShowBalanceManager(true)}
-              className="group relative overflow-hidden rounded-2xl p-6 text-left bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+              className="group relative overflow-hidden rounded-2xl p-5 sm:p-6 text-left bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
                   <Wallet className="w-4 h-4 text-emerald-600" />
@@ -328,7 +415,7 @@ export default function Dashboard() {
                 <ChevronRight className="w-4 h-4 text-[var(--slate-faint)] group-hover:text-emerald-400 transition-colors" />
               </div>
               <div className="text-[10px] tracking-[2px] uppercase text-[var(--slate-light)] mb-1 font-mono">Cash</div>
-              <div className="font-mono text-2xl font-bold text-[var(--navy)] tabular-nums">
+              <div className="font-mono text-xl sm:text-2xl font-bold text-[var(--navy)] tabular-nums">
                 ₹{cashBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </div>
             </button>
@@ -336,15 +423,15 @@ export default function Dashboard() {
         )}
 
         {/* ── THIS MONTH STRIP ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {/* Month income */}
           <div className="rounded-xl bg-[var(--white)] border border-[var(--hairline)] p-4 flex items-center gap-4 shadow-[var(--shadow-statement)]">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
               <ArrowDownLeft className="w-5 h-5 text-emerald-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-widest text-[var(--slate-light)] font-mono">This month income</div>
-              <div className="font-mono text-lg font-bold text-emerald-600 tabular-nums mt-0.5">
+              <div className="font-mono text-lg font-bold text-emerald-600 tabular-nums mt-0.5 truncate">
                 +₹{thisMonthIncome.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </div>
             </div>
@@ -355,9 +442,9 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0">
               <ArrowUpRight className="w-5 h-5 text-rose-500" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-widest text-[var(--slate-light)] font-mono">This month spent</div>
-              <div className="font-mono text-lg font-bold text-[var(--rose)] tabular-nums mt-0.5">
+              <div className="font-mono text-lg font-bold text-[var(--rose)] tabular-nums mt-0.5 truncate">
                 −₹{thisMonthExpenses.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </div>
             </div>
@@ -368,9 +455,9 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-xl bg-[var(--slate-faint)] flex items-center justify-center flex-shrink-0">
               <TrendingDown className="w-5 h-5 text-[var(--slate)]" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-widest text-[var(--slate-light)] font-mono">All-time outlay</div>
-              <div className="font-mono text-lg font-bold text-[var(--navy)] tabular-nums mt-0.5">
+              <div className="font-mono text-lg font-bold text-[var(--navy)] tabular-nums mt-0.5 truncate">
                 ₹{totalExpenses.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </div>
             </div>
@@ -395,7 +482,7 @@ export default function Dashboard() {
         })()}
 
         {/* ── MAIN CONTENT GRID ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
 
           {/* LEFT: Transaction Ledger */}
           <div className="space-y-4">
@@ -411,7 +498,7 @@ export default function Dashboard() {
             </div>
 
             <div className="bg-[var(--white)] rounded-2xl border border-[var(--hairline)] shadow-[var(--shadow-statement)] overflow-hidden">
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <TransactionList transactions={transactions} onDelete={handleDeleteRequest} />
               </div>
             </div>
@@ -426,7 +513,7 @@ export default function Dashboard() {
       </main>
 
       {/* ── MOBILE FAB ── */}
-      <div className="md:hidden fixed bottom-6 right-6 z-30 flex flex-col items-center gap-3">
+      <div className="md:hidden fixed bottom-6 right-4 z-30 flex flex-col items-center gap-3">
         <button onClick={() => setShowFriendsModal(true)}
           className="w-11 h-11 bg-[var(--white)] border border-[var(--hairline)] text-[var(--slate)] rounded-full shadow-lg flex items-center justify-center hover:border-[var(--slate-light)] transition-all">
           <Users className="w-4.5 h-4.5" style={{width:"18px",height:"18px"}} />
