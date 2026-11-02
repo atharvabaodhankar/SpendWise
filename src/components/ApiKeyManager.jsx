@@ -7,10 +7,11 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
-  Terminal,
   ShieldCheck,
   Code2,
   Cpu,
+  ExternalLink,
+  RefreshCw,
 } from 'lucide-react';
 import {
   collection,
@@ -34,6 +35,13 @@ import {
   getCurlSnippet,
 } from '../utils/apiKeyUtils';
 
+const FIRESTORE_RULE_SNIPPET = `    // API Keys collection - users can manage their own API keys
+    match /apiKeys/{keyId} {
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+    }`;
+
 export default function ApiKeyManager() {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useNotification();
@@ -43,6 +51,8 @@ export default function ApiKeyManager() {
   const [creating, setCreating] = useState(false);
   const [keyName, setKeyName] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [rulesNeeded, setRulesNeeded] = useState(false);
+  const [copiedRule, setCopiedRule] = useState(false);
 
   // Newly created key display state (shown once)
   const [newlyCreatedKey, setNewlyCreatedKey] = useState(null);
@@ -68,17 +78,27 @@ export default function ApiKeyManager() {
         (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
       );
       setKeys(items);
+      setRulesNeeded(false);
     } catch (err) {
       console.error('Error loading API keys:', err);
-      showError('Failed to load API keys.');
+      const isPermissionDenied =
+        err?.code === 'permission-denied' ||
+        String(err?.message || err).toLowerCase().includes('insufficient permissions');
+      if (isPermissionDenied) {
+        setRulesNeeded(true);
+      } else {
+        showError('Failed to load API keys.');
+      }
     } finally {
       setLoading(false);
     }
   }, [currentUser, showError]);
 
   useEffect(() => {
-    loadKeys();
-  }, [loadKeys]);
+    if (currentUser?.uid) {
+      loadKeys();
+    }
+  }, [currentUser?.uid, loadKeys]);
 
   const handleCreateKey = async (e) => {
     e.preventDefault();
@@ -116,7 +136,15 @@ export default function ApiKeyManager() {
       showSuccess('API Key created successfully!');
     } catch (err) {
       console.error('Error creating API key:', err);
-      showError('Failed to generate API key.');
+      const isPermissionDenied =
+        err?.code === 'permission-denied' ||
+        String(err?.message || err).toLowerCase().includes('insufficient permissions');
+      if (isPermissionDenied) {
+        setRulesNeeded(true);
+        showError('Firestore permission denied: Update rules in Firebase Console.');
+      } else {
+        showError('Failed to generate API key.');
+      }
     } finally {
       setCreating(false);
     }
@@ -145,6 +173,9 @@ export default function ApiKeyManager() {
     if (type === 'key') {
       setCopiedKey(true);
       setTimeout(() => setCopiedKey(false), 2000);
+    } else if (type === 'rule') {
+      setCopiedRule(true);
+      setTimeout(() => setCopiedRule(false), 2000);
     } else {
       setCopiedSnippet(true);
       setTimeout(() => setCopiedSnippet(false), 2000);
@@ -238,6 +269,63 @@ export default function ApiKeyManager() {
           Create Secret Key
         </button>
       </div>
+
+      {/* Firebase Rules Alert (if permission denied) */}
+      {rulesNeeded && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs space-y-3 animate-fade-in">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h5 className="font-semibold text-xs text-amber-800 dark:text-amber-300">
+                  Firebase Security Rule Update Needed
+                </h5>
+                <p className="text-[11px] text-amber-800/90 dark:text-amber-200/90 mt-1 leading-relaxed">
+                  Firestore blocked access to the <code>apiKeys</code> collection because the security rule hasn't been published to your Firebase Console yet.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={loadKeys}
+              className="btn-statement text-[10px] py-1 px-2.5 flex items-center gap-1 flex-shrink-0"
+              title="Retry fetching keys"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Retry
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="font-semibold text-amber-800 dark:text-amber-300">
+                Rule to paste in Firebase Console:
+              </span>
+              <button
+                onClick={() => copyToClipboard(FIRESTORE_RULE_SNIPPET, 'rule')}
+                className="flex items-center gap-1 font-semibold text-amber-900 dark:text-amber-100 hover:underline"
+              >
+                {copiedRule ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                {copiedRule ? 'Copied' : 'Copy Rule'}
+              </button>
+            </div>
+            <pre className="p-2.5 rounded-lg bg-black/10 dark:bg-black/30 border border-amber-500/20 text-[10px] font-mono overflow-x-auto leading-relaxed">
+              {FIRESTORE_RULE_SNIPPET}
+            </pre>
+          </div>
+
+          <div className="pt-1">
+            <a
+              href="https://console.firebase.google.com/project/spendwise-a875c/firestore/rules"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 hover:underline"
+            >
+              Open Firebase Console Rules
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Keys List */}
       <div>
