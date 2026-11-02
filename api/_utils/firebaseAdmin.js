@@ -1,10 +1,12 @@
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 let cachedDb = null;
 
 export function getFirebaseAdmin() {
-  if (admin.apps.length > 0) {
-    return admin;
+  const existingApps = getApps();
+  if (existingApps.length > 0) {
+    return existingApps[0];
   }
 
   // 1. Try full JSON string in FIREBASE_SERVICE_ACCOUNT
@@ -22,10 +24,9 @@ export function getFirebaseAdmin() {
       if (parsed.private_key) {
         parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
       }
-      admin.initializeApp({
-        credential: admin.credential.cert(parsed),
+      return initializeApp({
+        credential: cert(parsed),
       });
-      return admin;
     } catch (err) {
       console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT:', err);
     }
@@ -40,14 +41,13 @@ export function getFirebaseAdmin() {
 
   if (privateKey && clientEmail && projectId) {
     try {
-      admin.initializeApp({
-        credential: admin.credential.cert({
+      return initializeApp({
+        credential: cert({
           projectId,
           clientEmail,
           privateKey: privateKey.replace(/\\n/g, '\n'),
         }),
       });
-      return admin;
     } catch (err) {
       console.error('Failed to init with FIREBASE_PRIVATE_KEY:', err);
     }
@@ -56,10 +56,9 @@ export function getFirebaseAdmin() {
   // 3. Fallback: Default application credentials or project ID only
   if (projectId) {
     try {
-      admin.initializeApp({
+      return initializeApp({
         projectId,
       });
-      return admin;
     } catch (err) {
       console.error('Failed to init with default projectId:', err);
     }
@@ -73,7 +72,7 @@ export function getFirebaseAdmin() {
 export function getAdminDb() {
   if (!cachedDb) {
     const app = getFirebaseAdmin();
-    cachedDb = app.firestore();
+    cachedDb = getFirestore(app);
   }
   return cachedDb;
 }
