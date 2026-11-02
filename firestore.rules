@@ -83,6 +83,13 @@ service cloud.firestore {
         allow read, write: if false; // Only allow creation for triggers
     }
 
+    // API Keys collection - users can manage their own API keys
+    match /apiKeys/{keyId} {
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

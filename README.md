@@ -47,6 +47,13 @@ npm run dev:vercel
   2. Creditor confirms receipt → Debt settled and removed
 - **Transaction Integration**: All debts linked to original split transactions
 
+### 🤖 AI & Model Context Protocol (MCP)
+- **Official MCP Server**: Turn SpendWise into an AI-native conversational finance agent
+- **Secret API Key Management**: Generate, view, and revoke `spw_live_...` API keys with SHA-256 secure hashing
+- **AI Client Support**: 1-click config templates for Claude Desktop, Cursor, Windsurf, and Antigravity
+- **Natural Language Actions**: Log expenses, check budgets, split bills, and query debts via conversation
+- **Dual Connectivity**: Supports both remote HTTP/SSE (`/api/mcp`) on Vercel and local stdio runner (`npm run mcp`)
+
 ### 🎨 User Experience
 - Modern, premium UI with dark/light theme support
 - Glassmorphism design elements
@@ -158,6 +165,23 @@ Path: `/userPreferences/{userId}`
   dailyExpenseLimit: number (optional)
 }
 ```
+
+#### `apiKeys`
+Path: `/apiKeys/{keyId}`
+Stores hashed secret keys for MCP & API integrations.
+```javascript
+{
+  keyId: string,
+  userId: string,
+  name: string,
+  keyHash: string, // SHA-256 hash of secret key
+  prefix: string,  // Truncated preview, e.g. spw_live_a89f...8a90
+  createdAt: timestamp,
+  lastUsedAt: timestamp | null,
+  status: "active" | "revoked"
+}
+```
+**Security**: Authenticated users can only read, create, and revoke their own keys.
 
 ### Firestore Security Rules
 
@@ -345,6 +369,41 @@ node scripts/direct-test.js recipient@example.com
 3. **If owed to you**: Click "Confirm" when you receive payment
 4. Debt is removed and settled
 
+## 🤖 Model Context Protocol (MCP) & API
+
+SpendWise provides a standard Model Context Protocol (MCP) server so you can connect your expense tracker to Claude Desktop, Cursor, Antigravity, or custom AI agents.
+
+### Available MCP Tools
+
+| Tool | Parameters | Description |
+| :--- | :--- | :--- |
+| `add_transaction` | `amount`, `type`, `category`, `paymentMethod`, `description`, `date`, `affectCurrentBalance` | Log expense/income and adjust wallet balance |
+| `get_summary` | None | Real-time cash & online balance, monthly spend, budget progress |
+| `list_transactions` | `limit`, `category`, `type`, `search` | Filter recent transactions |
+| `split_expense` | `totalAmount`, `description`, `friendEmails`, `paymentMethod`, `category`, `date` | Split bill with friends & record debts |
+| `get_debts` | `filter` (`all`, `you_owe`, `owed_to_you`) | Track who owes you and who you owe |
+| `settle_debt` | `debtId`, `action` (`mark_paid`, `confirm_receipt`) | Settle debts with mutual verification |
+
+### Quick Setup with Claude Desktop
+
+1. In SpendWise, click the **Key** icon in the header (or go to **Settings** → **API Keys & MCP**).
+2. Click **Create Secret Key** and copy your `spw_live_...` key.
+3. Add to your `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "spendwise": {
+      "url": "https://your-spendwise-deployment.vercel.app/api/mcp",
+      "headers": {
+        "Authorization": "Bearer spw_live_YOUR_KEY"
+      }
+    }
+  }
+}
+```
+
+For detailed setup options (including local stdio and Cursor configuration), refer to [MCP_SETUP.md](./MCP_SETUP.md).
+
 ## 🎨 UI/UX Highlights
 
 - **Premium Design**: Glassmorphism, smooth gradients, custom CSS variables
@@ -368,6 +427,8 @@ node scripts/direct-test.js recipient@example.com
 - **Styling**: Vanilla CSS with CSS custom properties
 - **Backend**: Firebase (Firestore, Auth)
 - **Serverless**: Vercel Functions
+- **MCP Protocol**: `@modelcontextprotocol/sdk` (Model Context Protocol standard)
+- **Firebase Admin**: `firebase-admin` (Server-side admin authentication)
 - **Email**: Nodemailer + Gmail SMTP
 - **Charts**: Recharts
 - **Icons**: Lucide React

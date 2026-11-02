@@ -8,7 +8,7 @@ import {
 } from "firebase/firestore";
 import {
   PlusCircle, TrendingUp, TrendingDown, BarChart3,
-  Settings, LogOut, Wallet, CreditCard, Users,
+  Settings, LogOut, Wallet, CreditCard, Users, Key,
   Sun, Moon, Download, ChevronRight, Zap,
   ArrowUpRight, ArrowDownLeft, Activity,
   Menu, X
@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [showBalanceManager, setShowBalanceManager] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("preferences");
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [preferences, setPreferences] = useState({ showBalances: true });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -247,7 +248,12 @@ export default function Dashboard() {
               title="Friends">
               <Users className="w-4 h-4 text-[var(--slate)]" />
             </button>
-            <button onClick={() => setShowSettingsModal(true)}
+            <button onClick={() => { setSettingsTab('api'); setShowSettingsModal(true); }}
+              className="hidden sm:flex w-8 h-8 rounded-lg border border-[var(--hairline)] bg-[var(--white)] items-center justify-center hover:border-[var(--slate-light)] transition-all"
+              title="API & MCP Keys">
+              <Key className="w-4 h-4 text-[var(--slate)]" />
+            </button>
+            <button onClick={() => { setSettingsTab('preferences'); setShowSettingsModal(true); }}
               className="hidden sm:flex w-8 h-8 rounded-lg border border-[var(--hairline)] bg-[var(--white)] items-center justify-center hover:border-[var(--slate-light)] transition-all"
               title="Settings">
               <Settings className="w-4 h-4 text-[var(--slate)]" />
@@ -313,7 +319,13 @@ export default function Dashboard() {
               <Users className="w-4 h-4" /> Friends & Splits
             </button>
             <button
-              onClick={() => { setMobileMenuOpen(false); setShowSettingsModal(true); }}
+              onClick={() => { setMobileMenuOpen(false); setSettingsTab('api'); setShowSettingsModal(true); }}
+              className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)] transition-all text-left"
+            >
+              <Key className="w-4 h-4" /> API & MCP Keys
+            </button>
+            <button
+              onClick={() => { setMobileMenuOpen(false); setSettingsTab('preferences'); setShowSettingsModal(true); }}
               className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)] transition-all text-left"
             >
               <Settings className="w-4 h-4" /> Settings
@@ -546,6 +558,7 @@ export default function Dashboard() {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         onUpdatePreferences={setPreferences}
+        initialTab={settingsTab}
       />
 
       <FriendsManagerModal
