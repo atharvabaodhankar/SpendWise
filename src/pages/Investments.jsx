@@ -49,6 +49,50 @@ import SpendWiseLogo from "../components/SpendWiseLogo";
 import SettingsModal from "../components/SettingsModal";
 import FriendsManagerModal from "../components/friends/FriendsManagerModal";
 
+const MONTH_MAP = {
+  jan: 1, january: 1,
+  feb: 2, february: 2,
+  mar: 3, march: 3,
+  apr: 4, april: 4,
+  may: 5,
+  jun: 6, june: 6,
+  jul: 7, july: 7,
+  aug: 8, august: 8,
+  sep: 9, sept: 9, september: 9,
+  oct: 10, october: 10,
+  nov: 11, november: 11,
+  dec: 12, december: 12,
+};
+
+function getSalaryTimestamp(sal) {
+  const str = (sal.salaryMonth || "").toLowerCase();
+  let monthNum = 0;
+  for (const [m, num] of Object.entries(MONTH_MAP)) {
+    if (str.includes(m)) {
+      monthNum = num;
+      break;
+    }
+  }
+
+  const yearMatch = str.match(/\b(20\d\d)\b/);
+  let year = yearMatch ? parseInt(yearMatch[1], 10) : null;
+  if (!year && sal.receivedDate) {
+    const recYear = new Date(sal.receivedDate).getFullYear();
+    if (!isNaN(recYear)) year = recYear;
+  }
+  if (!year) year = new Date().getFullYear();
+
+  if (monthNum > 0) {
+    return new Date(year, monthNum - 1, 1).getTime();
+  }
+
+  if (sal.receivedDate) {
+    const t = new Date(sal.receivedDate).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return 0;
+}
+
 const ASSET_TYPES = [
   { id: "gold", label: "Gold", icon: Coins, color: "#F59E0B" },
   { id: "silver", label: "Silver", icon: Gem, color: "#94A3B8" },
@@ -77,6 +121,7 @@ export default function Investments() {
   const [loadingSalaries, setLoadingSalaries] = useState(true);
   const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [submittingSalary, setSubmittingSalary] = useState(false);
+  const [salarySortOrder, setSalarySortOrder] = useState("desc");
 
   // Nav modals
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -160,7 +205,7 @@ export default function Investments() {
         snapshot.forEach((doc) => {
           items.push({ id: doc.id, ...doc.data() });
         });
-        items.sort((a, b) => new Date(b.receivedDate || 0) - new Date(a.receivedDate || 0));
+        items.sort((a, b) => getSalaryTimestamp(b) - getSalaryTimestamp(a));
         setSalaries(items);
         setLoadingSalaries(false);
       },
@@ -191,6 +236,11 @@ export default function Investments() {
       : investments.filter((inv) => inv.assetType === filterType);
 
   // Aggregate metrics - Salaries
+  const sortedSalaries = [...salaries].sort((a, b) => {
+    const diff = getSalaryTimestamp(b) - getSalaryTimestamp(a);
+    return salarySortOrder === "asc" ? -diff : diff;
+  });
+
   const totalSalariesReceived = salaries
     .filter((s) => s.status === "received")
     .reduce((sum, s) => sum + Number(s.amount || 0), 0);
@@ -769,9 +819,33 @@ export default function Investments() {
                 <h2 className="text-sm font-semibold text-[var(--navy)]">
                   Disbursement History & Notes
                 </h2>
-                <span className="text-xs font-mono text-[var(--slate-light)]">
-                  {salaries.length} credits
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex p-0.5 rounded-lg bg-[var(--slate-faint)] border border-[var(--hairline)] text-[10px] font-mono">
+                    <button
+                      onClick={() => setSalarySortOrder("desc")}
+                      className={`px-2 py-0.5 rounded transition-all ${
+                        salarySortOrder === "desc"
+                          ? "bg-[var(--white)] text-[var(--navy)] font-semibold shadow-xs"
+                          : "text-[var(--slate-light)] hover:text-[var(--navy)]"
+                      }`}
+                    >
+                      Newest First
+                    </button>
+                    <button
+                      onClick={() => setSalarySortOrder("asc")}
+                      className={`px-2 py-0.5 rounded transition-all ${
+                        salarySortOrder === "asc"
+                          ? "bg-[var(--white)] text-[var(--navy)] font-semibold shadow-xs"
+                          : "text-[var(--slate-light)] hover:text-[var(--navy)]"
+                      }`}
+                    >
+                      Oldest First
+                    </button>
+                  </div>
+                  <span className="text-xs font-mono text-[var(--slate-light)]">
+                    {salaries.length} credits
+                  </span>
+                </div>
               </div>
 
               {loadingSalaries ? (
@@ -788,7 +862,7 @@ export default function Investments() {
                 </div>
               ) : (
                 <div className="relative pl-6 sm:pl-8 py-6 pr-4 sm:pr-6 space-y-6 before:absolute before:left-8 sm:before:left-10 before:top-8 before:bottom-8 before:w-0.5 before:bg-[var(--slate-faint)]">
-                  {salaries.map((sal) => (
+                  {sortedSalaries.map((sal) => (
                     <div key={sal.id} className="relative flex items-start gap-4 sm:gap-6 group">
                       {/* Timeline dot */}
                       <div className="w-4 h-4 rounded-full bg-[var(--white)] border-2 border-emerald-500 flex-shrink-0 mt-1 z-10 shadow-sm" />
