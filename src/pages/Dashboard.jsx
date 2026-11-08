@@ -11,7 +11,7 @@ import {
   Settings, LogOut, Wallet, CreditCard, Users, Key,
   Sun, Moon, Download, ChevronRight, Zap,
   ArrowUpRight, ArrowDownLeft, Activity,
-  Menu, X
+  Menu, X, Coins
 } from "lucide-react";
 import TransactionForm from "../components/TransactionForm";
 import TransactionList from "../components/TransactionList";
@@ -231,6 +231,7 @@ export default function Dashboard() {
           {/* Nav links — desktop */}
           <div className="hidden md:flex items-center gap-1">
             <span className="px-3 py-1.5 rounded-md text-xs font-semibold text-[var(--navy)] bg-[var(--slate-faint)]">Dashboard</span>
+            <a href="/investments" className="px-3 py-1.5 rounded-md text-xs font-medium text-[var(--slate)] hover:text-[var(--navy)] hover:bg-[var(--canvas)] transition-all flex items-center gap-1.5"><Coins className="w-3.5 h-3.5 text-amber-500" /> Investments</a>
             <a href="/analytics" className="px-3 py-1.5 rounded-md text-xs font-medium text-[var(--slate)] hover:text-[var(--navy)] hover:bg-[var(--canvas)] transition-all flex items-center gap-1.5">
               <BarChart3 className="w-3.5 h-3.5" /> Analytics
             </a>
@@ -301,6 +302,7 @@ export default function Dashboard() {
             <div className="px-3 py-2.5 rounded-lg text-sm font-semibold text-[var(--navy)] bg-[var(--slate-faint)]">
               Dashboard
             </div>
+            <a href="/investments" className="px-3 py-1.5 rounded-md text-xs font-medium text-[var(--slate)] hover:text-[var(--navy)] hover:bg-[var(--canvas)] transition-all flex items-center gap-1.5"><Coins className="w-3.5 h-3.5 text-amber-500" /> Investments</a>
             <a href="/analytics"
               className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)] transition-all"
               onClick={() => setMobileMenuOpen(false)}
@@ -503,7 +505,8 @@ export default function Dashboard() {
                 <h2 className="text-sm font-semibold text-[var(--navy)] uppercase tracking-wider">Recent transactions</h2>
                 <p className="text-[11px] text-[var(--slate-light)] mt-0.5 font-mono">{transactions.length} total records</p>
               </div>
-              <a href="/analytics"
+              <a href="/investments" className="px-3 py-1.5 rounded-md text-xs font-medium text-[var(--slate)] hover:text-[var(--navy)] hover:bg-[var(--canvas)] transition-all flex items-center gap-1.5"><Coins className="w-3.5 h-3.5 text-amber-500" /> Investments</a>
+            <a href="/analytics"
                 className="text-[11px] font-medium text-[var(--slate)] hover:text-[var(--navy)] flex items-center gap-1 transition-colors">
                 View analytics <ChevronRight className="w-3.5 h-3.5" />
               </a>

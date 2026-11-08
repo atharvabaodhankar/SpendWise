@@ -31,6 +31,10 @@ function sortByDateDescending(left, right) {
   return new Date(right.date ?? 0).getTime() - new Date(left.date ?? 0).getTime();
 }
 
+function sortInvestmentsByDateDescending(left, right) {
+  return new Date(right.purchaseDate ?? 0).getTime() - new Date(left.purchaseDate ?? 0).getTime();
+}
+
 export function formatCurrency(value) {
   return CURRENCY_FORMATTER.format(normalizeAmount(value));
 }
@@ -49,6 +53,74 @@ export function serializeTransaction(transaction) {
     isSplit: Boolean(transaction.isSplit),
     isBalanceAdjustment: Boolean(transaction.isBalanceAdjustment),
   };
+}
+
+export function serializeInvestment(investment) {
+  const investedAmount = normalizeAmount(investment.investedAmount ?? investment.amount);
+  const currentValue =
+    investment.currentValue !== undefined && investment.currentValue !== null
+      ? normalizeAmount(investment.currentValue)
+      : investedAmount;
+  const gainLoss = currentValue - investedAmount;
+  const gainLossPercentage =
+    investedAmount > 0 ? (gainLoss / investedAmount) * 100 : 0;
+
+  return {
+    id: investment.id,
+    name: investment.name || 'Investment',
+    assetType: investment.assetType || 'other',
+    provider: investment.provider || 'Direct',
+    investedAmount,
+    currentValue,
+    gainLoss,
+    gainLossPercentage: Number(gainLossPercentage.toFixed(2)),
+    formattedInvestedAmount: formatCurrency(investedAmount),
+    formattedCurrentValue: formatCurrency(currentValue),
+    formattedGainLoss: formatCurrency(gainLoss),
+    purchaseDate: normalizeDate(investment.purchaseDate || investment.date),
+    maturityDate: normalizeDate(investment.maturityDate),
+    interestRate:
+      investment.interestRate !== undefined && investment.interestRate !== null
+        ? normalizeAmount(investment.interestRate)
+        : null,
+    units:
+      investment.units !== undefined && investment.units !== null
+        ? normalizeAmount(investment.units)
+        : null,
+    notes: investment.notes || '',
+  };
+}
+
+function buildAssetTypeBreakdown(investments) {
+  return investments.reduce((accumulator, investment) => {
+    const key = investment.assetType || 'other';
+    if (!accumulator[key]) {
+      accumulator[key] = {
+        count: 0,
+        investedAmount: 0,
+        currentValue: 0,
+        gainLoss: 0,
+        gainLossPercentage: 0,
+        formattedInvestedAmount: formatCurrency(0),
+        formattedCurrentValue: formatCurrency(0),
+        formattedGainLoss: formatCurrency(0),
+      };
+    }
+
+    accumulator[key].count += 1;
+    accumulator[key].investedAmount += investment.investedAmount;
+    accumulator[key].currentValue += investment.currentValue;
+    accumulator[key].gainLoss += investment.gainLoss;
+    accumulator[key].gainLossPercentage =
+      accumulator[key].investedAmount > 0
+        ? Number(((accumulator[key].gainLoss / accumulator[key].investedAmount) * 100).toFixed(2))
+        : 0;
+    accumulator[key].formattedInvestedAmount = formatCurrency(accumulator[key].investedAmount);
+    accumulator[key].formattedCurrentValue = formatCurrency(accumulator[key].currentValue);
+    accumulator[key].formattedGainLoss = formatCurrency(accumulator[key].gainLoss);
+
+    return accumulator;
+  }, {});
 }
 
 function buildCategoryTotals(transactions) {
@@ -91,12 +163,17 @@ export function buildAssistantContext({
   transactions = [],
   budget = null,
   balances = null,
+  investments = [],
   now = new Date(),
 }) {
   const normalizedTransactions = transactions
     .map(serializeTransaction)
     .filter((transaction) => transaction.date)
     .sort(sortByDateDescending);
+
+  const normalizedInvestments = investments
+    .map(serializeInvestment)
+    .sort(sortInvestmentsByDateDescending);
 
   const currentMonthKey = now.toISOString().slice(0, 7);
   const expenseTransactions = normalizedTransactions.filter((transaction) => transaction.type === 'expense');
@@ -113,6 +190,19 @@ export function buildAssistantContext({
     0,
   );
 
+  const totalInvested = normalizedInvestments.reduce(
+    (sum, inv) => sum + inv.investedAmount,
+    0,
+  );
+  const totalPortfolioValue = normalizedInvestments.reduce(
+    (sum, inv) => sum + inv.currentValue,
+    0,
+  );
+  const totalGainLoss = totalPortfolioValue - totalInvested;
+  const totalGainLossPercentage =
+    totalInvested > 0 ? Number(((totalGainLoss / totalInvested) * 100).toFixed(2)) : 0;
+
+  const breakdownByAssetType = buildAssetTypeBreakdown(normalizedInvestments);
   const categoryTotals = buildCategoryTotals(expenseTransactions);
   const currentMonthCategoryTotals = buildCategoryTotals(currentMonthExpenses);
   const paymentMethodTotals = buildPaymentMethodTotals(expenseTransactions);
@@ -147,6 +237,17 @@ export function buildAssistantContext({
           ),
         }
       : null,
+    investments: {
+      count: normalizedInvestments.length,
+      totalPortfolioValue,
+      totalInvested,
+      totalGainLoss,
+      totalGainLossPercentage,
+      formattedTotalPortfolioValue: formatCurrency(totalPortfolioValue),
+      formattedTotalInvested: formatCurrency(totalInvested),
+      formattedTotalGainLoss: formatCurrency(totalGainLoss),
+      breakdownByAssetType,
+    },
     metrics: {
       transactionCount: normalizedTransactions.length,
       expenseCount: expenseTransactions.length,
@@ -154,6 +255,14 @@ export function buildAssistantContext({
       currentMonthTotal,
       formattedTotalExpenses: formatCurrency(totalExpenses),
       formattedCurrentMonthTotal: formatCurrency(currentMonthTotal),
+      investmentCount: normalizedInvestments.length,
+      totalPortfolioValue,
+      totalInvested,
+      totalGainLoss,
+      totalGainLossPercentage,
+      formattedTotalPortfolioValue: formatCurrency(totalPortfolioValue),
+      formattedTotalInvested: formatCurrency(totalInvested),
+      formattedTotalGainLoss: formatCurrency(totalGainLoss),
     },
     summaries: {
       topCategories,
@@ -161,15 +270,38 @@ export function buildAssistantContext({
       currentMonthCategoryTotals,
       paymentMethodTotals,
       monthlyTotals,
+      breakdownByAssetType,
+      assetTypeBreakdown: breakdownByAssetType,
+      investmentSummary: {
+        totalPortfolioValue,
+        totalInvested,
+        totalGainLoss,
+        totalGainLossPercentage,
+        formattedTotalPortfolioValue: formatCurrency(totalPortfolioValue),
+        formattedTotalInvested: formatCurrency(totalInvested),
+        formattedTotalGainLoss: formatCurrency(totalGainLoss),
+        breakdownByAssetType,
+      },
     },
-    recentTransactions: normalizedTransactions.slice(0, 30),
-    transactionReference: normalizedTransactions.slice(0, 50).map((transaction) => ({
+    recentTransactions: normalizedTransactions.slice(0, 15),
+    transactionReference: normalizedTransactions.slice(0, 20).map((transaction) => ({
       id: transaction.id,
       label: transaction.description || transaction.category,
       date: transaction.date,
       amount: transaction.amount,
       paymentMethod: transaction.paymentMethod,
       type: transaction.type,
+    })),
+    recentInvestments: normalizedInvestments.slice(0, 10),
+    investmentReference: normalizedInvestments.slice(0, 15).map((inv) => ({
+      id: inv.id,
+      name: inv.name,
+      assetType: inv.assetType,
+      provider: inv.provider,
+      investedAmount: inv.investedAmount,
+      currentValue: inv.currentValue,
+      gainLoss: inv.gainLoss,
+      purchaseDate: inv.purchaseDate,
     })),
   };
 }

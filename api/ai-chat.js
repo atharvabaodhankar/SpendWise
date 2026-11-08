@@ -1,10 +1,10 @@
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const DEFAULT_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+const DEFAULT_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 const FALLBACK_MODELS = [
   DEFAULT_MODEL,
-  'llama-3.1-8b-instant',
-  'qwen-2.5-72b-instruct',
-  'llama3-70b-8192',
+  'openai/gpt-oss-20b',
+  'openai/gpt-oss-120b',
+  'qwen/qwen3.8-27b',
 ];
 let keyCursor = 0;
 
@@ -41,9 +41,14 @@ function extractJson(rawText) {
 
 function buildSystemPrompt() {
   return `
-You are SpendWise AI, a warm finance copilot inside a personal expense tracker.
-You must answer using ONLY the provided context from Firebase-backed records.
-Be friendly, concise, analytical, and practical.
+You are SpendWise AI, an exclusive personal finance copilot, expense manager, and investment tracker inside the SpendWise app.
+
+SCOPE RESTRICTION:
+- You ONLY handle personal finances, expenses, incomes, budgets, balances, investments/portfolio, and SpendWise features.
+- You must strictly REFUSE to answer off-topic queries, including general knowledge, math puzzles (e.g. "what is 2 + 2"), writing code / functions (e.g. for-loops), philosophy, trivia, homework, or general assistant tasks.
+- When an off-topic request is received, politely state that you are SpendWise AI and can only assist with personal finances, expenses, budgets, balances, investments, and transactions in SpendWise. Set "actions", "highlights", and "followUps" to empty or relevant finance suggestions.
+- You must answer finance queries using ONLY the provided context from Firebase-backed records.
+- Be friendly, concise, analytical, and practical.
 
 Return strict JSON with this shape:
 {
@@ -52,7 +57,7 @@ Return strict JSON with this shape:
   "followUps": ["string"],
   "actions": [
     {
-      "type": "add_transaction" | "update_transaction" | "delete_transaction" | "set_budget" | "adjust_balance",
+      "type": "add_transaction" | "update_transaction" | "delete_transaction" | "set_budget" | "adjust_balance" | "add_investment" | "update_investment" | "delete_investment",
       "transactionId": "string when needed",
       "transaction": {
         "type": "expense or income",
@@ -62,6 +67,21 @@ Return strict JSON with this shape:
         "date": "YYYY-MM-DD",
         "paymentMethod": "online or cash or owed",
         "affectCurrentBalance": true
+      },
+      "investmentId": "string when needed for update_investment or delete_investment",
+      "assetType": "gold" | "silver" | "mutual_fund" | "fd" | "stocks" | "crypto" | "other",
+      "name": "string",
+      "provider": "string (e.g. PhonePe, Groww, Zerodha, SBI, Direct)",
+      "investedAmount": 0,
+      "currentValue": 0,
+      "purchaseDate": "YYYY-MM-DD",
+      "investment": {
+        "assetType": "gold" | "silver" | "mutual_fund" | "fd" | "stocks" | "crypto" | "other",
+        "name": "string",
+        "provider": "string",
+        "investedAmount": 0,
+        "currentValue": 0,
+        "purchaseDate": "YYYY-MM-DD"
       },
       "updates": {},
       "monthlyLimit": 0,
@@ -75,10 +95,14 @@ Return strict JSON with this shape:
 Rules:
 - Never invent data. If context is missing, say that clearly.
 - For analytics questions, include concrete numbers in INR and mention whether you used all-time or current-month data.
+- For investment questions, report on portfolio value, total invested, net gain/loss, assetType breakdown, or recentInvestments.
 - Use descriptions and categories semantically. For example, "non veg" or "sugar cane juice" may come from free-text descriptions, not only categories.
-- Only create update/delete actions when the target record is unambiguous from the provided transactionReference or recentTransactions.
+- Only create update/delete actions when the target record is unambiguous from the provided transactionReference/recentTransactions or investmentReference/recentInvestments.
 - If the user asks to delete or edit a record but the match is ambiguous, ask a follow-up question instead of taking action.
 - For add_transaction, only create one when the user clearly specified amount, category or description, date if relevant, and payment method if relevant. Otherwise ask a follow-up.
+- For add_investment, recognize parameters: assetType (gold, silver, mutual_fund, fd, stocks, crypto, other), name, provider (e.g. PhonePe, Zerodha, Groww, SBI, Direct), investedAmount, currentValue (defaults to investedAmount if not provided), purchaseDate (defaults to today's date if not provided). Provide them in investment object or top-level action fields.
+- For update_investment, include investmentId (from investmentReference/recentInvestments) and updated parameters (assetType, name, provider, investedAmount, currentValue, purchaseDate).
+- For delete_investment, include investmentId (from investmentReference/recentInvestments).
 - Keep highlights and followUps short. Use at most 3 each.
 - reply must be plain text, not markdown code fences.
 `.trim();
@@ -137,7 +161,7 @@ async function requestAssistantCompletion(messages) {
         if (error.status === 400 || error.status === 404) {
           break;
         }
-        if (![401, 403, 429].includes(error.status)) {
+        if (![401, 403, 413, 429].includes(error.status)) {
           break;
         }
       }

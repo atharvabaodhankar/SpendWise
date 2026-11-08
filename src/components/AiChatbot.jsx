@@ -19,12 +19,17 @@ import {
   setBudgetFromAssistant,
   updateTransactionFromAssistant,
 } from '../utils/transactionMutations';
+import {
+  addInvestment,
+  updateInvestment,
+  deleteInvestment,
+} from '../utils/investmentService';
 import SpendWiseLogo from './SpendWiseLogo';
 
 const DEFAULT_SUGGESTIONS = [
   'Which food am I eating overly this month?',
+  'What is my investment portfolio value?',
   'How much did I spend on sugar cane juice?',
-  'What is my non veg budget this month?',
 ];
 
 /* ── Simple Markdown renderer (bold, italic, lists, inline code) ── */
@@ -149,9 +154,9 @@ function createWelcomeMessage(mode) {
     role: 'assistant',
     content:
       mode === 'embedded'
-        ? 'Ask me anything about your SpendWise data. I can analyze your spending and also add, edit, or delete records for you.'
-        : 'I am connected to your SpendWise data and ready to help with insights, budgets, and record updates.',
-    highlights: ['Live Firebase context', 'Budget aware', 'Can edit records'],
+        ? 'Ask me anything about your SpendWise data. I can analyze your spending, portfolio, and also add, edit, or delete records for you.'
+        : 'I am connected to your SpendWise data and ready to help with insights, budgets, investments, and record updates.',
+    highlights: ['Live Firebase context', 'Budget aware', 'Investments tracking', 'Can edit records'],
     followUps: DEFAULT_SUGGESTIONS,
     timestamp: Date.now(),
   };
@@ -178,6 +183,7 @@ export default function AiChatbot({
   const [transactions, setTransactions] = useState([]);
   const [budget, setBudget] = useState(null);
   const [balances, setBalances] = useState(null);
+  const [investments, setInvestments] = useState([]);
   const [loadingContext, setLoadingContext] = useState(true);
   const [isOpen, setIsOpen] = useState(mode === 'embedded');
   const [input, setInput] = useState('');
@@ -228,17 +234,100 @@ export default function AiChatbot({
       setBalances(s.exists() ? s.data() : null),
     );
 
-    return () => { unsubscribeTransactions(); unsubscribeBudget(); unsubscribeBalances(); };
+    const unsubscribeInvestments = onSnapshot(
+      query(collection(db, 'investments'), where('userId', '==', currentUser.uid)),
+      (snapshot) => {
+        setInvestments(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (error) => {
+        console.warn('Failed to subscribe to investments:', error);
+      },
+    );
+
+    return () => {
+      unsubscribeTransactions();
+      unsubscribeBudget();
+      unsubscribeBalances();
+      unsubscribeInvestments();
+    };
   }, [currentUser]);
 
   async function runAction(action) {
     switch (action.type) {
-      case 'add_transaction': return createTransactionFromAssistant(currentUser.uid, action.transaction || {});
-      case 'update_transaction': return updateTransactionFromAssistant(currentUser.uid, action.transactionId, action.updates || {});
-      case 'delete_transaction': return deleteTransactionFromAssistant(currentUser.uid, action.transactionId);
-      case 'set_budget': return setBudgetFromAssistant(currentUser.uid, action.monthlyLimit);
-      case 'adjust_balance': return adjustBalanceFromAssistant(currentUser.uid, action);
-      default: throw new Error(`Unsupported action type: ${action.type}`);
+      case 'add_transaction':
+        return createTransactionFromAssistant(currentUser.uid, action.transaction || {});
+      case 'update_transaction':
+        return updateTransactionFromAssistant(currentUser.uid, action.transactionId, action.updates || {});
+      case 'delete_transaction':
+        return deleteTransactionFromAssistant(currentUser.uid, action.transactionId);
+      case 'set_budget':
+        return setBudgetFromAssistant(currentUser.uid, action.monthlyLimit);
+      case 'adjust_balance':
+        return adjustBalanceFromAssistant(currentUser.uid, action);
+      case 'add_investment': {
+        const invData = {
+          assetType: action.assetType,
+          name: action.name,
+          provider: action.provider,
+          investedAmount: action.investedAmount,
+          currentValue: action.currentValue,
+          purchaseDate: action.purchaseDate,
+          maturityDate: action.maturityDate,
+          interestRate: action.interestRate,
+          units: action.units,
+          notes: action.notes,
+          ...(action.investment || {}),
+        };
+        return addInvestment(currentUser.uid, invData);
+      }
+      case 'update_investment': {
+        let investmentId = action.investmentId || action.id;
+        if (!investmentId && (action.name || action.updates?.name)) {
+          const targetName = (action.name || action.updates?.name || '').trim().toLowerCase();
+          const match = investments.find(
+            (inv) => inv.name?.trim().toLowerCase() === targetName,
+          );
+          if (match) {
+            investmentId = match.id;
+          }
+        }
+        if (!investmentId) {
+          throw new Error('Investment ID could not be identified for update.');
+        }
+        const updates = {
+          ...(action.updates || {}),
+          ...(action.assetType !== undefined ? { assetType: action.assetType } : {}),
+          ...(action.name !== undefined ? { name: action.name } : {}),
+          ...(action.provider !== undefined ? { provider: action.provider } : {}),
+          ...(action.investedAmount !== undefined ? { investedAmount: action.investedAmount } : {}),
+          ...(action.currentValue !== undefined ? { currentValue: action.currentValue } : {}),
+          ...(action.purchaseDate !== undefined ? { purchaseDate: action.purchaseDate } : {}),
+          ...(action.maturityDate !== undefined ? { maturityDate: action.maturityDate } : {}),
+          ...(action.interestRate !== undefined ? { interestRate: action.interestRate } : {}),
+          ...(action.units !== undefined ? { units: action.units } : {}),
+          ...(action.notes !== undefined ? { notes: action.notes } : {}),
+          ...(action.investment || {}),
+        };
+        return updateInvestment(currentUser.uid, investmentId, updates);
+      }
+      case 'delete_investment': {
+        let investmentId = action.investmentId || action.id;
+        if (!investmentId && action.name) {
+          const targetName = action.name.trim().toLowerCase();
+          const match = investments.find(
+            (inv) => inv.name?.trim().toLowerCase() === targetName,
+          );
+          if (match) {
+            investmentId = match.id;
+          }
+        }
+        if (!investmentId) {
+          throw new Error('Investment ID could not be identified for deletion.');
+        }
+        return deleteInvestment(currentUser.uid, investmentId);
+      }
+      default:
+        throw new Error(`Unsupported action type: ${action.type}`);
     }
   }
 
@@ -282,7 +371,7 @@ export default function AiChatbot({
           conversation: nextMessages
             .filter((m) => m.role === 'user' || m.role === 'assistant')
             .map((m) => ({ role: m.role, content: m.content })),
-          context: buildAssistantContext({ transactions, budget, balances }),
+          context: buildAssistantContext({ transactions, budget, balances, investments }),
         }),
       });
       clearTimeout(timeoutId);

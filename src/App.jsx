@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
+import Investments from './pages/Investments';
 import './App.css';
 
 function App() {
@@ -27,8 +28,8 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route 
-                path="/analytics" 
+              <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
+              <Route path="/analytics" 
                 element={
                   <ProtectedRoute>
                     <Analytics />
