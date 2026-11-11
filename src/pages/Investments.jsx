@@ -885,7 +885,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                   onChange={(e) =>
                     setInvestmentForm((p) => ({ ...p, name: e.target.value }))
                   }
-                  className="field text-sm"
+                  className="field h-10 text-sm"
                   autoFocus
                 />
               </div>
@@ -898,7 +898,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     onChange={(e) =>
                       setInvestmentForm((p) => ({ ...p, assetType: e.target.value }))
                     }
-                    className="field text-xs bg-[var(--surface)]"
+                    className="field h-10 text-xs bg-[var(--surface)]"
                   >
                     <option value="Mutual Funds">Mutual Funds</option>
                     <option value="Fixed Deposits">Fixed Deposits</option>
@@ -918,7 +918,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     onChange={(e) =>
                       setInvestmentForm((p) => ({ ...p, provider: e.target.value }))
                     }
-                    className="field text-xs"
+                    className="field h-10 text-xs"
                   />
                 </div>
               </div>
@@ -936,7 +936,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     onChange={(e) =>
                       setInvestmentForm((p) => ({ ...p, investedAmount: e.target.value }))
                     }
-                    className="field text-sm"
+                    className="field h-10 text-sm tabular-nums"
                   />
                 </div>
 
@@ -951,7 +951,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     onChange={(e) =>
                       setInvestmentForm((p) => ({ ...p, currentValue: e.target.value }))
                     }
-                    className="field text-sm"
+                    className="field h-10 text-sm tabular-nums"
                   />
                 </div>
               </div>
@@ -1003,7 +1003,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     onChange={(e) =>
                       setSalaryForm((p) => ({ ...p, salaryMonth: e.target.value }))
                     }
-                    className="field text-xs bg-[var(--surface)]"
+                    className="field h-10 text-xs bg-[var(--surface)]"
                   >
                     {MONTH_NAMES.map((m) => (
                       <option key={m} value={m}>
@@ -1021,7 +1021,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     onChange={(e) =>
                       setSalaryForm((p) => ({ ...p, receivedDate: e.target.value }))
                     }
-                    className="field text-xs"
+                    className="field h-10 text-xs"
                   />
                 </div>
               </div>
@@ -1038,7 +1038,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                   onChange={(e) =>
                     setSalaryForm((p) => ({ ...p, amount: e.target.value }))
                   }
-                  className="field text-sm"
+                  className="field h-10 text-sm tabular-nums"
                   autoFocus
                 />
               </div>
@@ -1052,7 +1052,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                   onChange={(e) =>
                     setSalaryForm((p) => ({ ...p, companyOrSource: e.target.value }))
                   }
-                  className="field text-sm"
+                  className="field h-10 text-sm"
                 />
               </div>
 

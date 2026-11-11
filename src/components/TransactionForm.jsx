@@ -294,7 +294,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="field text-sm"
+              className="field h-10 text-sm"
             />
           </div>
 
@@ -309,7 +309,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
               placeholder={`e.g. ${category} at supermarket`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="field text-sm"
+              className="field h-10 text-sm"
             />
           </div>
 

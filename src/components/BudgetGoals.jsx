@@ -194,19 +194,22 @@ export default function BudgetGoals({ goals, mockDate }) {
 
       {isEditing && (
         <div className="flex items-center gap-2 py-1">
-          <input
-            type="number"
-            inputMode="decimal"
-            value={budgetAmount}
-            onChange={(e) => setBudgetAmount(e.target.value)}
-            placeholder="Monthly limit in ₹"
-            className="field h-9 text-xs"
-            autoFocus
-          />
+          <div className="relative flex-1">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-3)] select-none">₹</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={budgetAmount}
+              onChange={(e) => setBudgetAmount(e.target.value)}
+              placeholder="e.g. 50000"
+              className="field h-9 pl-6 pr-3 text-xs tabular-nums"
+              autoFocus
+            />
+          </div>
           <button
             type="button"
             onClick={saveBudget}
-            className="btn btn-primary h-9 px-3 text-xs"
+            className="btn-primary h-9 px-3 text-xs"
           >
             Save
           </button>

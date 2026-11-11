@@ -86,7 +86,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-xs font-medium text-[var(--ink-3)] mb-1">
+            <label htmlFor="email" className="field-label">
               Email address
             </label>
             <input
@@ -97,13 +97,13 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-base text-xs w-full py-2 px-3"
+              className="field h-10 text-xs w-full"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-medium text-[var(--ink-3)] mb-1">
+            <label htmlFor="password" className="field-label">
               Password
             </label>
             <div className="relative">
@@ -115,7 +115,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-base text-xs w-full py-2 pl-3 pr-11"
+                className="field h-10 text-xs w-full pr-11"
                 placeholder="••••••••"
               />
               <button

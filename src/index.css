@@ -144,9 +144,149 @@
   code, kbd, samp, pre {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
+
+  /* Form Base Resets */
+  input, select, textarea {
+    font-family: var(--font-sans);
+    color: var(--ink);
+  }
+
+  /* Remove default number spin buttons */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* Date picker icon styling */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+  }
+
+  /* Native Checkbox and Radio styling */
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
 }
 
 /* Base button utility classes */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+/* Form Field & Input Classes */
+.field-label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+
+.field,
+.input-base {
+  display: block;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+  background-color: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 2px rgba(17, 19, 24, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.dark .field,
+.dark .input-base {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.field:hover,
+.input-base:hover {
+  border-color: var(--ink-2);
+}
+
+.field:focus,
+.input-base:focus,
+.field:focus-visible,
+.input-base:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--accent);
+}
+
+.field::placeholder,
+.input-base::placeholder {
+  color: var(--ink-3);
+  opacity: 0.75;
+}
+
+.field:disabled,
+.input-base:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background-color: var(--sunken);
+}
+
+/* Custom Dropboxes (<select>) */
+select.field,
+select.input-base,
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235A606D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px 14px;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+.dark select.field,
+.dark select.input-base,
+.dark select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239DA4B0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+select option {
+  background-color: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  padding: 8px 12px;
+}
 .btn-primary {
   display: inline-flex;
   align-items: center;

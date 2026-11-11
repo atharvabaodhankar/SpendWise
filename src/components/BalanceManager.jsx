@@ -221,7 +221,7 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
             <form onSubmit={handleAdjustment} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[var(--ink-3)] mb-1">
+                  <label className="field-label">
                     Online adjustment
                   </label>
                   <input
@@ -231,12 +231,12 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
                     onChange={handleChange}
                     step="0.01"
                     placeholder="+/- 0.00"
-                    className="input-base text-xs w-full tabular-nums"
+                    className="field h-10 text-xs w-full tabular-nums"
                   />
                   <p className="text-xs text-[var(--ink-3)] mt-1">Positive to add, negative to deduct</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[var(--ink-3)] mb-1">
+                  <label className="field-label">
                     Cash adjustment
                   </label>
                   <input
@@ -246,13 +246,13 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
                     onChange={handleChange}
                     step="0.01"
                     placeholder="+/- 0.00"
-                    className="input-base text-xs w-full tabular-nums"
+                    className="field h-10 text-xs w-full tabular-nums"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[var(--ink-3)] mb-1">
+                <label className="field-label">
                   Reason *
                 </label>
                 <input
@@ -262,7 +262,7 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
                   onChange={handleChange}
                   required
                   placeholder="e.g. Correction, Found cash, Bank interest"
-                  className="input-base text-xs w-full"
+                  className="field h-10 text-xs w-full"
                 />
               </div>
 

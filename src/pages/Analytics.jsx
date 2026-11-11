@@ -11,8 +11,10 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from 'recharts';
 import Money from '../components/Money';
+import CustomSelect from '../components/CustomSelect';
 
 const NOTE_COLORS = [
   '#7D8A82', // Stone (₹500)
@@ -23,6 +25,24 @@ const NOTE_COLORS = [
   '#8B5E3C', // Cocoa (₹10)
 ];
 const COLOR_OTHER = '#5F6978';
+
+function formatCompactRupee(val) {
+  const n = Number(val) || 0;
+  if (n === 0) return '₹0';
+  if (n >= 10000000) {
+    const cr = n / 10000000;
+    return `₹${cr % 1 === 0 ? cr : cr.toFixed(1)}Cr`;
+  }
+  if (n >= 100000) {
+    const l = n / 100000;
+    return `₹${l % 1 === 0 ? l : l.toFixed(1)}L`;
+  }
+  if (n >= 1000) {
+    const k = n / 1000;
+    return `₹${k % 1 === 0 ? k : k.toFixed(1)}k`;
+  }
+  return `₹${n}`;
+}
 
 function CustomTooltip({ active, payload, label }) {
   if (active && payload && payload.length) {
@@ -46,7 +66,8 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function Analytics({ initialTransactions } = {}) {
-  const { currentUser } = useAuth();
+  const auth = useAuth();
+  const currentUser = auth?.currentUser;
   const [transactions, setTransactions] = useState(() => initialTransactions || []);
   const [loading, setLoading] = useState(!initialTransactions);
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -240,16 +261,17 @@ export default function Analytics({ initialTransactions } = {}) {
           </p>
         </div>
 
-        {/* Month Selector: native select styled as .field */}
+        {/* Month Selector: Custom dropdown popover */}
         <div className="flex items-center gap-2">
           <label htmlFor="analytics-month" className="text-xs text-[var(--ink-3)]">
             Period:
           </label>
-          <select
+          <CustomSelect
             id="analytics-month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="field h-9 px-3 text-xs w-44 bg-[var(--surface)] cursor-pointer"
+            className="h-9 w-44"
+            aria-label="Period"
           >
             <option value="all">All time</option>
             {availableMonths.map((m) => {
@@ -262,7 +284,7 @@ export default function Analytics({ initialTransactions } = {}) {
                 </option>
               );
             })}
-          </select>
+          </CustomSelect>
         </div>
       </div>
 
@@ -301,7 +323,9 @@ export default function Analytics({ initialTransactions } = {}) {
                         <div className="flex items-center gap-2 text-right">
                           <Money amount={cat.amount} className="font-medium text-[var(--ink)]" />
                           <span className="text-[var(--ink-3)] w-12 text-right">
-                            {cat.percent.toFixed(0)}%
+                            {cat.percent > 0 && cat.percent < 1
+                              ? '<1%'
+                              : `${Math.round(cat.percent)}%`}
                           </span>
                         </div>
                       </div>
@@ -334,26 +358,46 @@ export default function Analytics({ initialTransactions } = {}) {
               </p>
             </div>
 
-            <div className="w-full pt-2">
-              <ResponsiveContainer width="100%" aspect={2.4}>
-                <BarChart data={walletBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis
-                    dataKey="name"
-                    axisLine={{ stroke: 'var(--line)' }}
-                    tickLine={false}
-                    tick={{ fill: 'var(--ink-3)', fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'var(--ink-3)', fontSize: 12 }}
-                    tickFormatter={(v) => `₹${v}`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="amount" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {walletBarData.every((d) => d.amount === 0) ? (
+              <div className="py-6 text-xs text-[var(--ink-3)]">
+                No online or cash expenses recorded in this period.
+              </div>
+            ) : (
+              <div className="w-full h-[240px] pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={walletBarData}
+                    margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                  >
+                    <XAxis
+                      dataKey="name"
+                      axisLine={{ stroke: 'var(--line)' }}
+                      tickLine={false}
+                      tick={{ fill: 'var(--ink-3)', fontSize: 12 }}
+                    />
+                    <YAxis
+                      width={56}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'var(--ink-3)', fontSize: 12 }}
+                      tickFormatter={formatCompactRupee}
+                      domain={[0, 'auto']}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar
+                      dataKey="amount"
+                      fill="var(--accent)"
+                      barSize={36}
+                      radius={[4, 4, 0, 0]}
+                    >
+                      {walletBarData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </section>
 
           {/* ── SECTION 3: 6-MONTH TREND (Line chart, flat, no gridlines except baseline) ── */}
@@ -367,34 +411,45 @@ export default function Analytics({ initialTransactions } = {}) {
               </p>
             </div>
 
-            <div className="w-full pt-2">
-              <ResponsiveContainer width="100%" aspect={2.4}>
-                <LineChart data={monthlyTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis
-                    dataKey="month"
-                    axisLine={{ stroke: 'var(--line)' }}
-                    tickLine={false}
-                    tick={{ fill: 'var(--ink-3)', fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'var(--ink-3)', fontSize: 12 }}
-                    tickFormatter={(v) => `₹${v}`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    name="Spent"
-                    stroke="var(--accent)"
-                    strokeWidth={2}
-                    dot={{ fill: 'var(--accent)', strokeWidth: 0, r: 3 }}
-                    activeDot={{ r: 5, fill: 'var(--accent)' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {monthlyTrendData.every((d) => d.amount === 0) ? (
+              <div className="py-6 text-xs text-[var(--ink-3)]">
+                No expenses recorded in the last 6 months.
+              </div>
+            ) : (
+              <div className="w-full h-[240px] pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={monthlyTrendData}
+                    margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                  >
+                    <XAxis
+                      dataKey="month"
+                      axisLine={{ stroke: 'var(--line)' }}
+                      tickLine={false}
+                      tick={{ fill: 'var(--ink-3)', fontSize: 12 }}
+                    />
+                    <YAxis
+                      width={56}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'var(--ink-3)', fontSize: 12 }}
+                      tickFormatter={formatCompactRupee}
+                      domain={[0, 'auto']}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="linear"
+                      dataKey="amount"
+                      name="Spent"
+                      stroke="var(--accent)"
+                      strokeWidth={2}
+                      dot={{ fill: 'var(--accent)', strokeWidth: 0, r: 3 }}
+                      activeDot={{ r: 5, fill: 'var(--accent)' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </section>
         </div>
       )}

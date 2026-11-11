@@ -686,7 +686,7 @@ export default function ApiKeyManager() {
               placeholder="Search tools by name or description..."
               value={toolSearch}
               onChange={(e) => setToolSearch(e.target.value)}
-              className="input-base pl-8 text-xs w-full py-1.5"
+              className="field h-9 pl-8 text-xs w-full"
             />
           </div>
 
@@ -782,7 +782,7 @@ export default function ApiKeyManager() {
 
             <form onSubmit={handleCreateKey} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[var(--ink-3)] mb-1">
+                <label className="field-label">
                   Key name
                 </label>
                 <input
@@ -792,7 +792,7 @@ export default function ApiKeyManager() {
                   onChange={(e) => setKeyName(e.target.value)}
                   autoFocus
                   required
-                  className="input-base text-xs w-full"
+                  className="field h-10 text-xs w-full"
                 />
               </div>
 
