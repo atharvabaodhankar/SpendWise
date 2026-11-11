@@ -1,295 +1,271 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus Jakarta Sans:wght@100..900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-credit: var(--credit);
+  --color-debit: var(--debit);
+
+  --color-banknote-stone: var(--banknote-stone);
+  --color-banknote-saffron: var(--banknote-saffron);
+  --color-banknote-lagoon: var(--banknote-lagoon);
+  --color-banknote-lavender: var(--banknote-lavender);
+  --color-banknote-olive: var(--banknote-olive);
+  --color-banknote-cocoa: var(--banknote-cocoa);
 }
 
-/* Statement & Passbook Theme Tokens */
 :root {
-  /* Light Theme (Primary) */
-  --canvas: #F9FAFB;
-  --white: #FFFFFF;
-  --navy: #0F172A;
-  --navy-muted: #1E293B;
-  --slate: #475569;
-  --slate-light: #94A3B8;
-  --slate-faint: #E2E8F0;
-  --accent: #0F172A;
-  --emerald: #10B981;
-  --emerald-dark: #065F46;
-  --rose: #E11D48;
-  --rose-dark: #9F1239;
-  --hairline: rgba(15, 23, 42, 0.08);
-  
-  --bg-primary: var(--canvas);
-  --card-bg: var(--white);
-  --card-border: var(--slate-faint);
-  
-  --text-primary: var(--navy);
-  --text-secondary: var(--slate);
-  --text-tertiary: var(--slate-light);
-  
-  --shadow-statement: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  /* Light Theme (Primary Ledger Palette) */
+  --bg: #FBFBFA;
+  --surface: #FFFFFF;
+  --sunken: #F1F2F4;
+  --ink: #111318;
+  --ink-2: #5A606D;
+  --ink-3: #8B93A0;
+  --line: #E4E7EB;
+  --line-strong: #C8CDD5;
+  --accent: #1B4D3E;
+  --accent-soft: rgba(27, 77, 62, 0.08);
+  --on-accent: #FFFFFF;
+  --credit: #0E7050;
+  --debit: #C53030;
+
+  /* Indian Banknote Category Palette */
+  --banknote-stone: #78716C;    /* ₹10 note */
+  --banknote-saffron: #D97706;  /* ₹200 note */
+  --banknote-lagoon: #0D9488;   /* ₹50 note */
+  --banknote-lavender: #7C3AED; /* ₹100 note */
+  --banknote-olive: #4D7C0F;    /* ₹500 note */
+  --banknote-cocoa: #9A3412;    /* ₹20 note */
+
+  /* Backward Compatibility Aliases (Bridge until M2–M6 page refactors) */
+  --canvas: var(--bg);
+  --white: var(--surface);
+  --navy: var(--ink);
+  --navy-muted: var(--ink-2);
+  --slate: var(--ink-2);
+  --slate-light: var(--ink-3);
+  --slate-faint: var(--line);
+  --hairline: var(--line);
+  --bg-primary: var(--bg);
+  --card-bg: var(--surface);
+  --card-border: var(--line);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-tertiary: var(--ink-3);
+  --emerald: var(--credit);
+  --emerald-dark: var(--credit);
+  --rose: var(--debit);
+  --rose-dark: var(--debit);
+  --shadow-statement: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .dark {
-  /* Dark Theme */
-  --canvas: #090D16;
-  --white: #0F172A;
-  --navy: #F8FAFC;
-  --navy-muted: #E2E8F0;
-  --slate: #94A3B8;
-  --slate-light: #64748B;
-  --slate-faint: #1E293B;
-  --accent: #38BDF8;
-  --emerald: #34D399;
-  --emerald-dark: #10B981;
-  --rose: #FB7185;
-  --rose-dark: #F43F5E;
-  --hairline: rgba(255, 255, 255, 0.1);
-  
-  --bg-primary: var(--canvas);
-  --card-bg: var(--white);
-  --card-border: var(--slate-faint);
-  
-  --text-primary: var(--navy);
-  --text-secondary: var(--slate);
-  --text-tertiary: var(--slate-light);
-  
-  --shadow-statement: 0 10px 30px rgba(0, 0, 0, 0.2);
+  /* Dark Theme (Ledger Palette) */
+  --bg: #0E1013;
+  --surface: #17191E;
+  --sunken: #1F2228;
+  --ink: #F0F2F5;
+  --ink-2: #9DA4B0;
+  --ink-3: #636B78;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --accent: #34D399;
+  --accent-soft: rgba(52, 211, 153, 0.12);
+  --on-accent: #0E1013;
+  --credit: #34D399;
+  --debit: #F87171;
+
+  /* Indian Banknote Category Palette (Dark) */
+  --banknote-stone: #A8A29E;
+  --banknote-saffron: #F59E0B;
+  --banknote-lagoon: #14B8A6;
+  --banknote-lavender: #A78BFA;
+  --banknote-olive: #84CC16;
+  --banknote-cocoa: #EA580C;
+
+  /* Backward Compatibility Aliases */
+  --canvas: var(--bg);
+  --white: var(--surface);
+  --navy: var(--ink);
+  --navy-muted: var(--ink-2);
+  --slate: var(--ink-2);
+  --slate-light: var(--ink-3);
+  --slate-faint: var(--line);
+  --hairline: var(--line);
+  --bg-primary: var(--bg);
+  --card-bg: var(--surface);
+  --card-border: var(--line);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-tertiary: var(--ink-3);
+  --emerald: var(--credit);
+  --emerald-dark: var(--credit);
+  --rose: var(--debit);
+  --rose-dark: var(--debit);
+  --shadow-statement: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Global Reset & Base */
 @layer base {
   html, body {
-    margin: 0; padding: 0;
-    background-color: var(--canvas);
-    color: var(--slate);
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg);
+    color: var(--ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
 
   body {
-    background-image: radial-gradient(circle at 50% 0%, rgba(15, 23, 42, 0.02) 0%, transparent 70%);
     min-height: 100vh;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans);
-    color: var(--navy);
-    @apply font-semibold tracking-tight;
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  code, kbd, samp, pre {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
 }
 
-/* Component Utilities */
-@layer components {
-  /* Statement Card */
-  .statement-card {
-    background: var(--white);
-    border: 1px solid var(--hairline);
-    border-radius: 12px;
-    padding: 32px;
-    box-shadow: var(--shadow-statement);
-  }
+/* Base button utility classes */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background-color: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
 
-  .passbook-card {
-    background: var(--white);
-    border: 1px solid var(--hairline);
-    border-radius: 12px;
-    padding: 32px;
-    box-shadow: var(--shadow-statement);
-  }
+.btn-primary:hover {
+  opacity: 0.92;
+}
 
-  /* Ledger Row */
-  .ledger-row {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 20px 0;
-    border-bottom: 1px solid var(--hairline);
-    transition: background 0.2s ease;
-  }
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-  .ledger-row:hover {
-    background: rgba(15, 23, 42, 0.015);
-  }
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background-color: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
 
-  .dark .ledger-row:hover {
-    background: rgba(255, 255, 255, 0.02);
-  }
+.btn-quiet:hover {
+  background-color: var(--sunken);
+  border-color: var(--line-strong);
+}
 
-  /* Buttons */
-  .btn-statement, .btn-secondary {
-    font-family: var(--font-sans);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 12px 24px;
-    border-radius: 6px;
-    border: 1px solid var(--slate-faint);
-    background: var(--white);
-    color: var(--slate);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
+.btn-quiet:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-  .btn-statement:hover, .btn-secondary:hover {
-    border-color: var(--slate-light);
-    background: var(--canvas);
-    color: var(--navy);
-  }
+/* Secondary & Danger bridge buttons for existing modals */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background-color: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
 
-  .btn-statement-primary, .btn-primary {
-    font-family: var(--font-sans);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 12px 24px;
-    border-radius: 6px;
-    border: 1px solid var(--navy);
-    background: var(--navy);
-    color: var(--canvas);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-  }
+.btn-secondary:hover {
+  background-color: var(--sunken);
+  border-color: var(--line-strong);
+}
 
-  .btn-statement-primary:hover, .btn-primary:hover {
-    background: var(--navy-muted);
-    border-color: var(--navy-muted);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
-  }
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--debit);
+  background-color: var(--debit);
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
 
-  .btn-danger {
-    font-family: var(--font-sans);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 12px 24px;
-    border-radius: 6px;
-    border: 1px solid var(--rose);
-    background: var(--rose);
-    color: #ffffff;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
+.btn-danger:hover {
+  opacity: 0.92;
+}
 
-  .btn-danger:hover {
-    background: var(--rose-dark);
-    border-color: var(--rose-dark);
+/* Animations */
+@keyframes row-flash {
+  0% {
+    background-color: var(--accent-soft);
   }
-
-  /* Stamp Pill */
-  .stamp-pill {
-    border: 1px solid var(--hairline);
-    color: var(--navy);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 2px;
-    padding: 8px 18px;
-    border-radius: 100px;
-    text-transform: uppercase;
-    white-space: nowrap;
-    background: var(--white);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    display: inline-flex; align-items: center; gap: 8px;
-  }
-
-  .stamp-pill::before {
-    content: ""; width: 6px; height: 6px; background: var(--emerald); border-radius: 50%;
-  }
-
-  /* Method Pill */
-  .method-pill {
-    font-family: var(--font-mono);
-    font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
-    color: var(--slate);
-    border: 1px solid var(--slate-faint);
-    border-radius: 4px;
-    padding: 4px 8px;
-    white-space: nowrap;
-    background: var(--white);
-  }
-
-  /* Inputs */
-  .input-premium {
-    width: 100%;
-    background: var(--white);
-    border: 1px solid var(--slate-faint);
-    color: var(--navy);
-    border-radius: 6px;
-    padding: 12px 16px;
-    outline: none;
-    font-family: var(--font-sans);
-    transition: all 0.2s ease;
-  }
-
-  .input-premium:focus {
-    border-color: var(--navy);
-    box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
-  }
-  
-  .label-premium {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--slate-light);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 6px;
-    display: block;
-  }
-
-  /* Badges */
-  .badge {
-    font-family: var(--font-mono);
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-  
-  .badge-success {
-    background: rgba(16, 185, 129, 0.1); color: var(--emerald-dark); border: 1px solid rgba(16, 185, 129, 0.2);
-  }
-  
-  .badge-warning {
-    background: rgba(245, 158, 11, 0.1); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.2);
-  }
-
-  .badge-indigo {
-    background: rgba(99, 102, 241, 0.1); color: #4338CA; border: 1px solid rgba(99, 102, 241, 0.2);
-  }
-  
-  .badge-danger {
-    background: rgba(225, 29, 72, 0.1); color: var(--rose); border: 1px solid rgba(225, 29, 72, 0.2);
+  100% {
+    background-color: transparent;
   }
 }
 
-/* Dashboard card entrance */
-@keyframes dash-fade-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+.row-flash {
+  animation: row-flash 1.2s ease-out;
 }
 
-.dash-animate > * {
-  animation: dash-fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
 }
-.dash-animate > *:nth-child(1) { animation-delay: 0ms; }
-.dash-animate > *:nth-child(2) { animation-delay: 60ms; }
-.dash-animate > *:nth-child(3) { animation-delay: 120ms; }
-.dash-animate > *:nth-child(4) { animation-delay: 180ms; }
-.dash-animate > *:nth-child(5) { animation-delay: 240ms; }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
@@ -298,54 +274,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--canvas);
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--slate-faint);
+  background: var(--line-strong);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--slate-light);
-}
-
-/* Glass card (legacy alias → statement-card) */
-.glass-card {
-  background: var(--white);
-  border: 1px solid var(--hairline);
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: var(--shadow-statement);
-}
-
-/* Mobile-specific responsive tweaks */
-@media (max-width: 640px) {
-  .statement-card,
-  .passbook-card,
-  .glass-card {
-    padding: 20px;
-    border-radius: 10px;
-  }
-
-  .btn-statement,
-  .btn-secondary,
-  .btn-statement-primary,
-  .btn-primary {
-    padding: 10px 16px;
-    font-size: 10px;
-  }
-
-  .stamp-pill {
-    font-size: 9px;
-    padding: 6px 12px;
-    letter-spacing: 1.5px;
-  }
-
-  .ledger-row {
-    padding: 12px 0;
-    gap: 12px;
-  }
+  background: var(--ink-3);
 }
 
 /* Safe area padding for mobile chat */
@@ -354,10 +292,3 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
-
-/* Smooth bounce animation for typing dots */
-@keyframes typing-bounce {
-  0%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-6px); }
-}
-

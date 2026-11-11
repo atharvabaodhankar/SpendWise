@@ -3,11 +3,15 @@ import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
 import { db } from "../firebase/config";
 import { doc, setDoc } from "firebase/firestore";
-import { Wallet, CreditCard, Banknote, ArrowRight, Lightbulb } from "lucide-react";
+import SpendWiseLogo from "./SpendWiseLogo";
+import Money from "./Money";
 
 export default function InitialBalanceSetup({ onComplete }) {
   const { currentUser } = useAuth();
-  const { showSuccess, showError } = useNotification();
+  const notification = useNotification();
+  const showSuccess = notification?.showSuccess || (() => {});
+  const showError = notification?.showError || (() => {});
+
   const [balances, setBalances] = useState({
     online: "",
     cash: "",
@@ -18,7 +22,7 @@ export default function InitialBalanceSetup({ onComplete }) {
     e.preventDefault();
 
     if (!balances.online && !balances.cash) {
-      showError("Please enter at least one balance amount");
+      showError("Please enter at least one balance amount.");
       return;
     }
 
@@ -31,15 +35,17 @@ export default function InitialBalanceSetup({ onComplete }) {
         updatedAt: new Date().toISOString(),
       };
 
-      await setDoc(doc(db, "currentBalances", currentUser.uid), balanceData);
-      showSuccess("Initial balances set up successfully!");
+      if (currentUser) {
+        await setDoc(doc(db, "currentBalances", currentUser.uid), balanceData);
+      }
+      showSuccess("Initial balances saved.");
       if (onComplete) onComplete();
     } catch (err) {
       console.error("Error setting initial balances:", err);
-      showError("Failed to set initial balances");
+      showError("Failed to save initial balances.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleSkip = async () => {
@@ -50,126 +56,111 @@ export default function InitialBalanceSetup({ onComplete }) {
         updatedAt: new Date().toISOString(),
       };
 
-      await setDoc(doc(db, "currentBalances", currentUser.uid), balanceData);
-      showSuccess("Started with ₹0.00 balances!");
+      if (currentUser) {
+        await setDoc(doc(db, "currentBalances", currentUser.uid), balanceData);
+      }
+      showSuccess("Started with zero balance.");
       if (onComplete) onComplete();
     } catch (err) {
       console.error("Error skipping setup:", err);
-      showError("Failed to skip setup");
+      showError("Failed to skip setup.");
     }
   };
 
+  const totalCalculated =
+    (parseFloat(balances.online) || 0) + (parseFloat(balances.cash) || 0);
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="statement-card w-full max-w-xl my-auto p-8 shadow-2xl">
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Set starting balances"
+    >
+      <div className="w-full sm:max-w-lg bg-[var(--surface)] border border-[var(--line)] rounded-t-[14px] sm:rounded-[14px] shadow-[var(--shadow-pop)] p-6 sm:p-8 space-y-6 max-h-[92dvh] overflow-y-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-[var(--navy)] text-white font-mono text-xl font-bold rounded-lg flex items-center justify-center mx-auto mb-4 shadow-md">
-            S
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
+            <SpendWiseLogo size={36} />
           </div>
-          <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold">Account Setup</div>
-          <h1 className="text-2xl font-semibold text-[var(--navy)] tracking-tight mt-1">
-            Welcome to SpendWise
+          <h1 className="text-xl font-semibold text-[var(--ink)]">
+            Set your starting balance
           </h1>
-          <p className="text-xs text-[var(--slate)] mt-1">
-            Set up your initial account balances to begin expense tracking
+          <p className="text-xs text-[var(--ink-3)] max-w-sm mx-auto">
+            Tell SpendWise how much you have across online and cash wallets right now.
           </p>
         </div>
 
-        {/* Explanation Card */}
-        <div className="passbook-card p-5 mb-8">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--navy)] uppercase tracking-wider mb-2">
-            <Lightbulb className="w-4 h-4 text-[var(--navy)]" />
-            <span>Why set initial balances?</span>
-          </div>
-          <div className="text-[11px] text-[var(--slate)] space-y-1.5 leading-relaxed">
-            <p>• <strong>Real-time Accuracy:</strong> Passbook tracks current wallet totals alongside transaction ledgers.</p>
-            <p>• <strong>Independent Adjustments:</strong> Add past transactions without disrupting your current balance state.</p>
-            <p>• <strong>Smart Auditing:</strong> Get automated alerts if ledger outlays deviate from tracked funds.</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-4">
             {/* Online Balance */}
             <div>
-              <label className="label-premium flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5 text-[var(--slate-light)]" />
-                Online / Bank Balance
+              <label className="field-label" htmlFor="initial-online">
+                Online (bank / UPI)
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={balances.online}
-                onChange={(e) =>
-                  setBalances((prev) => ({ ...prev, online: e.target.value }))
-                }
-                placeholder="0.00"
-                className="input-premium font-mono text-sm"
-              />
-              <p className="text-[10px] text-[var(--slate-light)] mt-1">
-                Bank accounts, UPI, digital wallets
-              </p>
+              <div className="relative flex items-center">
+                <span className="absolute left-3 text-sm text-[var(--ink-3)]">₹</span>
+                <input
+                  id="initial-online"
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  value={balances.online}
+                  onChange={(e) =>
+                    setBalances((prev) => ({ ...prev, online: e.target.value }))
+                  }
+                  placeholder="0.00"
+                  className="field pl-7 text-sm"
+                />
+              </div>
             </div>
 
             {/* Cash Balance */}
             <div>
-              <label className="label-premium flex items-center gap-1.5">
-                <Banknote className="w-3.5 h-3.5 text-[var(--slate-light)]" />
-                Cash Balance
+              <label className="field-label" htmlFor="initial-cash">
+                Cash in hand
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={balances.cash}
-                onChange={(e) =>
-                  setBalances((prev) => ({ ...prev, cash: e.target.value }))
-                }
-                placeholder="0.00"
-                className="input-premium font-mono text-sm"
-              />
-              <p className="text-[10px] text-[var(--slate-light)] mt-1">
-                Physical cash in wallet or home
-              </p>
+              <div className="relative flex items-center">
+                <span className="absolute left-3 text-sm text-[var(--ink-3)]">₹</span>
+                <input
+                  id="initial-cash"
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  value={balances.cash}
+                  onChange={(e) =>
+                    setBalances((prev) => ({ ...prev, cash: e.target.value }))
+                  }
+                  placeholder="0.00"
+                  className="field pl-7 text-sm"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Total Preview */}
+          {/* Calculated Total */}
           {(balances.online || balances.cash) && (
-            <div className="statement-card p-4 border border-[var(--emerald)]/30 bg-[var(--white)]">
-              <div className="text-center">
-                <div className="text-[10px] uppercase tracking-[1.5px] text-[var(--slate-light)] font-semibold mb-1">
-                  Calculated Starting Total
-                </div>
-                <div className="font-mono text-2xl font-bold text-[var(--navy)] tabular-nums">
-                  ₹{(
-                    (parseFloat(balances.online) || 0) +
-                    (parseFloat(balances.cash) || 0)
-                  ).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </div>
-              </div>
+            <div className="p-3 bg-[var(--sunken)] rounded-[6px] flex items-center justify-between text-xs">
+              <span className="text-[var(--ink-3)]">Starting net balance:</span>
+              <Money amount={totalCalculated} className="font-semibold text-[var(--ink)]" />
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={loading || (!balances.online && !balances.cash)}
-              className="flex-1 btn-statement-primary text-[10px] py-3.5 flex items-center justify-center gap-2"
-            >
-              <span>{loading ? "Setting up..." : "Set Passbook Balances"}</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-
+          {/* Actions */}
+          <div className="pt-2 flex flex-col sm:flex-row gap-2">
             <button
               type="button"
               onClick={handleSkip}
-              className="btn-statement text-[10px] py-3.5"
+              className="btn btn-quiet flex-1 text-xs order-2 sm:order-1"
             >
               Start with ₹0.00
+            </button>
+            <button
+              type="submit"
+              disabled={loading || (!balances.online && !balances.cash)}
+              className="btn btn-primary flex-1 text-xs order-1 sm:order-2"
+            >
+              {loading ? "Saving..." : "Save balances"}
             </button>
           </div>
         </form>

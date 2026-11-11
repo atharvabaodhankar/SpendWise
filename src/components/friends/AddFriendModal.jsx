@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Search, UserPlus, Check, Loader2, User } from 'lucide-react';
+import { X, Search, Check, Loader2, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -7,7 +7,9 @@ import { db } from '../../firebase/config';
 
 export default function AddFriendModal({ isOpen, onClose }) {
   const { currentUser } = useAuth();
-  const { showSuccess, showError } = useNotification();
+  const notification = useNotification();
+  const showSuccess = notification?.showSuccess || (() => {});
+  const showError = notification?.showError || (() => {});
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [foundUser, setFoundUser] = useState(null);
@@ -22,7 +24,7 @@ export default function AddFriendModal({ isOpen, onClose }) {
     setRequestSent(false);
 
     try {
-      const q = query(collection(db, 'users'), where('email', '==', email));
+      const q = query(collection(db, 'users'), where('email', '==', email.trim().toLowerCase()));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
@@ -43,7 +45,6 @@ export default function AddFriendModal({ isOpen, onClose }) {
     setLoading(true);
 
     try {
-      // Check if request already exists (simple check, ideally should be more robust)
       const q = query(
          collection(db, 'friendRequests'), 
          where('senderId', '==', currentUser.uid),
@@ -67,7 +68,6 @@ export default function AddFriendModal({ isOpen, onClose }) {
         createdAt: serverTimestamp()
       });
 
-      // Send email notification via Vercel API
       try {
          await fetch('/api/send-email-gmail', {
             method: 'POST',
@@ -83,17 +83,16 @@ export default function AddFriendModal({ isOpen, onClose }) {
          });
       } catch (emailError) {
          console.error("Failed to send email alert:", emailError);
-         // Don't block the UI flow if email fails
       }
 
       setRequestSent(true);
-      showSuccess('Friend request sent!');
+      showSuccess('Friend request sent.');
       setTimeout(() => {
          onClose();
          setEmail('');
          setFoundUser(null);
          setRequestSent(false);
-      }, 1500);
+      }, 1200);
 
     } catch (error) {
       console.error("Error sending request:", error);
@@ -106,72 +105,76 @@ export default function AddFriendModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-[var(--card-bg)] rounded-2xl shadow-2xl w-full max-w-md border border-[var(--card-border)] overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="rounded-[14px] bg-[var(--surface)] border border-[var(--line)] shadow-[var(--shadow-pop)] w-full max-w-md overflow-hidden p-6 space-y-5">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[var(--card-border)] flex justify-between items-center bg-[var(--bg-secondary)]">
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">Add Friend</h2>
+        <div className="flex justify-between items-start pb-3 border-b border-[var(--line)]">
+          <div>
+            <h2 className="text-[17px] font-semibold text-[var(--ink)]">Add friend</h2>
+            <p className="text-xs text-[var(--ink-3)] mt-0.5">Send a request to split bills and track balances.</p>
+          </div>
           <button 
             onClick={onClose}
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1 rounded-lg hover:bg-[var(--bg-tertiary)]"
+            className="btn-quiet p-1.5 text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer"
+            aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
-          <form onSubmit={handleSearch} className="space-y-4">
+        <div className="space-y-4">
+          <form onSubmit={handleSearch} className="space-y-3">
             <div className="relative">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-tertiary)]" />
-               <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter friend's email"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--card-border)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)]"
-                  autoFocus
-               />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-3)]" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter friend's email"
+                className="input-base pl-9 text-xs w-full py-2"
+                autoFocus
+                required
+              />
             </div>
             <button
-               type="submit"
-               disabled={loading || !email.trim()}
-               className="w-full btn-primary py-2.5 flex items-center justify-center gap-2"
+              type="submit"
+              disabled={loading || !email.trim()}
+              className="w-full btn-primary text-xs py-2 flex items-center justify-center gap-1.5"
             >
-               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-               Search
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+              Search user
             </button>
           </form>
 
           {/* Result */}
           {foundUser && (
-             <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--bg-secondary)] flex items-center justify-between animate-fade-in">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-full bg-[var(--primary-100)] flex items-center justify-center text-[var(--primary-600)]">
-                      <User className="w-5 h-5" />
-                   </div>
-                   <div>
-                      <p className="font-semibold text-[var(--text-primary)]">{foundUser.displayName || 'User'}</p>
-                      <p className="text-xs text-[var(--text-secondary)]">{foundUser.email}</p>
-                   </div>
+            <div className="p-3.5 rounded-[6px] border border-[var(--line)] bg-[var(--sunken)] flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[var(--surface)] border border-[var(--line)] flex items-center justify-center text-[var(--ink-2)]">
+                  <User className="w-4 h-4" />
                 </div>
-                
-                {requestSent ? (
-                   <div className="flex items-center gap-1 text-[var(--success-500)] font-medium text-sm">
-                      <Check className="w-4 h-4" />
-                      Sent
-                   </div>
-                ) : (
-                   <button
-                      onClick={sendFriendRequest}
-                      disabled={loading}
-                      className="p-2 rounded-lg bg-[var(--primary-50)] text-[var(--primary-600)] hover:bg-[var(--primary-100)] transition-colors"
-                      title="Send Request"
-                   >
-                      <UserPlus className="w-5 h-5" />
-                   </button>
-                )}
-             </div>
+                <div>
+                  <p className="text-xs font-medium text-[var(--ink)]">{foundUser.displayName || 'User'}</p>
+                  <p className="text-xs text-[var(--ink-3)]">{foundUser.email}</p>
+                </div>
+              </div>
+              
+              {requestSent ? (
+                <div className="flex items-center gap-1 text-[var(--credit)] text-xs font-medium">
+                  <Check className="w-3.5 h-3.5" />
+                  Sent
+                </div>
+              ) : (
+                <button
+                  onClick={sendFriendRequest}
+                  disabled={loading}
+                  className="btn-primary text-xs py-1 px-3"
+                >
+                  Send request
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

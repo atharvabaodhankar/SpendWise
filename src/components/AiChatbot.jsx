@@ -107,7 +107,7 @@ function formatInline(text) {
     const token = match[0];
     if (token.startsWith('`')) {
       parts.push(
-        <code key={match.index} className="bg-[var(--slate-faint)] text-[var(--navy)] px-1 py-0.5 rounded text-[10px] font-mono">
+        <code key={match.index} className="bg-[var(--sunken)] text-[var(--ink)] px-1 py-0.5 rounded text-xs">
           {token.slice(1, -1)}
         </code>
       );
@@ -173,19 +173,29 @@ function createStatusMessage(content, tone = 'neutral') {
 }
 
 export default function AiChatbot({
+  isOpen: controlledIsOpen,
+  onClose,
   mode = 'floating',
   title = 'SpendWise AI',
   subtitle = 'Live insights and actions from Firebase',
   suggestions = DEFAULT_SUGGESTIONS,
 }) {
   const { currentUser } = useAuth();
-  const { showError, showInfo, showSuccess } = useNotification();
+  const { showError = () => {}, showSuccess = () => {} } = useNotification() || {};
   const [transactions, setTransactions] = useState([]);
   const [budget, setBudget] = useState(null);
   const [balances, setBalances] = useState(null);
   const [investments, setInvestments] = useState([]);
   const [loadingContext, setLoadingContext] = useState(true);
-  const [isOpen, setIsOpen] = useState(mode === 'embedded');
+  const [internalIsOpen, setInternalIsOpen] = useState(mode === 'embedded');
+  const isControlled = controlledIsOpen !== undefined;
+  const isPanelOpen = isControlled ? controlledIsOpen : internalIsOpen;
+
+  const handleClose = useCallback(() => {
+    if (onClose) onClose();
+    if (!isControlled) setInternalIsOpen(false);
+  }, [onClose, isControlled]);
+
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState(() => [createWelcomeMessage(mode)]);
@@ -193,7 +203,7 @@ export default function AiChatbot({
   const textareaRef = useRef(null);
 
   useEffect(() => {
-    if (mode === 'embedded') setIsOpen(true);
+    if (mode === 'embedded') setInternalIsOpen(true);
   }, [mode]);
 
   useEffect(() => {
@@ -416,21 +426,211 @@ export default function AiChatbot({
     setMessages([createWelcomeMessage(mode)]);
   }
 
+  // ── Drawer mode ──────────────────────────────────────────────────────────
+  if (mode === 'drawer') {
+    if (!isPanelOpen) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={title}>
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+          onClick={handleClose}
+        />
+        <div
+          className="relative z-10 w-full sm:w-[420px] bg-[var(--surface)] border-l border-[var(--line)] shadow-2xl flex flex-col h-full max-sm:h-[88dvh] max-sm:mt-auto max-sm:rounded-t-[14px] max-sm:border-t max-sm:border-l-0 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex shrink-0 items-center justify-between border-b border-[var(--line)] bg-[var(--surface)] px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <SpendWiseLogo size={28} />
+              <div>
+                <p className="text-xs font-semibold text-[var(--ink)]">{title}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${loadingContext ? 'animate-pulse bg-[var(--ink-3)]' : 'bg-[var(--credit)]'}`} />
+                  <span className="text-xs text-[var(--ink-3)]">
+                    {loadingContext ? 'Syncing Firebase...' : subtitle}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={clearConversation}
+                className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-[6px] text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--sunken)] transition-colors"
+                title="Clear conversation"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                aria-label="Close chat"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-[6px] text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--sunken)] transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Suggestion chips */}
+          <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-[var(--line)] bg-[var(--sunken)] px-4 py-2">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => void sendMessage(s)}
+                className="text-xs py-1 px-2.5 rounded-[6px] bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:border-[var(--line-strong)] transition-colors"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
+          {/* Messages — scrollable */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 bg-[var(--surface)]">
+            <div className="flex flex-col gap-3">
+              {messages.map((message) => {
+                const isUser = message.role === 'user';
+                const isStatus = message.role === 'status';
+
+                return (
+                  <div key={message.id} className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                    {!isUser && !isStatus && (
+                      <div className="mt-0.5 flex-shrink-0">
+                        <SpendWiseLogo size={24} />
+                      </div>
+                    )}
+
+                    <div
+                      className={`max-w-[85%] rounded-[14px] px-4 py-2.5 text-xs leading-relaxed ${
+                        isUser
+                          ? 'bg-[var(--accent-soft)] text-[var(--ink)] border border-[var(--accent)]/20'
+                          : isStatus
+                            ? message.tone === 'error'
+                              ? 'border border-[var(--debit)]/30 bg-[var(--sunken)] text-[var(--debit)]'
+                              : 'border border-[var(--credit)]/30 bg-[var(--sunken)] text-[var(--credit)]'
+                            : 'border border-[var(--line)] bg-[var(--sunken)] text-[var(--ink)]'
+                      }`}
+                    >
+                      {!isUser && !isStatus && (
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-xs font-semibold text-[var(--ink-2)]">
+                            SpendWise Assistant
+                          </p>
+                          <span className="text-xs text-[var(--ink-3)]">
+                            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="break-words font-sans">
+                        {renderMarkdown(message.content)}
+                      </div>
+
+                      {message.highlights?.length > 0 && (
+                        <div className="mt-2.5 flex flex-wrap gap-1 border-t border-[var(--line)] pt-2">
+                          {message.highlights.map((h, i) => (
+                            <span
+                              key={i}
+                              className="rounded-[4px] bg-[var(--surface)] px-1.5 py-0.5 text-xs text-[var(--ink-2)] border border-[var(--line)]"
+                            >
+                              {h}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {message.followUps?.length > 0 && (
+                        <div className="mt-2.5 flex flex-col gap-1 border-t border-[var(--line)] pt-2">
+                          <p className="text-xs font-medium text-[var(--ink-2)]">Suggestions</p>
+                          <div className="flex flex-wrap gap-1">
+                            {message.followUps.map((f, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => void sendMessage(f)}
+                                className="rounded-[4px] border border-[var(--line)] bg-[var(--surface)] px-2 py-0.5 text-xs text-[var(--ink)] hover:bg-[var(--sunken)] transition-colors text-left"
+                              >
+                                {f}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {isSending && (
+                <div className="flex items-center gap-2 text-xs text-[var(--ink-3)] px-2">
+                  <LoaderCircle className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+                  <span>Thinking...</span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Composer */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (input.trim() && !isSending) {
+                void sendMessage(input);
+                setInput('');
+              }
+            }}
+            className="shrink-0 border-t border-[var(--line)] bg-[var(--surface)] p-3 pb-[calc(12px+env(safe-area-inset-bottom))]"
+          >
+            <div className="relative flex items-center">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (input.trim() && !isSending) {
+                      sendMessage(input);
+                      setInput('');
+                    }
+                  }
+                }}
+                rows={1}
+                placeholder="Ask SpendWise..."
+                className="w-full resize-none rounded-[6px] border border-[var(--line)] bg-[var(--sunken)] px-3 py-2 pr-10 text-xs text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+              />
+              <button
+                type="submit"
+                disabled={!input.trim() || isSending}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-[var(--ink-2)] hover:text-[var(--accent)] disabled:opacity-40 transition-colors"
+                aria-label="Send message"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   // ── Floating trigger ─────────────────────────────────────────────────────
-  if (mode === 'floating' && !isOpen) {
+  if (mode === 'floating' && !isPanelOpen) {
     return (
       <div className="fixed bottom-6 left-4 z-50 sm:left-6">
         <button
           type="button"
-          onClick={() => { setIsOpen(true); showInfo('SpendWise AI is ready with your latest Firebase data.'); }}
-          className="flex items-center gap-3 rounded-2xl border border-[var(--hairline)] bg-[var(--white)] px-3 sm:px-4 py-2.5 sm:py-3 shadow-[var(--shadow-statement)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
+          onClick={() => { setInternalIsOpen(true); }}
+          className="flex items-center gap-3 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] px-3 sm:px-4 py-2 sm:py-2.5 shadow-[var(--shadow-pop)] transition-colors hover:bg-[var(--sunken)]"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden">
-            <SpendWiseLogo size={36} />
+          <span className="flex h-8 w-8 items-center justify-center rounded-[4px] overflow-hidden">
+            <SpendWiseLogo size={32} />
           </span>
           <div className="hidden text-left sm:block">
-            <div className="text-sm font-semibold text-[var(--navy)]">SpendWise AI</div>
-            <div className="text-xs text-[var(--slate-light)]">Ask about spending or edit records</div>
+            <div className="text-xs font-semibold text-[var(--ink)]">SpendWise AI</div>
+            <div className="text-xs text-[var(--ink-3)]">Ask about spending or edit records</div>
           </div>
         </button>
       </div>
@@ -440,32 +640,31 @@ export default function AiChatbot({
   // ── Panel ────────────────────────────────────────────────────────────────
   const panelClass =
     mode === 'embedded'
-      ? 'flex flex-col overflow-hidden statement-card shadow-2xl h-[580px] sm:h-[640px] max-h-[calc(100vh-10rem)] p-0 border border-[var(--hairline)] bg-[var(--white)]'
-      : 'fixed bottom-0 left-0 right-0 z-50 flex flex-col overflow-hidden bg-[var(--white)] shadow-2xl sm:bottom-6 sm:left-6 sm:right-auto sm:h-[620px] sm:w-[420px] sm:rounded-2xl sm:border sm:border-[var(--hairline)] p-0';
+      ? 'flex flex-col overflow-hidden shadow-[var(--shadow-pop)] h-[580px] sm:h-[640px] max-h-[calc(100vh-10rem)] p-0 border border-[var(--line)] bg-[var(--surface)]'
+      : 'fixed bottom-0 left-0 right-0 z-50 flex flex-col overflow-hidden bg-[var(--surface)] shadow-[var(--shadow-pop)] sm:bottom-6 sm:left-6 sm:right-auto sm:h-[620px] sm:w-[420px] sm:rounded-[14px] sm:border sm:border-[var(--line)] p-0';
 
   return (
     <div className={panelClass}>
 
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-[var(--hairline)] bg-[var(--canvas)] px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--line)] bg-[var(--sunken)] px-4 py-3">
         <div className="flex items-center gap-2.5">
           <SpendWiseLogo size={28} />
           <div>
-            <p className="text-xs font-semibold text-[var(--navy)] uppercase tracking-wider">{title}</p>
+            <p className="text-xs font-semibold text-[var(--ink)]">{title}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={`h-1.5 w-1.5 rounded-full ${loadingContext ? 'animate-pulse bg-[var(--slate-light)]' : 'bg-[var(--emerald)]'}`} />
-              <span className="text-[10px] font-mono text-[var(--slate-light)]">
-                {loadingContext ? 'Syncing Firebase...' : subtitle}
+              <span className={`h-1.5 w-1.5 rounded-full ${loadingContext ? 'animate-pulse bg-[var(--ink-3)]' : 'bg-[var(--credit)]'}`} />
+              <span className="text-xs text-[var(--ink-3)]">
+                {loadingContext ? 'Syncing...' : subtitle}
               </span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          {/* Clear conversation */}
           <button
             type="button"
             onClick={clearConversation}
-            className="btn-statement p-1.5 rounded-md hover:border-[var(--slate-light)] hover:text-[var(--navy)]"
+            className="btn-quiet p-1.5 text-[var(--ink-3)] hover:text-[var(--ink)]"
             title="Clear conversation"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -473,8 +672,8 @@ export default function AiChatbot({
           {mode === 'floating' && (
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
-              className="btn-statement p-1.5 rounded-md hover:border-[var(--rose)] hover:text-[var(--rose)]"
+              onClick={handleClose}
+              className="btn-quiet p-1.5 text-[var(--ink-3)] hover:text-[var(--ink)]"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -483,13 +682,13 @@ export default function AiChatbot({
       </div>
 
       {/* Suggestion chips */}
-      <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-[var(--hairline)] bg-[var(--canvas)]/50 px-4 py-2">
+      <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-[var(--line)] bg-[var(--sunken)] px-4 py-2">
         {suggestions.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => void sendMessage(s)}
-            className="btn-statement text-[10px] py-1 px-2 hover:border-[var(--navy)] hover:text-[var(--navy)]"
+            className="btn-secondary text-xs py-1 px-2"
           >
             {s}
           </button>
@@ -497,7 +696,7 @@ export default function AiChatbot({
       </div>
 
       {/* Messages — scrollable */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4 bg-[var(--white)]">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4 bg-[var(--surface)]">
         <div className="flex flex-col gap-3">
           {messages.map((message) => {
             const isUser = message.role === 'user';
@@ -505,7 +704,6 @@ export default function AiChatbot({
 
             return (
               <div key={message.id} className={`flex gap-2 sm:gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
-                {/* Bot avatar */}
                 {!isUser && !isStatus && (
                   <div className="mt-0.5 flex-shrink-0">
                     <SpendWiseLogo size={24} />
@@ -513,23 +711,23 @@ export default function AiChatbot({
                 )}
 
                 <div
-                  className={`max-w-[88%] sm:max-w-[85%] rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-xs leading-relaxed ${
+                  className={`max-w-[88%] sm:max-w-[85%] rounded-[14px] px-3.5 py-2.5 text-xs leading-relaxed ${
                     isUser
-                      ? 'bg-[var(--navy)] text-white font-medium shadow-sm'
+                      ? 'bg-[var(--accent-soft)] text-[var(--ink)] border border-[var(--accent)]/20'
                       : isStatus
                         ? message.tone === 'error'
-                          ? 'border border-[var(--rose)]/30 bg-rose-50 text-[var(--rose)]'
-                          : 'border border-[var(--emerald)]/30 bg-emerald-50 text-[var(--emerald-dark)]'
-                        : 'border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] shadow-sm'
+                          ? 'border border-[var(--debit)]/30 bg-[var(--sunken)] text-[var(--debit)]'
+                          : 'border border-[var(--credit)]/30 bg-[var(--sunken)] text-[var(--credit)]'
+                        : 'border border-[var(--line)] bg-[var(--sunken)] text-[var(--ink)]'
                   }`}
                 >
                   {!isUser && !isStatus && (
                     <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--slate-light)]">
-                        Financial AI Assistant
+                      <p className="text-xs font-semibold text-[var(--ink-2)]">
+                        SpendWise Assistant
                       </p>
                       {message.timestamp && (
-                        <span className="text-[8px] font-mono text-[var(--slate-light)] ml-2">
+                        <span className="text-xs text-[var(--ink-3)] ml-2">
                           {timeAgo(message.timestamp)}
                         </span>
                       )}
@@ -538,22 +736,22 @@ export default function AiChatbot({
 
                   {isUser && message.timestamp && (
                     <div className="flex justify-end mb-1">
-                      <span className="text-[8px] font-mono text-white/50">
+                      <span className="text-xs text-[var(--ink-3)]">
                         {timeAgo(message.timestamp)}
                       </span>
                     </div>
                   )}
 
-                  <div className="whitespace-pre-wrap">
+                  <div className="whitespace-pre-wrap font-sans">
                     {isUser ? message.content : renderMarkdown(message.content)}
                   </div>
 
                   {message.highlights?.length ? (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-2 flex flex-wrap gap-1">
                       {message.highlights.map((h) => (
                         <span
                           key={h}
-                          className="stamp-pill text-[9px] py-0.5 px-2"
+                          className="rounded-[4px] bg-[var(--surface)] px-1.5 py-0.5 text-xs text-[var(--ink-2)] border border-[var(--line)]"
                         >
                           {h}
                         </span>
@@ -562,13 +760,13 @@ export default function AiChatbot({
                   ) : null}
 
                   {message.followUps?.length ? (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-2 flex flex-wrap gap-1">
                       {message.followUps.map((f) => (
                         <button
                           key={f}
                           type="button"
                           onClick={() => void sendMessage(f)}
-                          className="btn-statement text-[9px] py-1 px-2 hover:border-[var(--emerald)] hover:text-[var(--emerald)]"
+                          className="btn-secondary text-xs py-0.5 px-2"
                         >
                           {f}
                         </button>
@@ -585,7 +783,7 @@ export default function AiChatbot({
               <div className="flex-shrink-0">
                 <SpendWiseLogo size={24} />
               </div>
-              <div className="flex items-center gap-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] px-3 py-2">
+              <div className="flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-[var(--sunken)] px-3 py-2">
                 <TypingDots />
               </div>
             </div>
@@ -598,7 +796,7 @@ export default function AiChatbot({
       {/* Input */}
       <form
         onSubmit={(e) => { e.preventDefault(); void sendMessage(input); }}
-        className="shrink-0 border-t border-[var(--hairline)] bg-[var(--canvas)] p-2.5 sm:p-3"
+        className="shrink-0 border-t border-[var(--line)] bg-[var(--surface)] p-2.5 sm:p-3"
       >
         <div className="flex items-end gap-2">
           <textarea
@@ -610,13 +808,13 @@ export default function AiChatbot({
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage(input); }
             }}
             placeholder="Ask AI or type a command..."
-            className="input-premium py-2 px-3 text-xs resize-none overflow-hidden"
+            className="input-base py-2 px-3 text-xs resize-none overflow-hidden flex-1"
             style={{ minHeight: '36px', maxHeight: '80px' }}
           />
           <button
             type="submit"
             disabled={!input.trim() || isSending}
-            className="btn-statement-primary py-2 px-3 text-xs disabled:opacity-40 flex-shrink-0"
+            className="btn-primary py-2 px-3 text-xs disabled:opacity-40 flex-shrink-0"
           >
             <Send className="h-3.5 w-3.5" />
           </button>

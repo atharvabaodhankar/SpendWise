@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { UserPlus, Check, X, User } from 'lucide-react';
+import { UserPlus, Check, X, User, Loader2 } from 'lucide-react';
 
 export default function FriendRequests() {
   const { currentUser } = useAuth();
-  const { showSuccess, showError } = useNotification();
+  const notification = useNotification();
+  const showSuccess = notification?.showSuccess || (() => {});
+  const showError = notification?.showError || (() => {});
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +23,6 @@ export default function FriendRequests() {
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      // Fetch names for each sender from 'users' collection
       const requestsData = await Promise.all(snapshot.docs.map(async (requestDoc) => {
          const data = requestDoc.data();
          const senderId = data.senderId;
@@ -51,26 +52,22 @@ export default function FriendRequests() {
 
   const handleAccept = async (request) => {
     try {
-      // 1. Update request status
       await updateDoc(doc(db, 'friendRequests', request.id), {
         status: 'accepted'
       });
 
-      // 2. Add to my friends
       await setDoc(doc(db, 'users', currentUser.uid, 'friends', request.senderId), {
         email: request.senderEmail,
         friendId: request.senderId,
         createdAt: serverTimestamp()
       });
 
-      // 3. Add me to their friends
       await setDoc(doc(db, 'users', request.senderId, 'friends', currentUser.uid), {
         email: currentUser.email,
         friendId: currentUser.uid,
         createdAt: serverTimestamp()
       });
 
-      // Notify sender that request was accepted
       try {
         await fetch('/api/send-email-gmail', {
           method: 'POST',
@@ -86,7 +83,6 @@ export default function FriendRequests() {
         });
       } catch (emailError) {
         console.error("Failed to send acceptance email:", emailError);
-        // Don't block the UI flow if email fails
       }
       
       showSuccess(`You are now friends with ${request.senderEmail}`);
@@ -108,42 +104,53 @@ export default function FriendRequests() {
     }
   };
 
-  if (loading) return <div className="p-4 text-center text-[var(--text-secondary)]">Loading requests...</div>;
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-xs text-[var(--ink-3)] flex items-center justify-center gap-2">
+        <Loader2 className="w-4 h-4 animate-spin text-[var(--accent)]" />
+        Loading requests...
+      </div>
+    );
+  }
 
-  if (requests.length === 0) return (
-     <div className="flex flex-col items-center justify-center p-8 text-[var(--text-tertiary)]">
-        <UserPlus className="w-12 h-12 mb-3 opacity-20" />
-        <p>No new friend requests</p>
-     </div>
-  );
+  if (requests.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center text-xs text-[var(--ink-3)]">
+        <UserPlus className="w-8 h-8 mb-2 opacity-30" />
+        <p>No new friend requests.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y divide-[var(--line)]">
       {requests.map(request => (
-        <div key={request.id} className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--bg-secondary)] flex items-center justify-between animate-fade-in">
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full bg-[var(--primary-100)] flex items-center justify-center text-[var(--primary-600)]">
-                <User className="w-5 h-5" />
+        <div key={request.id} className="py-2.5 px-3 flex items-center justify-between gap-3 hover:bg-[var(--sunken)]/50 transition-colors">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+             <div className="w-8 h-8 rounded-full bg-[var(--sunken)] border border-[var(--line)] flex items-center justify-center text-[var(--ink-2)] flex-shrink-0">
+                <User className="w-4 h-4" />
              </div>
-             <div>
-                <p className="font-semibold text-[var(--text-primary)]">{request.senderName}</p>
-                <p className="text-xs text-[var(--text-secondary)]">{request.senderEmail}</p>
+             <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-[var(--ink)] truncate">{request.senderName}</p>
+                <p className="text-xs text-[var(--ink-3)] truncate">{request.senderEmail}</p>
              </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
               onClick={() => handleAccept(request)}
-              className="p-2 rounded-lg bg-[var(--success-50)] text-[var(--success-600)] hover:bg-[var(--success-100)] transition-colors"
+              className="btn-primary text-xs py-1 px-2.5 flex items-center gap-1"
               title="Accept"
             >
-              <Check className="w-5 h-5" />
+              <Check className="w-3.5 h-3.5" />
+              <span>Accept</span>
             </button>
             <button
               onClick={() => handleReject(request.id)}
-              className="p-2 rounded-lg bg-[var(--danger-50)] text-[var(--danger-500)] hover:bg-[var(--danger-100)] transition-colors"
+              className="btn-secondary text-xs py-1 px-2.5 flex items-center gap-1"
               title="Reject"
             >
-              <X className="w-5 h-5" />
+              <X className="w-3.5 h-3.5" />
+              <span>Decline</span>
             </button>
           </div>
         </div>

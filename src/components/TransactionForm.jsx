@@ -1,65 +1,92 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, Tag, CreditCard, Banknote, AlignLeft, AlertTriangle, Users, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { collection, query, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
-const categories = ['Food', 'Transportation', 'Entertainment', 'Bills', 'Shopping', 'Healthcare', 'Education', 'Investment', 'Other'];
+const CATEGORIES = [
+  'Food',
+  'Transportation',
+  'Shopping',
+  'Bills',
+  'Entertainment',
+  'Healthcare',
+  'Education',
+  'Investment',
+  'Groceries',
+  'Utilities',
+  'Personal',
+  'Other',
+];
 
+/**
+ * TransactionForm component
+ *
+ * Implements Section 5.3:
+ * - Desktop: right-side drawer, 440px wide, 14px radius on the left corners only.
+ * - Mobile: full-height bottom sheet with a sticky footer holding the Save button.
+ * - Amount field first and large (32px, inputmode="decimal", autofocus).
+ * - Segmented control for Expense / Income.
+ * - Category picker (list of text chips, wrap, max 8 visible with "More").
+ * - Payment method as segmented control (Online / Cash).
+ * - Date, note, and "Split with friends" switch that reveals friend selection.
+ * - Labels sentence case, 13px. Errors under field in --debit text.
+ * - Primary button text: "Save expense" (or "Save income"). Confirmation toast says "Expense saved".
+ */
 export default function TransactionForm({ onSubmit, onCancel }) {
   const { currentUser } = useAuth();
-  const [formData, setFormData] = useState({
-    type: 'expense',
-    amount: '',
-    category: 'Food',
-    description: '',
-    date: new Date().toISOString().split('T')[0],
-    paymentMethod: 'online',
-    isSplit: false,
-    splitWith: [] // Array of friend IDs
-  });
-  
+  const [type, setType] = useState('expense'); // 'expense' or 'income'
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('Food');
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cash'
+  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [description, setDescription] = useState('');
+  const [isSplit, setIsSplit] = useState(false);
+  const [splitWith, setSplitWith] = useState([]); // array of friendIds
+  const [splitMode, setSplitMode] = useState('equal'); // 'equal' or 'custom'
+  const [customAmounts, setCustomAmounts] = useState({});
+  const [affectCurrentBalance, setAffectCurrentBalance] = useState(true);
+  const [error, setError] = useState('');
+
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
-  const [affectCurrentBalance, setAffectCurrentBalance] = useState(false);
-  const [splitMode, setSplitMode] = useState('equal'); // 'equal' or 'custom'
-  const [customAmounts, setCustomAmounts] = useState({}); // { friendId: amount }
 
   useEffect(() => {
     const fetchFriends = async () => {
       if (!currentUser) return;
       setLoadingFriends(true);
       try {
-         const q = query(collection(db, 'users', currentUser.uid, 'friends'), orderBy('createdAt', 'desc'));
-         const snapshot = await getDocs(q);
-         
-         // Fetch names for each friend from 'users' collection to ensure we have display names
-         const friendsData = await Promise.all(snapshot.docs.map(async (friendDoc) => {
+        const q = query(collection(db, 'users', currentUser.uid, 'friends'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+
+        const friendsData = await Promise.all(
+          snapshot.docs.map(async (friendDoc) => {
             const data = friendDoc.data();
             const friendId = friendDoc.id;
-            
             try {
-               const userSnap = await getDoc(doc(db, 'users', friendId));
-               if (userSnap.exists()) {
-                  const userData = userSnap.data();
-                  return { 
-                     id: friendId, 
-                     friendId,
-                     email: data.email, 
-                     displayName: userData.displayName || data.email 
-                  };
-               }
+              const userSnap = await getDoc(doc(db, 'users', friendId));
+              if (userSnap.exists()) {
+                const userData = userSnap.data();
+                return {
+                  id: friendId,
+                  friendId,
+                  email: data.email,
+                  displayName: userData.displayName || data.email,
+                };
+              }
             } catch (e) {
-               console.error("Error fetching friend profile:", e);
+              console.error('Error fetching friend profile:', e);
             }
             return { id: friendId, friendId, email: data.email, displayName: data.email };
-         }));
-         
-         setFriends(friendsData);
-      } catch (error) {
-         console.error("Error fetching friends:", error);
+          })
+        );
+
+        setFriends(friendsData);
+      } catch (err) {
+        console.error('Error fetching friends:', err);
       } finally {
-         setLoadingFriends(false);
+        setLoadingFriends(false);
       }
     };
     fetchFriends();
@@ -67,375 +94,373 @@ export default function TransactionForm({ onSubmit, onCancel }) {
 
   const isHistoricalDate = () => {
     const today = new Date().toISOString().split('T')[0];
-    return formData.date < today;
+    return date < today;
+  };
+
+  const handleFriendToggle = (friendId) => {
+    setSplitWith((prev) =>
+      prev.includes(friendId) ? prev.filter((id) => id !== friendId) : [...prev, friendId]
+    );
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    const splitFriends = formData.isSplit 
-       ? friends.filter(f => formData.splitWith.includes(f.friendId)).map(friend => ({
-           ...friend,
-           customAmount: splitMode === 'custom' ? parseFloat(customAmounts[friend.friendId] || 0) : null
-         }))
-       : [];
+    setError('');
+
+    const parsedAmount = parseFloat(amount);
+    if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
+      setError('Please enter a valid amount greater than ₹0.');
+      return;
+    }
+
+    const splitFriends = isSplit
+      ? friends
+          .filter((f) => splitWith.includes(f.friendId))
+          .map((friend) => ({
+            ...friend,
+            customAmount: splitMode === 'custom' ? parseFloat(customAmounts[friend.friendId] || 0) : null,
+          }))
+      : [];
 
     onSubmit({
-      ...formData,
-      amount: parseFloat(formData.amount),
+      type,
+      amount: parsedAmount,
+      category,
+      paymentMethod,
+      date,
+      description: description.trim() || category,
+      isSplit,
+      splitWith,
+      splitDetails: splitFriends,
+      splitMode,
       isHistorical: isHistoricalDate(),
       affectCurrentBalance: isHistoricalDate() ? affectCurrentBalance : true,
-      splitDetails: splitFriends,
-      splitMode
     });
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const visibleCategories = showAllCategories ? CATEGORIES : CATEGORIES.slice(0, 8);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[var(--white)] w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-[var(--hairline)] shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end transition-opacity"
+      role="dialog"
+      aria-modal="true"
+      aria-label={type === 'expense' ? 'Add expense' : 'Add income'}
+    >
+      {/* Click outside backdrop */}
+      <div className="absolute inset-0" onClick={onCancel} />
+
+      {/* Drawer on Desktop (440px wide, 14px left corners), Bottom Sheet on Mobile (<640px full height) */}
+      <div className="relative w-full sm:max-w-[440px] h-[92dvh] sm:h-full bg-[var(--surface)] border-l sm:border-[var(--line)] rounded-t-[14px] sm:rounded-t-none sm:rounded-l-[14px] shadow-[var(--shadow-pop)] flex flex-col z-10 overflow-hidden self-end sm:self-auto">
         {/* Header */}
-        <div className="p-6 border-b border-[var(--hairline)] flex justify-between items-center bg-[var(--white)] sticky top-0 z-10">
-           <div>
-              <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold">Ledger Entry</div>
-              <h2 className="text-xl font-semibold text-[var(--navy)] tracking-tight mt-0.5">Add Transaction</h2>
-           </div>
-           <button
-              onClick={onCancel}
-              className="w-8 h-8 flex items-center justify-center rounded-md border border-[var(--slate-faint)] text-[var(--slate-light)] hover:text-[var(--navy)] transition-all"
-           >
-              <X className="w-4 h-4" />
-           </button>
+        <div className="px-6 py-4 border-b border-[var(--line)] flex items-center justify-between bg-[var(--surface)]">
+          <h2 className="text-base font-semibold text-[var(--ink)]">
+            {type === 'expense' ? 'Add expense' : 'Add income'}
+          </h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-8 h-8 flex items-center justify-center rounded-[6px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-           {/* Amount Input */}
-           <div className="space-y-2">
-              <label className="label-premium">Amount (₹)</label>
-              <div className="relative group">
-                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-[var(--navy)] font-mono font-bold text-xl">₹</span>
-                 </div>
-                 <input
-                    type="number"
-                    name="amount"
-                    value={formData.amount}
-                    onChange={handleChange}
-                    step="0.01"
-                    min="0"
-                    required
-                    placeholder="0.00"
-                    className="input-premium pl-10 text-2xl font-mono font-semibold tracking-tight text-[var(--navy)]"
-                    autoFocus
-                 />
-              </div>
-           </div>
-
-           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Category */}
-              <div>
-                 <label className="label-premium">Category</label>
-                 <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                       <Tag className="w-3.5 h-3.5 text-[var(--slate-light)]" />
-                    </div>
-                    <select
-                       name="category"
-                       value={formData.category}
-                       onChange={handleChange}
-                       className="input-premium pl-9 text-xs font-medium cursor-pointer"
-                    >
-                       {categories.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                       ))}
-                    </select>
-                 </div>
-              </div>
-
-              {/* Payment Method */}
-              <div>
-                 <label className="label-premium">Payment Method</label>
-                 <div className="grid grid-cols-2 gap-2">
-                    <button
-                       type="button"
-                       onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'online' }))}
-                       className={`py-2 px-3 rounded-md border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                          formData.paymentMethod === 'online' 
-                             ? 'border-[var(--navy)] bg-[var(--navy)] text-white shadow-sm' 
-                             : 'border-[var(--slate-faint)] bg-[var(--white)] text-[var(--slate)] hover:border-[var(--slate-light)]'
-                       }`}
-                    >
-                       <CreditCard className="w-3.5 h-3.5" />
-                       <span>Online</span>
-                    </button>
-                    <button
-                       type="button"
-                       onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'cash' }))}
-                       className={`py-2 px-3 rounded-md border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                          formData.paymentMethod === 'cash' 
-                             ? 'border-[var(--emerald)] bg-[var(--emerald)] text-white shadow-sm' 
-                             : 'border-[var(--slate-faint)] bg-[var(--white)] text-[var(--slate)] hover:border-[var(--slate-light)]'
-                       }`}
-                    >
-                       <Banknote className="w-3.5 h-3.5" />
-                       <span>Cash</span>
-                    </button>
-                 </div>
-              </div>
-           </div>
-
-           {/* Date */}
-           <div className="space-y-2">
-              <label className="label-premium">Date</label>
-              <div className="relative">
-                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Calendar className="w-4 h-4 text-[#94a3b8]" />
-                 </div>
-                 <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleChange}
-                    required
-                    className={`input-premium pl-10 ${isHistoricalDate() ? 'border-[#f59e0b]/50 bg-[#f59e0b]/10' : ''}`}
-                 />
-              </div>
-           </div>
-           
-           {/* Historical Date Warning */}
-           {isHistoricalDate() && (
-              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 animate-slide-down">
-                 <div className="flex gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                    <div>
-                       <h4 className="text-sm font-bold text-amber-800">Past Date Detected</h4>
-                       <p className="text-xs text-amber-700 mt-1">
-                          You are recording a transaction from the past. Should this affect your current balance?
-                       </p>
-                       
-                       <label className="flex items-center gap-3 mt-3 cursor-pointer group">
-                          <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
-                             affectCurrentBalance ? 'bg-amber-600 border-amber-600' : 'border-amber-400 bg-white'
-                          }`}>
-                             {affectCurrentBalance && <Check className="w-3.5 h-3.5 text-white" />}
-                          </div>
-                          <input 
-                             type="checkbox" 
-                             className="hidden" 
-                             checked={affectCurrentBalance}
-                             onChange={e => setAffectCurrentBalance(e.target.checked)}
-                          />
-                          <span className="text-xs font-semibold text-amber-800 group-hover:text-amber-900">
-                             Yes, deduct from my current balance
-                          </span>
-                       </label>
-                    </div>
-                 </div>
-              </div>
-           )}
-
-           {/* Description */}
-           <div className="space-y-2">
-              <label className="label-premium">Description (Optional)</label>
-              <div className="relative">
-                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <AlignLeft className="w-4 h-4 text-[var(--text-tertiary)]" />
-                 </div>
-                 <input
-                    type="text"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Dinner details, etc."
-                    className="input-premium pl-10"
-                 />
-              </div>
-           </div>
-
-            {/* Split Expense Section */}
-            <div className="space-y-3 pt-2 border-t border-[var(--card-border)]">
-               <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                     <Users className="w-5 h-5 text-[var(--primary-500)]" />
-                     <span className="font-semibold text-[var(--text-primary)]">Split with Friends</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                     <input 
-                        type="checkbox" 
-                        checked={formData.isSplit} 
-                        onChange={e => setFormData(prev => ({ ...prev, isSplit: e.target.checked, splitWith: [] }))}
-                        className="sr-only peer" 
-                     />
-                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-500)]"></div>
-                  </label>
-               </div>
-
-               {formData.isSplit && (
-                  <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] space-y-3 animate-fade-in">
-                     {loadingFriends ? (
-                        <p className="text-sm text-[var(--text-secondary)]">Loading friends...</p>
-                     ) : friends.length > 0 ? (
-                        <>
-                           <div className="flex items-center justify-between mb-3">
-                              <p className="text-sm text-[var(--text-secondary)]">Select friends to split with:</p>
-                              <div className="flex gap-2 text-xs">
-                                 <button
-                                    type="button"
-                                    onClick={() => setSplitMode('equal')}
-                                    className={`px-3 py-1 rounded-lg transition-all ${
-                                       splitMode === 'equal'
-                                          ? 'bg-[var(--primary-500)] text-white'
-                                          : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:bg-[var(--card-bg)]'
-                                    }`}
-                                 >
-                                    Equal Split
-                                 </button>
-                                 <button
-                                    type="button"
-                                    onClick={() => setSplitMode('custom')}
-                                    className={`px-3 py-1 rounded-lg transition-all ${
-                                       splitMode === 'custom'
-                                          ? 'bg-[var(--primary-500)] text-white'
-                                          : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:bg-[var(--card-bg)]'
-                                    }`}
-                                 >
-                                    Custom Amounts
-                                 </button>
-                              </div>
-                           </div>
-                           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                              {friends.map(friend => (
-                                 <div key={friend.friendId} className="space-y-1">
-                                    <div 
-                                       onClick={() => {
-                                          setFormData(prev => {
-                                             const isActive = prev.splitWith.includes(friend.friendId);
-                                             return {
-                                                ...prev,
-                                                splitWith: isActive 
-                                                   ? prev.splitWith.filter(id => id !== friend.friendId)
-                                                   : [...prev.splitWith, friend.friendId]
-                                             };
-                                          });
-                                       }}
-                                       className={`p-2 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
-                                          formData.splitWith.includes(friend.friendId)
-                                             ? 'border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)]'
-                                             : 'border-[var(--card-border)] bg-[var(--bg-primary)] hover:border-[var(--primary-300)]'
-                                       }`}
-                                    >
-                                       <span className="text-xs font-medium truncate">{friend.displayName || friend.email}</span>
-                                       {formData.splitWith.includes(friend.friendId) && <Check className="w-3.5 h-3.5" />}
-                                    </div>
-                                    
-                                    {/* Custom Amount Input */}
-                                    {splitMode === 'custom' && formData.splitWith.includes(friend.friendId) && (
-                                       <div className="pl-2 animate-fade-in">
-                                          <div className="relative">
-                                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[var(--text-tertiary)]">₹</span>
-                                             <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                placeholder="0.00"
-                                                value={customAmounts[friend.friendId] || ''}
-                                                onChange={(e) => setCustomAmounts(prev => ({
-                                                   ...prev,
-                                                   [friend.friendId]: e.target.value
-                                                }))}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="w-full pl-5 pr-2 py-1.5 text-xs rounded-lg border border-[var(--card-border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]"
-                                             />
-                                          </div>
-                                       </div>
-                                    )}
-                                 </div>
-                              ))}
-                           </div>
-                           
-                           {formData.splitWith.length > 0 && (
-                              <div className="pt-3 border-t border-[var(--card-border)] space-y-2">
-                                 {splitMode === 'custom' && (() => {
-                                    const totalAmount = parseFloat(formData.amount || 0);
-                                    const friendsTotal = formData.splitWith.reduce((sum, id) => 
-                                       sum + parseFloat(customAmounts[id] || 0), 0
-                                    );
-                                    const yourShare = totalAmount - friendsTotal;
-                                    
-                                    return (
-                                       <>
-                                          <div className="flex justify-between items-center text-xs">
-                                             <span className="text-[var(--text-tertiary)]">Friends total:</span>
-                                             <span className="font-medium">₹{friendsTotal.toFixed(2)}</span>
-                                          </div>
-                                          <div className="flex justify-between items-center text-sm">
-                                             <span className="text-[var(--text-secondary)]">Your share:</span>
-                                             <span className={`font-bold ${
-                                                yourShare >= 0 && yourShare <= totalAmount
-                                                   ? 'text-[var(--primary-600)]'
-                                                   : 'text-[var(--danger-500)]'
-                                             }`}>
-                                                ₹{yourShare.toFixed(2)}
-                                             </span>
-                                          </div>
-                                          {yourShare < 0 && (
-                                             <p className="text-xs text-[var(--danger-500)] flex items-center gap-1">
-                                                <AlertTriangle className="w-3 h-3" />
-                                                Friends' total exceeds bill amount
-                                             </p>
-                                          )}
-                                          {yourShare > totalAmount && (
-                                             <p className="text-xs text-[var(--danger-500)] flex items-center gap-1">
-                                                <AlertTriangle className="w-3 h-3" />
-                                                Your share exceeds bill amount
-                                             </p>
-                                          )}
-                                       </>
-                                    );
-                                 })()}
-                                 
-                                 {splitMode === 'equal' && (
-                                    <div className="flex justify-between items-center text-sm">
-                                       <span className="text-[var(--text-secondary)]">Your share:</span>
-                                       <span className="font-bold text-[var(--primary-600)]">
-                                          ₹{(parseFloat(formData.amount || 0) / (formData.splitWith.length + 1)).toFixed(2)}
-                                       </span>
-                                    </div>
-                                 )}
-                              </div>
-                           )}
-                        </>
-                     ) : (
-                        <p className="text-sm text-[var(--text-tertiary)] italic">You haven't added any friends yet.</p>
-                     )}
-                  </div>
-               )}
+        {/* Form Body (Scrollable) */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {/* Amount Field (First and large: 32px, inputmode="decimal", autofocus) */}
+          <div>
+            <label className="field-label" htmlFor="amount-input">
+              Amount
+            </label>
+            <div className="relative flex items-center border-b-2 border-[var(--line-strong)] focus-within:border-[var(--accent)] pb-1 transition-colors">
+              <span className="text-2xl font-light text-[var(--ink-3)] mr-2 select-none">₹</span>
+              <input
+                id="amount-input"
+                type="number"
+                step="any"
+                inputMode="decimal"
+                autoFocus
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  if (error) setError('');
+                }}
+                className="w-full text-3xl font-light text-[var(--ink)] bg-transparent outline-none tabular-nums"
+              />
             </div>
+            {error && <p className="text-xs text-[var(--debit)] mt-1.5">{error}</p>}
+          </div>
 
-           {/* Actions */}
-           <div className="pt-4 flex gap-4">
+          {/* Segmented Control: Expense / Income */}
+          <div>
+            <label className="field-label">Transaction type</label>
+            <div className="grid grid-cols-2 p-1 bg-[var(--sunken)] rounded-[6px] gap-1">
               <button
-                 type="button"
-                 onClick={onCancel}
-                 className="flex-1 btn-secondary"
+                type="button"
+                onClick={() => setType('expense')}
+                className={`min-h-[36px] text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                  type === 'expense'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                    : 'text-[var(--ink-2)] hover:text-[var(--ink)]'
+                }`}
               >
-                 Cancel
+                Expense
               </button>
               <button
-                 type="submit"
-                 className="flex-1 btn-primary"
+                type="button"
+                onClick={() => setType('income')}
+                className={`min-h-[36px] text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                  type === 'income'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                    : 'text-[var(--ink-2)] hover:text-[var(--ink)]'
+                }`}
               >
-                 Save Expense
+                Income
               </button>
-           </div>
+            </div>
+          </div>
+
+          {/* Category Picker: wrap text chips */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="field-label mb-0">Category</label>
+              {CATEGORIES.length > 8 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllCategories((prev) => !prev)}
+                  className="text-xs text-[var(--accent)] hover:underline cursor-pointer"
+                >
+                  {showAllCategories ? 'Show less' : 'More'}
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {visibleCategories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={`px-3 py-1.5 text-xs rounded-[6px] border transition-colors cursor-pointer ${
+                    category === cat
+                      ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)] font-medium'
+                      : 'border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--sunken)]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment Method Segmented Control: Online / Cash */}
+          <div>
+            <label className="field-label">Payment method</label>
+            <div className="grid grid-cols-2 p-1 bg-[var(--sunken)] rounded-[6px] gap-1">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('online')}
+                className={`min-h-[36px] text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                  paymentMethod === 'online'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                    : 'text-[var(--ink-2)] hover:text-[var(--ink)]'
+                }`}
+              >
+                Online
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={`min-h-[36px] text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                  paymentMethod === 'cash'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                    : 'text-[var(--ink-2)] hover:text-[var(--ink)]'
+                }`}
+              >
+                Cash
+              </button>
+            </div>
+          </div>
+
+          {/* Date Field */}
+          <div>
+            <label className="field-label" htmlFor="date-input">
+              Date
+            </label>
+            <input
+              id="date-input"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="field text-sm"
+            />
+          </div>
+
+          {/* Description / Note */}
+          <div>
+            <label className="field-label" htmlFor="desc-input">
+              Note or description
+            </label>
+            <input
+              id="desc-input"
+              type="text"
+              placeholder={`e.g. ${category} at supermarket`}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="field text-sm"
+            />
+          </div>
+
+          {/* Historical Date Checkbox */}
+          {isHistoricalDate() && (
+            <div className="p-3 bg-[var(--sunken)] rounded-[6px] space-y-1">
+              <label className="flex items-center gap-2 text-xs text-[var(--ink)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={affectCurrentBalance}
+                  onChange={(e) => setAffectCurrentBalance(e.target.checked)}
+                  className="rounded border-[var(--line-strong)]"
+                />
+                <span>Deduct from current wallet balance</span>
+              </label>
+              <p className="text-xs text-[var(--ink-3)]">
+                Uncheck if this historical entry is already accounted for in your wallet.
+              </p>
+            </div>
+          )}
+
+          {/* Split with friends (Only for expense) */}
+          {type === 'expense' && (
+            <div className="pt-2 border-t border-[var(--line)] space-y-3">
+              <label className="flex items-center justify-between text-xs font-medium text-[var(--ink)] cursor-pointer">
+                <span>Split with friends</span>
+                <input
+                  type="checkbox"
+                  checked={isSplit}
+                  onChange={(e) => setIsSplit(e.target.checked)}
+                  className="rounded border-[var(--line-strong)]"
+                />
+              </label>
+
+              {isSplit && (
+                <div className="space-y-3 pt-1">
+                  {loadingFriends ? (
+                    <p className="text-xs text-[var(--ink-3)]">Loading friends list...</p>
+                  ) : friends.length === 0 ? (
+                    <p className="text-xs text-[var(--ink-3)]">
+                      No friends found. Add friends in the Friends menu to split bills.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-1.5">
+                        {friends.map((f) => {
+                          const isSelected = splitWith.includes(f.friendId);
+                          return (
+                            <button
+                              key={f.friendId}
+                              type="button"
+                              onClick={() => handleFriendToggle(f.friendId)}
+                              className={`px-3 py-1.5 text-xs rounded-[6px] border transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)] font-medium'
+                                  : 'border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--sunken)]'
+                              }`}
+                            >
+                              {f.displayName}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {splitWith.length > 0 && (
+                        <div className="p-3 bg-[var(--sunken)] rounded-[6px] space-y-2 text-xs text-[var(--ink-2)]">
+                          <div className="flex items-center justify-between">
+                            <span>Split mode</span>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSplitMode('equal')}
+                                className={`text-xs ${
+                                  splitMode === 'equal'
+                                    ? 'text-[var(--accent)] font-semibold underline'
+                                    : 'text-[var(--ink-3)]'
+                                }`}
+                              >
+                                Equal
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSplitMode('custom')}
+                                className={`text-xs ${
+                                  splitMode === 'custom'
+                                    ? 'text-[var(--accent)] font-semibold underline'
+                                    : 'text-[var(--ink-3)]'
+                                }`}
+                              >
+                                Custom
+                              </button>
+                            </div>
+                          </div>
+
+                          {splitMode === 'equal' && amount && (
+                            <p className="text-xs text-[var(--ink-3)]">
+                              ₹{(parseFloat(amount) / (splitWith.length + 1)).toFixed(2)} each (across {splitWith.length + 1} people).
+                            </p>
+                          )}
+
+                          {splitMode === 'custom' && (
+                            <div className="space-y-1.5 pt-1">
+                              {friends
+                                .filter((f) => splitWith.includes(f.friendId))
+                                .map((f) => (
+                                  <div key={f.friendId} className="flex items-center justify-between gap-2">
+                                    <span className="text-xs truncate">{f.displayName}</span>
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      placeholder="0"
+                                      value={customAmounts[f.friendId] || ''}
+                                      onChange={(e) =>
+                                        setCustomAmounts((prev) => ({
+                                          ...prev,
+                                          [f.friendId]: e.target.value,
+                                        }))
+                                      }
+                                      className="field h-8 w-24 text-xs text-right"
+                                    />
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </form>
+
+        {/* Sticky Footer Action */}
+        <div className="p-4 border-t border-[var(--line)] bg-[var(--surface)] flex items-center justify-end gap-3 pb-[calc(16px+env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="btn btn-quiet text-xs h-10 px-4"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="btn btn-primary text-xs h-10 px-5"
+          >
+            {type === 'expense' ? 'Save expense' : 'Save income'}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { User, Users } from 'lucide-react';
+import { User, Users, Loader2 } from 'lucide-react';
 
 export default function FriendList() {
   const { currentUser } = useAuth();
@@ -18,7 +18,6 @@ export default function FriendList() {
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      // Fetch profiles for each friend to get their current display names
       const friendsData = await Promise.all(snapshot.docs.map(async (friendDoc) => {
          const data = friendDoc.data();
          const friendId = friendDoc.id;
@@ -46,26 +45,35 @@ export default function FriendList() {
     return () => unsubscribe();
   }, [currentUser]);
 
-  if (loading) return <div className="p-4 text-center text-[var(--text-secondary)]">Loading friends...</div>;
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-xs text-[var(--ink-3)] flex items-center justify-center gap-2">
+        <Loader2 className="w-4 h-4 animate-spin text-[var(--accent)]" />
+        Loading friends...
+      </div>
+    );
+  }
 
-  if (friends.length === 0) return (
-     <div className="flex flex-col items-center justify-center p-8 text-[var(--text-tertiary)]">
-        <Users className="w-12 h-12 mb-3 opacity-20" />
-        <p>No friends yet. Add some!</p>
-     </div>
-  );
+  if (friends.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center text-xs text-[var(--ink-3)]">
+        <Users className="w-8 h-8 mb-2 opacity-30" />
+        <p>No friends added yet.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3">
+    <div className="divide-y divide-[var(--line)]">
       {friends.map(friend => (
-        <div key={friend.id} className="p-3 rounded-xl hover:bg-[var(--bg-tertiary)] flex items-center gap-3 transition-colors cursor-default">
-           <div className="w-10 h-10 rounded-full bg-[var(--accent-100)] flex items-center justify-center text-[var(--accent-600)]">
-              <User className="w-5 h-5" />
-           </div>
-           <div>
-              <p className="font-medium text-[var(--text-primary)]">{friend.displayName || friend.email}</p>
-              {friend.displayName && <p className="text-xs text-[var(--text-secondary)]">{friend.email}</p>}
-           </div>
+        <div key={friend.id} className="py-2.5 px-3 flex items-center gap-3 hover:bg-[var(--sunken)]/50 transition-colors">
+          <div className="w-8 h-8 rounded-full bg-[var(--sunken)] border border-[var(--line)] flex items-center justify-center text-[var(--ink-2)] flex-shrink-0">
+            <User className="w-4 h-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-[var(--ink)] truncate">{friend.displayName || friend.email}</p>
+            {friend.displayName && <p className="text-xs text-[var(--ink-3)] truncate">{friend.email}</p>}
+          </div>
         </div>
       ))}
     </div>

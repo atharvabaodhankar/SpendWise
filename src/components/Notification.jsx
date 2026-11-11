@@ -1,55 +1,82 @@
-import { useState, useEffect } from 'react';
-import { X, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 
-const icons = {
-  success: CheckCircle,
-  error: AlertTriangle,
-  warning: AlertTriangle,
-  info: Info
-};
-
-const colors = {
-  success: 'bg-green-50 border-green-400 text-green-800',
-  error: 'bg-red-50 border-red-400 text-red-800',
-  warning: 'bg-yellow-50 border-yellow-400 text-yellow-800',
-  info: 'bg-blue-50 border-blue-400 text-blue-800'
-};
-
-export default function Notification({ type = 'info', message, onClose, autoClose = true, duration = 5000 }) {
+/**
+ * Toast Notification component for SpendWise
+ *
+ * Implements Section 5.8:
+ * - Bottom-centre on mobile above the tab bar, bottom-left on desktop.
+ * - 14px radius, text only with a 2px left border in --credit or --debit.
+ * - Auto-dismiss at 4s, pause on hover, role="status".
+ */
+export default function Notification({
+  notification,
+  type = 'info',
+  message,
+  onClose,
+  autoClose = true,
+  duration = 4000,
+}) {
   const [isVisible, setIsVisible] = useState(true);
-  const Icon = icons[type];
+  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef(null);
+
+  const resolvedType = notification?.type || type || 'info';
+  const resolvedMessage = notification?.message || message || '';
+
+  const isSuccess = resolvedType === 'success';
+  const isError = resolvedType === 'error' || resolvedType === 'danger';
+
+  const borderColor = isSuccess
+    ? 'border-l-2 border-l-[var(--credit)]'
+    : isError
+    ? 'border-l-2 border-l-[var(--debit)]'
+    : 'border-l-2 border-l-[var(--accent)]';
 
   useEffect(() => {
-    if (autoClose) {
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(onClose, 300); // Wait for fade out animation
-      }, duration);
+    if (!autoClose || isPaused) return;
 
-      return () => clearTimeout(timer);
-    }
-  }, [autoClose, duration, onClose]);
+    timerRef.current = setTimeout(() => {
+      setIsVisible(false);
+      if (onClose) onClose();
+    }, duration);
 
-  if (!isVisible) return null;
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [autoClose, duration, isPaused, onClose]);
+
+  if (!isVisible || !resolvedMessage) return null;
 
   return (
-    <div className={`transition-all duration-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
-      <div className={`border-l-4 p-4 rounded-md shadow-lg ${colors[type]}`}>
-        <div className="flex items-start">
-          <Icon className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">{message}</p>
-          </div>
+    <div
+      role="status"
+      aria-live="polite"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className={`fixed z-50 transition-all duration-180 ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+      } bottom-[calc(72px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 sm:left-6 sm:bottom-6 sm:translate-x-0 max-w-[90vw] sm:max-w-md`}
+    >
+      <div
+        className={`bg-[var(--surface)] text-[var(--ink)] border border-[var(--line)] ${borderColor} rounded-[14px] shadow-[var(--shadow-pop)] py-3 px-4 flex items-center justify-between gap-3`}
+      >
+        <span className="text-[13px] font-normal leading-snug">
+          {resolvedMessage}
+        </span>
+        {onClose && (
           <button
+            type="button"
             onClick={() => {
               setIsVisible(false);
-              setTimeout(onClose, 300);
+              setTimeout(onClose, 180);
             }}
-            className="ml-3 flex-shrink-0 hover:opacity-70"
+            className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer flex-shrink-0"
+            aria-label="Dismiss notification"
           >
-            <X className="h-4 w-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
-        </div>
+        )}
       </div>
     </div>
   );

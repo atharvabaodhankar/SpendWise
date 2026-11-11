@@ -1,89 +1,118 @@
 import { useState } from 'react';
-import { X, UserPlus, Users, Inbox, Wallet } from 'lucide-react';
+import { X, UserPlus } from 'lucide-react';
 import FriendList from './FriendList';
 import FriendRequests from './FriendRequests';
 import AddFriendModal from './AddFriendModal';
 import DebtList from './DebtList';
 
-export default function FriendsManagerModal({ isOpen, onClose }) {
-  const [activeTab, setActiveTab] = useState('list'); // 'list' or 'requests' or 'debts'
+/**
+ * FriendsManagerModal component
+ *
+ * Implements Section 5.8:
+ * - Desktop (>=640px): centred dialog, max width 520px, 14px radius, --surface, --shadow-pop.
+ * - Mobile (<640px): bottom sheet, full width, max height 92dvh, 14px top corners.
+ * - Focus trap, Esc closes, backdrop click closes.
+ * - Text tabs with accent underline (no segmented pills).
+ */
+export default function FriendsManagerModal({ isOpen, onClose, initialTab = 'list', debts, onSettle }) {
+  const [activeTab, setActiveTab] = useState(() => (debts ? 'debts' : initialTab));
   const [showAddModal, setShowAddModal] = useState(false);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-[var(--card-bg)] rounded-2xl shadow-2xl w-full max-w-lg border border-[var(--card-border)] overflow-hidden animate-scale-up flex flex-col max-h-[80vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Friends and splits"
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      {/* Modal Dialog / Sheet */}
+      <div className="relative w-full sm:max-w-[520px] max-h-[92dvh] bg-[var(--surface)] border border-[var(--line)] rounded-t-[14px] sm:rounded-[14px] shadow-[var(--shadow-pop)] overflow-hidden flex flex-col z-10">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[var(--card-border)] flex justify-between items-center bg-[var(--bg-secondary)]">
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">Friends</h2>
-          <div className="flex gap-2">
-             <button
-                onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--primary-100)] text-[var(--primary-700)] hover:bg-[var(--primary-200)] transition-colors text-sm font-medium"
-             >
-                <UserPlus className="w-4 h-4" />
-                Add Friend
-             </button>
-             <button 
-               onClick={onClose}
-               className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1 rounded-lg hover:bg-[var(--bg-tertiary)]"
-             >
-               <X className="w-5 h-5" />
-             </button>
+        <div className="px-5 py-4 border-b border-[var(--line)] flex justify-between items-center bg-[var(--surface)]">
+          <h2 className="text-base font-semibold text-[var(--ink)]">Friends and splits</h2>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="btn btn-quiet h-8 px-2.5 text-xs flex items-center gap-1.5"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Add friend</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-[var(--card-border)] bg-[var(--bg-primary)]">
-           <button
-              onClick={() => setActiveTab('list')}
-              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                 activeTab === 'list' 
-                    ? 'text-[var(--primary-600)] border-b-2 border-[var(--primary-600)]' 
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-           >
-              <Users className="w-4 h-4" />
-              My Friends
-           </button>
-           <button
-              onClick={() => setActiveTab('requests')}
-              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                 activeTab === 'requests' 
-                    ? 'text-[var(--primary-600)] border-b-2 border-[var(--primary-600)]' 
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-           >
-              <Inbox className="w-4 h-4" />
-              Requests
-           </button>
-           <button
-              onClick={() => setActiveTab('debts')}
-              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                 activeTab === 'debts' 
-                    ? 'text-[var(--primary-600)] border-b-2 border-[var(--primary-600)]' 
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-           >
-              <Wallet className="w-4 h-4" />
-              Debts
-           </button>
+        {/* Text Tabs with Accent Underline */}
+        <div className="flex border-b border-[var(--line)] px-5 bg-[var(--surface)] gap-6" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'list'}
+            onClick={() => setActiveTab('list')}
+            className={`py-3 text-xs font-medium transition-colors border-b-2 -mb-[1px] cursor-pointer ${
+              activeTab === 'list'
+                ? 'border-[var(--accent)] text-[var(--ink)] font-semibold'
+                : 'border-transparent text-[var(--ink-3)] hover:text-[var(--ink)]'
+            }`}
+          >
+            Friends
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'requests'}
+            onClick={() => setActiveTab('requests')}
+            className={`py-3 text-xs font-medium transition-colors border-b-2 -mb-[1px] cursor-pointer ${
+              activeTab === 'requests'
+                ? 'border-[var(--accent)] text-[var(--ink)] font-semibold'
+                : 'border-transparent text-[var(--ink-3)] hover:text-[var(--ink)]'
+            }`}
+          >
+            Requests
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'debts'}
+            onClick={() => setActiveTab('debts')}
+            className={`py-3 text-xs font-medium transition-colors border-b-2 -mb-[1px] cursor-pointer ${
+              activeTab === 'debts'
+                ? 'border-[var(--accent)] text-[var(--ink)] font-semibold'
+                : 'border-transparent text-[var(--ink-3)] hover:text-[var(--ink)]'
+            }`}
+          >
+            Debts
+          </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 bg-[var(--bg-primary)]">
-           {activeTab === 'list' && <FriendList />}
-           {activeTab === 'requests' && <FriendRequests />}
-           {activeTab === 'debts' && <DebtList />}
+        <div className="p-5 overflow-y-auto flex-1">
+          {activeTab === 'list' && <FriendList />}
+          {activeTab === 'requests' && <FriendRequests />}
+          {activeTab === 'debts' && <DebtList debts={debts} onSettle={onSettle} />}
         </div>
       </div>
-      
-      {/* Nested Modal */}
-      <AddFriendModal 
-         isOpen={showAddModal} 
-         onClose={() => setShowAddModal(false)} 
-      />
+
+      {/* Nested Add Friend Modal */}
+      {showAddModal && (
+        <AddFriendModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -9,7 +9,14 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "mcp": "node mcp/server.js"
+    "mcp": "node mcp/server.js",
+    "test": "vitest run",
+    "test:tier1": "vitest run tests/e2e/tier1-feature-coverage",
+    "test:tier2": "vitest run tests/e2e/tier2-boundary-corner",
+    "test:tier3": "vitest run tests/e2e/tier3-cross-feature",
+    "test:tier4": "vitest run tests/e2e/tier4-application-scenarios",
+    "test:grep": "node scripts/check-prohibited-syntax.mjs",
+    "test:e2e": "node scripts/run-e2e-tests.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -32,6 +39,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.9",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.2",
@@ -40,8 +50,10 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.4.0",
+    "jsdom": "^28.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
-    "vite": "^7.1.6"
+    "vite": "^7.1.6",
+    "vitest": "^5.1.0"
   }
 }

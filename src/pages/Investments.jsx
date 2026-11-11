@@ -1,1181 +1,971 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useNotification } from "../context/NotificationContext";
-import { db } from "../firebase/config";
+import { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
+import { db } from '../firebase/config';
 import {
   collection,
   query,
   where,
   onSnapshot,
-} from "firebase/firestore";
+} from 'firebase/firestore';
 import {
-  Coins,
-  Gem,
-  LineChart,
-  Landmark,
-  TrendingUp,
-  Layers,
-  ArrowUpRight,
-  ArrowDownRight,
-  PlusCircle,
+  Plus,
   Trash2,
-  Calendar,
-  Building,
-  Sun,
-  Moon,
-  Users,
-  Key,
-  Settings,
-  LogOut,
-  BarChart3,
-  Menu,
   X,
-  Briefcase,
-  CheckCircle2,
-  Clock,
-  FileText,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+  ChevronRight,
+} from 'lucide-react';
 import {
   addInvestment,
   deleteInvestment,
-} from "../utils/investmentService";
+} from '../utils/investmentService';
 import {
   addSalary,
   deleteSalary,
-} from "../utils/salaryService";
-import AiChatbot from "../components/AiChatbot";
-import SpendWiseLogo from "../components/SpendWiseLogo";
-import SettingsModal from "../components/SettingsModal";
-import FriendsManagerModal from "../components/friends/FriendsManagerModal";
+} from '../utils/salaryService';
+import Money from '../components/Money';
 
-const MONTH_MAP = {
-  jan: 1, january: 1,
-  feb: 2, february: 2,
-  mar: 3, march: 3,
-  apr: 4, april: 4,
-  may: 5,
-  jun: 6, june: 6,
-  jul: 7, july: 7,
-  aug: 8, august: 8,
-  sep: 9, sept: 9, september: 9,
-  oct: 10, october: 10,
-  nov: 11, november: 11,
-  dec: 12, december: 12,
-};
-
-function getSalaryTimestamp(sal) {
-  const str = (sal.salaryMonth || "").toLowerCase();
-  let monthNum = 0;
-  for (const [m, num] of Object.entries(MONTH_MAP)) {
-    if (str.includes(m)) {
-      monthNum = num;
-      break;
-    }
-  }
-
-  const yearMatch = str.match(/\b(20\d\d)\b/);
-  let year = yearMatch ? parseInt(yearMatch[1], 10) : null;
-  if (!year && sal.receivedDate) {
-    const recYear = new Date(sal.receivedDate).getFullYear();
-    if (!isNaN(recYear)) year = recYear;
-  }
-  if (!year) year = new Date().getFullYear();
-
-  if (monthNum > 0) {
-    return new Date(year, monthNum - 1, 1).getTime();
-  }
-
-  if (sal.receivedDate) {
-    const t = new Date(sal.receivedDate).getTime();
-    if (!isNaN(t)) return t;
-  }
-  return 0;
-}
-
-const ASSET_TYPES = [
-  { id: "gold", label: "Gold", icon: Coins, color: "#F59E0B" },
-  { id: "silver", label: "Silver", icon: Gem, color: "#94A3B8" },
-  { id: "mutual_fund", label: "Mutual Funds", icon: LineChart, color: "#10B981" },
-  { id: "fd", label: "Fixed Deposits", icon: Landmark, color: "#3B82F6" },
-  { id: "stocks", label: "Stocks / Equity", icon: TrendingUp, color: "#8B5CF6" },
-  { id: "other", label: "Other Assets", icon: Layers, color: "#64748B" },
+const BANKNOTE_HUES = [
+  'var(--cat-stone)',
+  'var(--cat-saffron)',
+  'var(--cat-lagoon)',
+  'var(--cat-lavender)',
+  'var(--cat-olive)',
+  'var(--cat-cocoa)',
 ];
 
-export default function Investments() {
-  const { currentUser, logout } = useAuth();
-  const { showSuccess, showError } = useNotification();
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
-  // Top Section Mode: "investments" | "salaries"
-  const [activeView, setActiveView] = useState("investments");
+export default function Investments({ initialHoldings, initialSalaryHistory } = {}) {
+  const auth = useAuth?.() || {};
+  const currentUser = auth.currentUser;
+  const notification = useNotification?.() || {};
+  const showSuccess = notification?.showSuccess || (() => {});
+  const showError = notification?.showError || (() => {});
+
+  // Tab: 'investments' | 'salary'
+  const [activeTab, setActiveTab] = useState('investments');
 
   // Investments State
-  const [investments, setInvestments] = useState([]);
-  const [loadingInvestments, setLoadingInvestments] = useState(true);
-  const [filterType, setFilterType] = useState("all");
-  const [showInvestmentModal, setShowInvestmentModal] = useState(false);
-  const [submittingInvestment, setSubmittingInvestment] = useState(false);
+  const [investments, setInvestments] = useState(() => initialHoldings || []);
+  const [filterType, setFilterType] = useState('all');
+  const [showAddInvestmentModal, setShowAddInvestmentModal] = useState(false);
+  const [selectedMobileHolding, setSelectedMobileHolding] = useState(null);
 
-  // Salaries State
-  const [salaries, setSalaries] = useState([]);
-  const [loadingSalaries, setLoadingSalaries] = useState(true);
-  const [showSalaryModal, setShowSalaryModal] = useState(false);
-  const [submittingSalary, setSubmittingSalary] = useState(false);
-  const [salarySortOrder, setSalarySortOrder] = useState("desc");
+  // Salary State
+  const [salaries, setSalaries] = useState(() => initialSalaryHistory || []);
+  const [showAddSalaryModal, setShowAddSalaryModal] = useState(false);
 
-  // Nav modals
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [settingsTab, setSettingsTab] = useState("preferences");
-  const [showFriendsModal, setShowFriendsModal] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Investment Form State
+  // Forms
   const [investmentForm, setInvestmentForm] = useState({
-    name: "",
-    assetType: "gold",
-    provider: "PhonePe",
-    investedAmount: "",
-    currentValue: "",
-    purchaseDate: new Date().toISOString().split("T")[0],
-    notes: "",
+    name: '',
+    assetType: 'Mutual Funds',
+    provider: '',
+    investedAmount: '',
+    currentValue: '',
+    purchaseDate: new Date().toISOString().split('T')[0],
+    notes: '',
   });
 
-  // Salary Form State
   const [salaryForm, setSalaryForm] = useState({
-    salaryMonth: "",
-    amount: "",
-    receivedDate: new Date().toISOString().split("T")[0],
-    companyOrSource: "",
-    status: "received",
-    notes: "",
+    salaryMonth: MONTH_NAMES[new Date().getMonth()],
+    amount: '',
+    receivedDate: new Date().toISOString().split('T')[0],
+    companyOrSource: '',
+    notes: '',
   });
 
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
-
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
+    if (initialHoldings) {
+      setInvestments(initialHoldings);
     }
-  }, [darkMode]);
+  }, [initialHoldings]);
 
-  // Subscribe to Investments
   useEffect(() => {
-    if (!currentUser) return;
-    const q = query(
-      collection(db, "investments"),
-      where("userId", "==", currentUser.uid)
-    );
+    if (initialSalaryHistory) {
+      setSalaries(initialSalaryHistory);
+    }
+  }, [initialSalaryHistory]);
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const items = [];
-        snapshot.forEach((doc) => {
-          items.push({ id: doc.id, ...doc.data() });
-        });
-        items.sort((a, b) => new Date(b.createdAt?.toDate?.() || b.purchaseDate || 0) - new Date(a.createdAt?.toDate?.() || a.purchaseDate || 0));
-        setInvestments(items);
-        setLoadingInvestments(false);
-      },
-      (err) => {
-        console.error("Investments fetch error:", err);
-        setLoadingInvestments(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [currentUser]);
-
-  // Subscribe to Salaries
+  // Firestore subscribers (if not using mock props)
   useEffect(() => {
-    if (!currentUser) return;
-    const q = query(
-      collection(db, "salaries"),
-      where("userId", "==", currentUser.uid)
+    if (!currentUser || initialHoldings) return;
+    const qInv = query(
+      collection(db, 'investments'),
+      where('userId', '==', currentUser.uid)
     );
+    const unsubInv = onSnapshot(qInv, (snap) => {
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setInvestments(docs);
+    });
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const items = [];
-        snapshot.forEach((doc) => {
-          items.push({ id: doc.id, ...doc.data() });
-        });
-        items.sort((a, b) => getSalaryTimestamp(b) - getSalaryTimestamp(a));
-        setSalaries(items);
-        setLoadingSalaries(false);
-      },
-      (err) => {
-        console.error("Salaries fetch error:", err);
-        setLoadingSalaries(false);
-      }
+    return () => unsubInv();
+  }, [currentUser, initialHoldings]);
+
+  useEffect(() => {
+    if (!currentUser || initialSalaryHistory) return;
+    const qSal = query(
+      collection(db, 'salaries'),
+      where('userId', '==', currentUser.uid)
     );
+    const unsubSal = onSnapshot(qSal, (snap) => {
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setSalaries(docs);
+    });
 
-    return () => unsubscribe();
-  }, [currentUser]);
+    return () => unsubSal();
+  }, [currentUser, initialSalaryHistory]);
 
-  const username = currentUser?.displayName || currentUser?.email?.split("@")[0] || "User";
-  const initials = username.slice(0, 2).toUpperCase();
+  // Portfolio calculations
+  const { totalInvested, totalCurrentValue, netReturn, assetTypesPresent, typeBreakdown } =
+    useMemo(() => {
+      let invested = 0;
+      let current = 0;
+      const typeMap = {};
 
-  // Aggregate metrics - Investments
-  const totalInvested = investments.reduce((sum, inv) => sum + Number(inv.investedAmount || 0), 0);
-  const totalCurrentValue = investments.reduce(
-    (sum, inv) => sum + Number(inv.currentValue ?? inv.investedAmount ?? 0),
-    0
-  );
-  const totalGain = totalCurrentValue - totalInvested;
-  const gainPercentage = totalInvested > 0 ? (totalGain / totalInvested) * 100 : 0;
+      investments.forEach((inv) => {
+        const invAmt = Number(inv.investedAmount ?? inv.invested) || 0;
+        const curAmt = Number(inv.currentValue ?? inv.current) || invAmt;
+        const type = inv.assetType || inv.type || 'Other';
 
-  const filteredInvestments =
-    filterType === "all"
-      ? investments
-      : investments.filter((inv) => inv.assetType === filterType);
+        invested += invAmt;
+        current += curAmt;
 
-  // Aggregate metrics - Salaries
-  const sortedSalaries = [...salaries].sort((a, b) => {
-    const diff = getSalaryTimestamp(b) - getSalaryTimestamp(a);
-    return salarySortOrder === "asc" ? -diff : diff;
-  });
+        if (!typeMap[type]) {
+          typeMap[type] = { type, invested: 0, current: 0 };
+        }
+        typeMap[type].invested += invAmt;
+        typeMap[type].current += curAmt;
+      });
 
-  const totalSalariesReceived = salaries
-    .filter((s) => s.status === "received")
-    .reduce((sum, s) => sum + Number(s.amount || 0), 0);
-  const latestSalary = salaries[0];
+      const ret = current - invested;
+      const pct = invested > 0 ? (ret / invested) * 100 : 0;
 
-  // Investment submission
-  const handleInvestmentSubmit = async (e) => {
+      const typesList = Object.keys(typeMap);
+
+      const breakdown = typesList.map((t) => ({
+        type: t,
+        value: typeMap[t].current,
+        percent: current > 0 ? (typeMap[t].current / current) * 100 : 0,
+      }));
+
+      return {
+        totalInvested: invested,
+        totalCurrentValue: current,
+        netReturn: ret,
+        returnPercent: pct,
+        assetTypesPresent: typesList,
+        typeBreakdown: breakdown,
+      };
+    }, [investments]);
+
+  // Filtered investments
+  const filteredInvestments = useMemo(() => {
+    if (filterType === 'all') return investments;
+    return investments.filter((inv) => {
+      const t = (inv.assetType || inv.type || '').toLowerCase();
+      return t === filterType.toLowerCase();
+    });
+  }, [investments, filterType]);
+
+  // Handle add investment
+  const handleAddInvestmentSubmit = async (e) => {
     e.preventDefault();
-    if (!investmentForm.name || !investmentForm.investedAmount) {
-      showError("Please provide an investment name and amount.");
+    const invAmt = parseFloat(investmentForm.investedAmount);
+    const curAmt = parseFloat(investmentForm.currentValue || investmentForm.investedAmount);
+
+    if (!investmentForm.name || isNaN(invAmt) || invAmt <= 0) {
+      showError('Please enter a valid asset name and invested amount.');
       return;
     }
 
     try {
-      setSubmittingInvestment(true);
-      await addInvestment(currentUser.uid, {
-        ...investmentForm,
-        investedAmount: parseFloat(investmentForm.investedAmount),
-        currentValue: investmentForm.currentValue
-          ? parseFloat(investmentForm.currentValue)
-          : parseFloat(investmentForm.investedAmount),
-      });
-      showSuccess(`Logged ${investmentForm.name} investment!`);
-      setShowInvestmentModal(false);
+      if (currentUser) {
+        await addInvestment(currentUser.uid, {
+          name: investmentForm.name.trim(),
+          assetType: investmentForm.assetType,
+          provider: investmentForm.provider.trim(),
+          investedAmount: invAmt,
+          currentValue: curAmt,
+          purchaseDate: investmentForm.purchaseDate,
+          notes: investmentForm.notes.trim(),
+        });
+      } else {
+        setInvestments((prev) => [
+          ...prev,
+          {
+            id: `inv-${Date.now()}`,
+            ...investmentForm,
+            investedAmount: invAmt,
+            currentValue: curAmt,
+          },
+        ]);
+      }
+      setShowAddInvestmentModal(false);
       setInvestmentForm({
-        name: "",
-        assetType: "gold",
-        provider: "PhonePe",
-        investedAmount: "",
-        currentValue: "",
-        purchaseDate: new Date().toISOString().split("T")[0],
-        notes: "",
+        name: '',
+        assetType: 'Mutual Funds',
+        provider: '',
+        investedAmount: '',
+        currentValue: '',
+        purchaseDate: new Date().toISOString().split('T')[0],
+        notes: '',
       });
-    } catch (err) {
-      console.error(err);
-      showError(err.message || "Failed to add investment.");
-    } finally {
-      setSubmittingInvestment(false);
+      showSuccess('Investment saved.');
+    } catch {
+      showError('Failed to save investment.');
     }
   };
 
-  // Salary submission
-  const handleSalarySubmit = async (e) => {
+  // Handle delete investment
+  const handleDeleteInvestment = async (invId) => {
+    try {
+      if (currentUser) {
+        await deleteInvestment(invId);
+      }
+      setInvestments((prev) => prev.filter((i) => i.id !== invId));
+      setSelectedMobileHolding(null);
+      showSuccess('Investment deleted.');
+    } catch {
+      showError('Failed to delete investment.');
+    }
+  };
+
+  // Handle add salary
+  const handleAddSalarySubmit = async (e) => {
     e.preventDefault();
-    if (!salaryForm.salaryMonth || !salaryForm.amount) {
-      showError("Please provide the salary month and amount.");
+    const amt = parseFloat(salaryForm.amount);
+    if (isNaN(amt) || amt <= 0) {
+      showError('Please enter a valid salary amount.');
       return;
     }
 
     try {
-      setSubmittingSalary(true);
-      await addSalary(currentUser.uid, {
-        ...salaryForm,
-        amount: parseFloat(salaryForm.amount),
-      });
-      showSuccess(`Logged salary for ${salaryForm.salaryMonth}!`);
-      setShowSalaryModal(false);
+      if (currentUser) {
+        await addSalary(currentUser.uid, {
+          salaryMonth: salaryForm.salaryMonth,
+          amount: amt,
+          receivedDate: salaryForm.receivedDate,
+          companyOrSource: salaryForm.companyOrSource.trim() || 'Company',
+          notes: salaryForm.notes.trim(),
+        });
+      } else {
+        setSalaries((prev) => [
+          ...prev,
+          {
+            id: `sal-${Date.now()}`,
+            ...salaryForm,
+            amount: amt,
+            company: salaryForm.companyOrSource,
+            date: salaryForm.receivedDate,
+          },
+        ]);
+      }
+      setShowAddSalaryModal(false);
       setSalaryForm({
-        salaryMonth: "",
-        amount: "",
-        receivedDate: new Date().toISOString().split("T")[0],
-        companyOrSource: "",
-        status: "received",
-        notes: "",
+        salaryMonth: MONTH_NAMES[new Date().getMonth()],
+        amount: '',
+        receivedDate: new Date().toISOString().split('T')[0],
+        companyOrSource: '',
+        notes: '',
       });
-    } catch (err) {
-      console.error(err);
-      showError(err.message || "Failed to add salary.");
-    } finally {
-      setSubmittingSalary(false);
+      showSuccess('Salary recorded.');
+    } catch {
+      showError('Failed to record salary.');
     }
   };
 
-  const handleDeleteInvestment = async (id, name) => {
-    if (!window.confirm(`Delete ${name || "this investment"}?`)) return;
+  // Handle delete salary
+  const handleDeleteSalary = async (salId) => {
     try {
-      await deleteInvestment(currentUser.uid, id);
-      showSuccess("Investment removed.");
-    } catch (err) {
-      showError(err.message || "Could not delete investment.");
+      if (currentUser) {
+        await deleteSalary(salId);
+      }
+      setSalaries((prev) => prev.filter((s) => s.id !== salId));
+      showSuccess('Salary entry deleted.');
+    } catch {
+      showError('Failed to delete salary entry.');
     }
   };
 
-  const handleDeleteSalary = async (id, month) => {
-    if (!window.confirm(`Delete salary record for ${month || "this month"}?`)) return;
-    try {
-      await deleteSalary(currentUser.uid, id);
-      showSuccess("Salary record removed.");
-    } catch (err) {
-      showError(err.message || "Could not delete salary.");
-    }
-  };
+  // Chronological timeline grouping for salary (newest first, grouped by year)
+  const salaryTimeline = useMemo(() => {
+    // Sort newest first
+    const sorted = [...salaries].sort((a, b) => {
+      const dateA = new Date(a.receivedDate || a.date || 0).getTime();
+      const dateB = new Date(b.receivedDate || b.date || 0).getTime();
+      return dateB - dateA;
+    });
 
-  const getAssetMeta = (type) =>
-    ASSET_TYPES.find((a) => a.id === type) || ASSET_TYPES[5];
+    let totalReceived = 0;
+    const itemsWithDelta = sorted.map((entry, index) => {
+      const amt = Number(entry.amount) || 0;
+      totalReceived += amt;
+
+      // Delta compared to the chronologically prior entry (which is at index + 1 in a newest-first array)
+      const nextOlder = sorted[index + 1];
+      let delta = null;
+      let deltaMonthName = '';
+      if (nextOlder) {
+        const olderAmt = Number(nextOlder.amount) || 0;
+        delta = amt - olderAmt;
+        const olderDate = new Date(nextOlder.receivedDate || nextOlder.date);
+        deltaMonthName = !isNaN(olderDate.getTime())
+          ? olderDate.toLocaleString('en-IN', { month: 'short' })
+          : nextOlder.salaryMonth || '';
+      }
+
+      const d = new Date(entry.receivedDate || entry.date);
+      const year = !isNaN(d.getTime()) ? d.getFullYear() : new Date().getFullYear();
+      const monthLabel = !isNaN(d.getTime())
+        ? d.toLocaleString('en-IN', { month: 'long' })
+        : entry.salaryMonth || 'Month';
+
+      return {
+        ...entry,
+        year,
+        monthLabel,
+        amountNum: amt,
+        delta,
+        deltaMonthName,
+      };
+    });
+
+    // Group by year
+    const yearGroups = {};
+    itemsWithDelta.forEach((item) => {
+      if (!yearGroups[item.year]) {
+        yearGroups[item.year] = [];
+      }
+      yearGroups[item.year].push(item);
+    });
+
+    return {
+      totalReceived,
+      monthCount: sorted.length,
+      years: Object.entries(yearGroups).sort(([yA], [yB]) => Number(yB) - Number(yA)),
+    };
+  }, [salaries]);
 
   return (
-    <div className="min-h-screen bg-[var(--canvas)] text-[var(--slate)] font-sans antialiased transition-colors duration-200">
-      {/* ── TOP NAV ── */}
-      <nav className="sticky top-0 z-40 bg-[var(--white)]/90 backdrop-blur-md border-b border-[var(--hairline)]">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          {/* Brand */}
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            <SpendWiseLogo size={32} />
-            <span className="font-semibold text-[var(--navy)] tracking-tight text-base hidden sm:block">SpendWise</span>
-          </div>
-
-          {/* Nav links — desktop */}
-          <div className="hidden md:flex items-center gap-1">
-            <Link to="/dashboard" className="px-3 py-1.5 rounded-md text-xs font-medium text-[var(--slate)] hover:text-[var(--navy)] hover:bg-[var(--canvas)] transition-all">
-              Dashboard
-            </Link>
-            <span className="px-3 py-1.5 rounded-md text-xs font-semibold text-[var(--navy)] bg-[var(--slate-faint)] flex items-center gap-1.5">
-              <Coins className="w-3.5 h-3.5 text-amber-500" /> Investments & Salary
-            </span>
-            <Link to="/analytics" className="px-3 py-1.5 rounded-md text-xs font-medium text-[var(--slate)] hover:text-[var(--navy)] hover:bg-[var(--canvas)] transition-all flex items-center gap-1.5">
-              <BarChart3 className="w-3.5 h-3.5" /> Analytics
-            </Link>
-          </div>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="w-8 h-8 rounded-lg border border-[var(--hairline)] bg-[var(--white)] flex items-center justify-center hover:border-[var(--slate-light)] transition-all"
-              title="Toggle theme"
-            >
-              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-[var(--slate)]" />}
-            </button>
-            <button
-              onClick={() => setShowFriendsModal(true)}
-              className="hidden sm:flex w-8 h-8 rounded-lg border border-[var(--hairline)] bg-[var(--white)] items-center justify-center hover:border-[var(--slate-light)] transition-all"
-              title="Friends"
-            >
-              <Users className="w-4 h-4 text-[var(--slate)]" />
-            </button>
-            <button
-              onClick={() => { setSettingsTab('api'); setShowSettingsModal(true); }}
-              className="hidden sm:flex w-8 h-8 rounded-lg border border-[var(--hairline)] bg-[var(--white)] items-center justify-center hover:border-[var(--slate-light)] transition-all"
-              title="API & MCP Keys"
-            >
-              <Key className="w-4 h-4 text-[var(--slate)]" />
-            </button>
-            <button
-              onClick={() => { setSettingsTab('preferences'); setShowSettingsModal(true); }}
-              className="hidden sm:flex w-8 h-8 rounded-lg border border-[var(--hairline)] bg-[var(--white)] items-center justify-center hover:border-[var(--slate-light)] transition-all"
-              title="Settings"
-            >
-              <Settings className="w-4 h-4 text-[var(--slate)]" />
-            </button>
-            <button
-              onClick={logout}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--hairline)] bg-[var(--white)] text-xs font-medium text-[var(--slate)] hover:border-[var(--rose)] hover:text-[var(--rose)] transition-all"
-            >
-              <LogOut className="w-3.5 h-3.5" /> Logout
-            </button>
-
-            {/* Avatar */}
-            <div className="hidden sm:flex w-8 h-8 rounded-full bg-[var(--navy)] items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-white font-mono">{initials}</span>
-            </div>
-
-            {/* Mobile hamburger */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="sm:hidden w-9 h-9 rounded-lg border border-[var(--hairline)] bg-[var(--white)] flex items-center justify-center hover:border-[var(--slate-light)] transition-all"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5 text-[var(--slate)]" /> : <Menu className="w-5 h-5 text-[var(--slate)]" />}
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── MAIN CONTENT ── */}
-      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-28 space-y-6 sm:space-y-8">
-        
-        {/* Toggleable Segmented Control: Investments vs Salaries */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="inline-flex p-1 rounded-xl bg-[var(--slate-faint)] border border-[var(--hairline)]">
-              <button
-                onClick={() => setActiveView("investments")}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold font-mono tracking-wider transition-all ${
-                  activeView === "investments"
-                    ? "bg-[var(--white)] text-[var(--navy)] shadow-sm"
-                    : "text-[var(--slate)] hover:text-[var(--navy)]"
-                }`}
-              >
-                <Coins className="w-3.5 h-3.5 text-amber-500" />
-                <span>Investments ({investments.length})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveView("salaries")}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold font-mono tracking-wider transition-all ${
-                  activeView === "salaries"
-                    ? "bg-[var(--white)] text-[var(--navy)] shadow-sm"
-                    : "text-[var(--slate)] hover:text-[var(--navy)]"
-                }`}
-              >
-                <Briefcase className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Salary Timeline ({salaries.length})</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            {activeView === "investments" ? (
-              <button
-                onClick={() => setShowInvestmentModal(true)}
-                className="btn-statement-primary flex items-center gap-2"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span className="text-[11px]">Add Investment</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setShowSalaryModal(true)}
-                className="btn-statement-primary flex items-center gap-2"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span className="text-[11px]">Log Salary</span>
-              </button>
-            )}
-          </div>
+    <div className="max-w-[1120px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+      {/* ── TOP HEADER / TAB SWITCH & ACTION BUTTON ── */}
+      <div className="flex items-center justify-between border-b border-[var(--line)]">
+        {/* Text tab pair: Investments / Salary with 2px accent underline */}
+        <div className="flex gap-8" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'investments'}
+            onClick={() => setActiveTab('investments')}
+            className={`pb-3 text-base transition-colors border-b-2 -mb-[1px] cursor-pointer ${
+              activeTab === 'investments'
+                ? 'border-[var(--accent)] text-[var(--ink)] font-semibold'
+                : 'border-transparent text-[var(--ink-2)] hover:text-[var(--ink)] font-medium'
+            }`}
+          >
+            Investments
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'salary'}
+            onClick={() => setActiveTab('salary')}
+            className={`pb-3 text-base transition-colors border-b-2 -mb-[1px] cursor-pointer ${
+              activeTab === 'salary'
+                ? 'border-[var(--accent)] text-[var(--ink)] font-semibold'
+                : 'border-transparent text-[var(--ink-2)] hover:text-[var(--ink)] font-medium'
+            }`}
+          >
+            Salary
+          </button>
         </div>
 
-        {/* ═════════════════════════════════════════════════ */}
-        {/* VIEW 1: INVESTMENTS & PORTFOLIO */}
-        {/* ═════════════════════════════════════════════════ */}
-        {activeView === "investments" && (
-          <div className="space-y-6 sm:space-y-8 animate-fade-in">
-            {/* Header description */}
-            <div>
-              <h1 className="text-xl sm:text-2xl font-semibold text-[var(--navy)] tracking-tight">
-                Portfolio Holdings
-              </h1>
-              <p className="text-sm text-[var(--slate-light)] mt-0.5">
-                Track gold, mutual funds, FDs, and precious assets in one place
-              </p>
+        {/* Dynamic primary action button */}
+        <button
+          type="button"
+          onClick={() => {
+            if (activeTab === 'investments') {
+              setShowAddInvestmentModal(true);
+            } else {
+              setShowAddSalaryModal(true);
+            }
+          }}
+          className="btn btn-primary h-9 px-4 text-xs -mt-2 cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{activeTab === 'investments' ? 'Add investment' : 'Log salary'}</span>
+        </button>
+      </div>
+
+      {/* ── INVESTMENTS VIEW ── */}
+      {activeTab === 'investments' && (
+        <div className="space-y-8">
+          {/* Portfolio Value Summary */}
+          <section aria-label="Portfolio summary">
+            <div className="text-xs text-[var(--ink-3)] font-normal mb-1">
+              Portfolio value
+            </div>
+            <div className="text-[clamp(40px,8vw,64px)] font-light leading-none tracking-[-0.02em] tabular-nums text-[var(--ink)]">
+              <Money amount={totalCurrentValue} tone="neutral" />
             </div>
 
-            {/* Three Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              {/* Card 1: Total Portfolio Value */}
-              <div
-                className="group relative overflow-hidden rounded-2xl p-5 sm:p-6 text-left transition-all duration-300 shadow-[var(--shadow-statement)]"
-                style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E3A5F 100%)" }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                    <Coins className="w-4.5 h-4.5 text-amber-400" style={{ width: "18px", height: "18px" }} />
-                  </div>
-                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-white/10 text-emerald-400">
-                    {totalGain >= 0 ? "+" : ""}{gainPercentage.toFixed(1)}%
+            {/* Single line: Invested and Returns */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+              <span className="text-[var(--ink-2)]">
+                Invested <Money amount={totalInvested} className="font-medium text-[var(--ink)]" />
+              </span>
+              <span className="text-[var(--ink-3)]">·</span>
+              <span className="text-[var(--ink-2)]">
+                Returns{' '}
+                {netReturn === 0 ? (
+                  <span className="text-[var(--ink-3)] font-medium">
+                    ₹0.00 <span className="font-normal opacity-80">(no change yet)</span>
                   </span>
-                </div>
-                <div className="text-[10px] tracking-[2px] uppercase text-white/50 mb-1 font-mono">
-                  Net Portfolio Value
-                </div>
-                <div className="font-mono text-2xl sm:text-3xl font-bold text-white tabular-nums tracking-tight">
-                  ₹{totalCurrentValue.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </div>
-              </div>
-
-              {/* Card 2: Total Principal Invested */}
-              <div className="rounded-2xl p-5 sm:p-6 text-left bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)]">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
-                    <Landmark className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <span className="text-[10px] uppercase font-mono text-[var(--slate-light)]">Principal</span>
-                </div>
-                <div className="text-[10px] tracking-[2px] uppercase text-[var(--slate-light)] mb-1 font-mono">
-                  Total Invested
-                </div>
-                <div className="font-mono text-xl sm:text-2xl font-bold text-[var(--navy)] tabular-nums">
-                  ₹{totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </div>
-              </div>
-
-              {/* Card 3: Net Returns */}
-              <div className="rounded-2xl p-5 sm:p-6 text-left bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)]">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                      totalGain >= 0
-                        ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
-                        : "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
-                    }`}
-                  >
-                    {totalGain >= 0 ? (
-                      <ArrowUpRight className="w-4 h-4" />
-                    ) : (
-                      <ArrowDownRight className="w-4 h-4" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-[10px] uppercase font-mono font-bold ${
-                      totalGain >= 0 ? "text-emerald-600" : "text-rose-600"
-                    }`}
-                  >
-                    {totalGain >= 0 ? "Profit" : "Loss"}
-                  </span>
-                </div>
-                <div className="text-[10px] tracking-[2px] uppercase text-[var(--slate-light)] mb-1 font-mono">
-                  Net Returns
-                </div>
-                <div
-                  className={`font-mono text-xl sm:text-2xl font-bold tabular-nums ${
-                    totalGain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                  }`}
-                >
-                  {totalGain >= 0 ? "+" : ""}₹{totalGain.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </div>
-              </div>
-            </div>
-
-            {/* Asset Allocation Bar */}
-            {totalCurrentValue > 0 && (
-              <div className="rounded-xl bg-[var(--white)] border border-[var(--hairline)] p-5 shadow-[var(--shadow-statement)] space-y-3">
-                <div className="flex items-center justify-between text-xs text-[var(--slate)] font-mono">
-                  <span className="uppercase tracking-widest text-[10px] text-[var(--slate-light)]">Asset Allocation</span>
-                  <span>{investments.length} Assets</span>
-                </div>
-                <div className="h-2 w-full rounded-full overflow-hidden flex bg-[var(--slate-faint)]">
-                  {ASSET_TYPES.map((type) => {
-                    const typeVal = investments
-                      .filter((i) => i.assetType === type.id)
-                      .reduce((s, i) => s + Number(i.currentValue ?? i.investedAmount ?? 0), 0);
-                    const pct = totalCurrentValue > 0 ? (typeVal / totalCurrentValue) * 100 : 0;
-                    if (pct <= 0) return null;
-                    return (
-                      <div
-                        key={type.id}
-                        style={{ width: `${pct}%`, backgroundColor: type.color }}
-                        className="h-full"
-                        title={`${type.label}: ${pct.toFixed(1)}%`}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-[var(--slate)]">
-                  {ASSET_TYPES.map((type) => {
-                    const count = investments.filter((i) => i.assetType === type.id).length;
-                    if (count === 0) return null;
-                    return (
-                      <div key={type.id} className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: type.color }} />
-                        <span className="font-medium text-[var(--navy)]">{type.label}</span>
-                        <span className="text-[var(--slate-light)] font-mono">({count})</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Filter Buttons */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              <button
-                onClick={() => setFilterType("all")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-mono tracking-wider uppercase transition-all whitespace-nowrap ${
-                  filterType === "all"
-                    ? "bg-[var(--navy)] text-[var(--canvas)]"
-                    : "bg-[var(--white)] text-[var(--slate)] border border-[var(--hairline)] hover:text-[var(--navy)]"
-                }`}
-              >
-                All ({investments.length})
-              </button>
-              {ASSET_TYPES.map((type) => {
-                const count = investments.filter((i) => i.assetType === type.id).length;
-                const Icon = type.icon;
-                return (
-                  <button
-                    key={type.id}
-                    onClick={() => setFilterType(type.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-mono tracking-wider uppercase transition-all whitespace-nowrap ${
-                      filterType === type.id
-                        ? "bg-[var(--navy)] text-[var(--canvas)]"
-                        : "bg-[var(--white)] text-[var(--slate)] border border-[var(--hairline)] hover:text-[var(--navy)]"
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" style={{ color: filterType === type.id ? "inherit" : type.color }} />
-                    <span>{type.label}</span>
-                    {count > 0 && <span className="opacity-70">({count})</span>}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Investments Ledger Table */}
-            <div className="rounded-xl bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[var(--hairline)] flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-[var(--navy)]">
-                  Asset Holdings
-                </h2>
-                <span className="text-xs font-mono text-[var(--slate-light)]">
-                  {filteredInvestments.length} records
-                </span>
-              </div>
-
-              {loadingInvestments ? (
-                <div className="p-12 text-center text-xs font-mono text-[var(--slate-light)]">
-                  Loading portfolio data...
-                </div>
-              ) : filteredInvestments.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Coins className="w-10 h-10 mx-auto text-amber-500/40 mb-3" />
-                  <p className="text-sm font-medium text-[var(--navy)]">No investments logged yet</p>
-                  <p className="text-xs text-[var(--slate-light)] mt-1">
-                    Log an asset with the button above or tell SpendWise AI in chat.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-[var(--hairline)]">
-                  {filteredInvestments.map((inv) => {
-                    const meta = getAssetMeta(inv.assetType);
-                    const Icon = meta.icon;
-                    const invested = Number(inv.investedAmount || 0);
-                    const current = Number(inv.currentValue ?? invested);
-                    const gain = current - invested;
-                    const gainPct = invested > 0 ? (gain / invested) * 100 : 0;
-
-                    return (
-                      <div
-                        key={inv.id}
-                        className="p-4 sm:px-6 flex items-center justify-between gap-4 hover:bg-[var(--canvas)] transition-colors group"
-                      >
-                        {/* Left: Icon + Name + Platform */}
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-[var(--hairline)]"
-                            style={{ backgroundColor: `${meta.color}15` }}
-                          >
-                            <Icon className="w-5 h-5" style={{ color: meta.color }} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm text-[var(--navy)] truncate">
-                                {inv.name}
-                              </span>
-                              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-[var(--slate-faint)] text-[var(--slate)]">
-                                {inv.provider || "Direct"}
-                              </span>
-                            </div>
-                            <div className="text-xs text-[var(--slate-light)] flex items-center gap-2 mt-0.5">
-                              <span className="font-mono">{inv.purchaseDate}</span>
-                              {inv.notes && <span>· {inv.notes}</span>}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right: Numbers + Delete */}
-                        <div className="flex items-center gap-4 flex-shrink-0 text-right">
-                          <div>
-                            <div className="font-mono text-sm sm:text-base font-bold text-[var(--navy)] tabular-nums">
-                              ₹{current.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                            </div>
-                            <div className="text-[11px] font-mono flex items-center justify-end gap-1 mt-0.5">
-                              <span className="text-[var(--slate-light)] hidden sm:inline">
-                                ₹{invested.toLocaleString("en-IN")}
-                              </span>
-                              <span
-                                className={`font-semibold ${
-                                  gain >= 0 ? "text-emerald-600" : "text-rose-600"
-                                }`}
-                              >
-                                {gain >= 0 ? "+" : ""}
-                                {gainPct.toFixed(1)}%
-                              </span>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={() => handleDeleteInvestment(inv.id, inv.name)}
-                            className="text-[var(--slate-light)] hover:text-rose-500 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Delete record"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ═════════════════════════════════════════════════ */}
-        {/* VIEW 2: SALARY TIMELINE & TRACKER */}
-        {/* ═════════════════════════════════════════════════ */}
-        {activeView === "salaries" && (
-          <div className="space-y-6 sm:space-y-8 animate-fade-in">
-            {/* Header description */}
-            <div>
-              <h1 className="text-xl sm:text-2xl font-semibold text-[var(--navy)] tracking-tight">
-                Salary & Income Timeline
-              </h1>
-              <p className="text-sm text-[var(--slate-light)] mt-0.5">
-                Keep a clear log of your monthly compensation, credit dates, and payout notes
-              </p>
-            </div>
-
-            {/* Salary Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              {/* Card 1: Total Salary Received */}
-              <div
-                className="group relative overflow-hidden rounded-2xl p-5 sm:p-6 text-left transition-all duration-300 shadow-[var(--shadow-statement)]"
-                style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E3A5F 100%)" }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                    <Briefcase className="w-4.5 h-4.5 text-emerald-400" style={{ width: "18px", height: "18px" }} />
-                  </div>
-                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-white/10 text-emerald-400">
-                    {salaries.length} Payouts
-                  </span>
-                </div>
-                <div className="text-[10px] tracking-[2px] uppercase text-white/50 mb-1 font-mono">
-                  Cumulative Earnings
-                </div>
-                <div className="font-mono text-2xl sm:text-3xl font-bold text-white tabular-nums tracking-tight">
-                  ₹{totalSalariesReceived.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </div>
-              </div>
-
-              {/* Card 2: Most Recent Payout */}
-              <div className="rounded-2xl p-5 sm:p-6 text-left bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)]">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <span className="text-[10px] uppercase font-mono text-[var(--slate-light)]">
-                    {latestSalary?.salaryMonth || "None"}
-                  </span>
-                </div>
-                <div className="text-[10px] tracking-[2px] uppercase text-[var(--slate-light)] mb-1 font-mono">
-                  Latest Received
-                </div>
-                <div className="font-mono text-xl sm:text-2xl font-bold text-[var(--navy)] tabular-nums">
-                  {latestSalary ? `₹${Number(latestSalary.amount).toLocaleString("en-IN")}` : "₹0.00"}
-                </div>
-                {latestSalary && (
-                  <div className="text-[11px] text-[var(--slate-light)] mt-1 font-mono">
-                    Credited on {latestSalary.receivedDate}
-                  </div>
+                ) : (
+                  <Money
+                    amount={netReturn}
+                    signed
+                    tone={netReturn > 0 ? 'credit' : 'debit'}
+                    className="font-medium"
+                  />
                 )}
-              </div>
-
-              {/* Card 3: Payout Frequency / Average */}
-              <div className="rounded-2xl p-5 sm:p-6 text-left bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)]">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <span className="text-[10px] uppercase font-mono text-[var(--slate-light)]">Average</span>
-                </div>
-                <div className="text-[10px] tracking-[2px] uppercase text-[var(--slate-light)] mb-1 font-mono">
-                  Monthly Avg
-                </div>
-                <div className="font-mono text-xl sm:text-2xl font-bold text-[var(--navy)] tabular-nums">
-                  ₹{salaries.length > 0 ? (totalSalariesReceived / salaries.length).toLocaleString("en-IN", { maximumFractionDigits: 0 }) : "0"}
-                </div>
-                <div className="text-[11px] text-[var(--slate-light)] mt-1 font-mono">
-                  Across {salaries.length} logged cycles
-                </div>
-              </div>
+              </span>
             </div>
 
-            {/* Salary Timeline Stream */}
-            <div className="rounded-xl bg-[var(--white)] border border-[var(--hairline)] shadow-[var(--shadow-statement)] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[var(--hairline)] flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-[var(--navy)]">
-                  Disbursement History & Notes
-                </h2>
-                <div className="flex items-center gap-2">
-                  <div className="inline-flex p-0.5 rounded-lg bg-[var(--slate-faint)] border border-[var(--hairline)] text-[10px] font-mono">
-                    <button
-                      onClick={() => setSalarySortOrder("desc")}
-                      className={`px-2 py-0.5 rounded transition-all ${
-                        salarySortOrder === "desc"
-                          ? "bg-[var(--white)] text-[var(--navy)] font-semibold shadow-xs"
-                          : "text-[var(--slate-light)] hover:text-[var(--navy)]"
-                      }`}
-                    >
-                      Newest First
-                    </button>
-                    <button
-                      onClick={() => setSalarySortOrder("asc")}
-                      className={`px-2 py-0.5 rounded transition-all ${
-                        salarySortOrder === "asc"
-                          ? "bg-[var(--white)] text-[var(--navy)] font-semibold shadow-xs"
-                          : "text-[var(--slate-light)] hover:text-[var(--navy)]"
-                      }`}
-                    >
-                      Oldest First
-                    </button>
-                  </div>
-                  <span className="text-xs font-mono text-[var(--slate-light)]">
-                    {salaries.length} credits
-                  </span>
+            {/* Proportional Banknote Allocation Bar */}
+            {typeBreakdown.length > 0 && (
+              <div className="mt-6 space-y-3">
+                <div className="text-xs font-medium text-[var(--ink-2)]">Allocation</div>
+                {/* 10px stacked bar */}
+                <div className="h-2.5 w-full rounded-[4px] bg-[var(--sunken)] overflow-hidden flex">
+                  {typeBreakdown.map((item, idx) => (
+                    <div
+                      key={item.type}
+                      className="h-full transition-all"
+                      style={{
+                        width: `${item.percent}%`,
+                        backgroundColor: BANKNOTE_HUES[idx % BANKNOTE_HUES.length],
+                      }}
+                      title={`${item.type}: ₹${item.value} (${Math.round(item.percent)}%)`}
+                    />
+                  ))}
                 </div>
-              </div>
 
-              {loadingSalaries ? (
-                <div className="p-12 text-center text-xs font-mono text-[var(--slate-light)]">
-                  Loading salary timeline...
-                </div>
-              ) : salaries.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Briefcase className="w-10 h-10 mx-auto text-emerald-500/40 mb-3" />
-                  <p className="text-sm font-medium text-[var(--navy)]">No salary cycles logged yet</p>
-                  <p className="text-xs text-[var(--slate-light)] mt-1">
-                    Log your salary for each month (e.g. "Jun salary - 10k, got on 17th July").
-                  </p>
-                </div>
-              ) : (
-                <div className="relative pl-6 sm:pl-8 py-6 pr-4 sm:pr-6 space-y-6 before:absolute before:left-8 sm:before:left-10 before:top-8 before:bottom-8 before:w-0.5 before:bg-[var(--slate-faint)]">
-                  {sortedSalaries.map((sal) => (
-                    <div key={sal.id} className="relative flex items-start gap-4 sm:gap-6 group">
-                      {/* Timeline dot */}
-                      <div className="w-4 h-4 rounded-full bg-[var(--white)] border-2 border-emerald-500 flex-shrink-0 mt-1 z-10 shadow-sm" />
-
-                      {/* Card Content */}
-                      <div className="flex-1 p-4 rounded-xl border border-[var(--hairline)] bg-[var(--canvas)]/40 hover:bg-[var(--canvas)] transition-all">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm text-[var(--navy)]">
-                                {sal.salaryMonth}
-                              </span>
-                              {sal.companyOrSource && (
-                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--slate-faint)] text-[var(--slate)]">
-                                  {sal.companyOrSource}
-                                </span>
-                              )}
-                              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-semibold">
-                                {sal.status || "Received"}
-                              </span>
-                            </div>
-                            
-                            {/* Notes pill (e.g. "got on 17th july") */}
-                            {sal.notes ? (
-                              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-[var(--slate)] bg-[var(--white)] px-2.5 py-1 rounded-md border border-[var(--hairline)] inline-flex">
-                                <FileText className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                                <span>{sal.notes}</span>
-                              </div>
-                            ) : (
-                              <div className="mt-1 text-xs text-[var(--slate-light)] font-mono">
-                                Credited on: {sal.receivedDate}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Amount and delete */}
-                          <div className="flex items-center gap-4 justify-between sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--hairline)]">
-                            <div className="font-mono text-base sm:text-lg font-bold text-emerald-600 tabular-nums">
-                              +₹{Number(sal.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                            </div>
-                            <button
-                              onClick={() => handleDeleteSalary(sal.id, sal.salaryMonth)}
-                              className="text-[var(--slate-light)] hover:text-rose-500 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Delete cycle"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                {/* Labels under stacked bar */}
+                <div className="flex flex-wrap gap-4 text-xs">
+                  {typeBreakdown.map((item, idx) => (
+                    <div key={item.type} className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: BANKNOTE_HUES[idx % BANKNOTE_HUES.length] }}
+                      />
+                      <span className="text-[var(--ink-2)]">{item.type}</span>
+                      <Money amount={item.value} className="text-[var(--ink)] font-medium" />
+                      <span className="text-[var(--ink-3)] font-normal">
+                        ({Math.round(item.percent)}%)
+                      </span>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-      </main>
+              </div>
+            )}
+          </section>
 
-      {/* ── MODAL: ADD INVESTMENT ── */}
-      {showInvestmentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[var(--white)] border border-[var(--hairline)] rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--hairline)]">
-              <h2 className="text-base font-semibold text-[var(--navy)]">
-                Log Investment
-              </h2>
-              <button
-                onClick={() => setShowInvestmentModal(false)}
-                className="p-1 rounded-lg text-[var(--slate)] hover:bg-[var(--slate-faint)] transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+          {/* Holdings Section */}
+          <section aria-label="Holdings" className="space-y-4">
+            <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] pb-3">
+              <h3 className="text-[17px] font-semibold text-[var(--ink)]">Holdings</h3>
 
-            <form onSubmit={handleInvestmentSubmit} className="mt-4 space-y-4">
+              {/* Dynamic Type Filter: <select> on mobile, text tab strip on desktop */}
               <div>
-                <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                  Asset Category
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {ASSET_TYPES.map((type) => (
+                {/* Desktop Tab Strip */}
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFilterType('all')}
+                    className={`px-2.5 py-1 text-xs rounded-[6px] transition-colors cursor-pointer ${
+                      filterType === 'all'
+                        ? 'bg-[var(--sunken)] text-[var(--ink)] font-medium'
+                        : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {assetTypesPresent.map((t) => (
                     <button
+                      key={t}
                       type="button"
-                      key={type.id}
-                      onClick={() => setInvestmentForm({ ...investmentForm, assetType: type.id })}
-                      className={`p-2 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
-                        investmentForm.assetType === type.id
-                          ? "border-[var(--navy)] bg-[var(--navy)] text-white shadow-sm"
-                          : "border-[var(--hairline)] text-[var(--slate)] hover:bg-[var(--canvas)]"
+                      onClick={() => setFilterType(t)}
+                      className={`px-2.5 py-1 text-xs rounded-[6px] transition-colors cursor-pointer ${
+                        filterType.toLowerCase() === t.toLowerCase()
+                          ? 'bg-[var(--sunken)] text-[var(--ink)] font-medium'
+                          : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
                       }`}
                     >
-                      <type.icon className="w-3.5 h-3.5" />
-                      <span>{type.label.split(" ")[0]}</span>
+                      {t}
                     </button>
                   ))}
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                  Name / Scheme
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 24K Digital Gold, Parag Parikh Flexi Cap"
-                  value={investmentForm.name}
-                  onChange={(e) => setInvestmentForm({ ...investmentForm, name: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                    Provider
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. PhonePe, Groww"
-                    value={investmentForm.provider}
-                    onChange={(e) => setInvestmentForm({ ...investmentForm, provider: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                    Purchase Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={investmentForm.purchaseDate}
-                    onChange={(e) => setInvestmentForm({ ...investmentForm, purchaseDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                  />
+                {/* Mobile Native Select */}
+                <div className="sm:hidden">
+                  <select
+                    role="combobox"
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="field h-8 px-2 text-xs rounded-[6px] bg-[var(--surface)]"
+                    aria-label="Filter asset types"
+                  >
+                    <option value="all">All</option>
+                    {assetTypesPresent.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                    Invested (₹)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    step="any"
-                    placeholder="10000"
-                    value={investmentForm.investedAmount}
-                    onChange={(e) =>
-                      setInvestmentForm({
-                        ...investmentForm,
-                        investedAmount: e.target.value,
-                        currentValue: investmentForm.currentValue || e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                  />
+            {/* Desktop Holdings Table (>=768px): sticky header, right-aligned numbers */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead className="sticky top-14 bg-[var(--bg)] border-b border-[var(--line)] text-xs text-[var(--ink-3)] font-normal z-10">
+                  <tr>
+                    <th className="py-2.5 pr-4 font-normal">Name</th>
+                    <th className="py-2.5 px-4 font-normal">Type</th>
+                    <th className="py-2.5 px-4 text-right font-normal">Invested</th>
+                    <th className="py-2.5 px-4 text-right font-normal">Current value</th>
+                    <th className="py-2.5 px-4 text-right font-normal">Return</th>
+                    <th className="py-2.5 pl-4 text-right font-normal w-12" aria-label="Actions"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--line)]">
+                  {filteredInvestments.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-sm text-[var(--ink-2)]">
+                        No investments yet. Add one, or tell your AI agent: Log a ₹15,000 SIP in a flexi cap fund.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredInvestments.map((inv) => {
+                      const invAmt = Number(inv.investedAmount ?? inv.invested) || 0;
+                      const curAmt = Number(inv.currentValue ?? inv.current) || invAmt;
+                      const diff = curAmt - invAmt;
+                      const pct = invAmt > 0 ? (diff / invAmt) * 100 : 0;
+                      const assetType = inv.assetType || inv.type || 'Other';
+
+                      return (
+                        <tr key={inv.id} className="hover:bg-[var(--sunken)]/40 transition-colors group">
+                          <td className="py-3.5 pr-4">
+                            <div className="font-medium text-[var(--ink)] leading-snug">
+                              {inv.name || 'Holding'}
+                            </div>
+                            {inv.provider && (
+                              <div className="text-xs text-[var(--ink-3)] mt-0.5">
+                                {inv.provider}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-xs text-[var(--ink-2)]">
+                            {assetType}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <Money amount={invAmt} className="font-medium text-[var(--ink-2)]" />
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <Money amount={curAmt} className="font-medium text-[var(--ink)]" />
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            {diff === 0 ? (
+                              <span className="text-xs text-[var(--ink-3)] font-normal">
+                                0.0%
+                              </span>
+                            ) : (
+                              <span
+                                className={`text-xs font-medium tabular-nums ${
+                                  diff > 0 ? 'text-[var(--credit)]' : 'text-[var(--debit)]'
+                                }`}
+                              >
+                                {diff > 0 ? '+' : '−'}
+                                {Math.abs(pct).toFixed(1)}%
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 pl-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteInvestment(inv.id)}
+                              className="p-1.5 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] hover:bg-[var(--sunken)] sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
+                              aria-label="Delete holding"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Holdings Stacked Cards (<768px): two-line row, tap opens sheet */}
+            <div className="md:hidden divide-y divide-[var(--line)]">
+              {filteredInvestments.length === 0 ? (
+                <div className="py-12 text-center text-sm text-[var(--ink-2)]">
+                  No investments yet. Add one, or tell your AI agent: Log a ₹15,000 SIP in a flexi cap fund.
                 </div>
-                <div>
-                  <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                    Current Worth (₹)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    placeholder="Current value"
-                    value={investmentForm.currentValue}
-                    onChange={(e) => setInvestmentForm({ ...investmentForm, currentValue: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                  />
-                </div>
-              </div>
+              ) : (
+                filteredInvestments.map((inv) => {
+                  const invAmt = Number(inv.investedAmount ?? inv.invested) || 0;
+                  const curAmt = Number(inv.currentValue ?? inv.current) || invAmt;
+                  const diff = curAmt - invAmt;
+                  const pct = invAmt > 0 ? (diff / invAmt) * 100 : 0;
+                  const assetType = inv.assetType || inv.type || 'Other';
 
-              <div>
-                <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                  Notes (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. SIP, certificate, maturity info"
-                  value={investmentForm.notes}
-                  onChange={(e) => setInvestmentForm({ ...investmentForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                />
-              </div>
+                  return (
+                    <button
+                      key={inv.id}
+                      type="button"
+                      onClick={() => setSelectedMobileHolding(inv)}
+                      className="w-full py-3 flex flex-col gap-1 text-left active:bg-[var(--sunken)] transition-colors cursor-pointer"
+                    >
+                      {/* Line 1: Name left, current value right */}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-[var(--ink)] truncate max-w-[200px]">
+                          {inv.name}
+                        </span>
+                        <Money amount={curAmt} className="font-medium text-[var(--ink)]" />
+                      </div>
 
-              <div className="pt-3 flex items-center justify-end gap-2 border-t border-[var(--hairline)]">
-                <button
-                  type="button"
-                  onClick={() => setShowInvestmentModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-[var(--slate)] hover:bg-[var(--canvas)] transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingInvestment}
-                  className="btn-statement-primary text-[11px]"
-                >
-                  {submittingInvestment ? "Saving..." : "Save Record"}
-                </button>
+                      {/* Line 2: Type and provider left, return right */}
+                      <div className="flex items-center justify-between text-xs text-[var(--ink-3)]">
+                        <span className="truncate max-w-[200px]">
+                          {assetType}
+                          {inv.provider ? ` · ${inv.provider}` : ''}
+                        </span>
+                        {diff === 0 ? (
+                          <span className="text-[var(--ink-3)]">0.0%</span>
+                        ) : (
+                          <span
+                            className={`font-medium tabular-nums ${
+                              diff > 0 ? 'text-[var(--credit)]' : 'text-[var(--debit)]'
+                            }`}
+                          >
+                            {diff > 0 ? '+' : '−'}
+                            {Math.abs(pct).toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ── SALARY TIMELINE VIEW ── */}
+      {activeTab === 'salary' && (
+        <div className="space-y-6">
+          {/* Summary Line: "Received ₹X across N months." */}
+          <div className="text-xs text-[var(--ink-3)] font-normal border-b border-[var(--line)] pb-3">
+            Received{' '}
+            <Money
+              amount={salaryTimeline.totalReceived}
+              className="font-medium text-[var(--ink)]"
+            />{' '}
+            across {salaryTimeline.monthCount} {salaryTimeline.monthCount === 1 ? 'month' : 'months'}.
+          </div>
+
+          {/* Timeline */}
+          <div className="relative pl-6 space-y-6 border-l border-[var(--line)] ml-2 min-h-[80px]">
+            {salaries.length === 0 ? (
+              <div className="py-8 text-sm text-[var(--ink-2)]">
+                No salary entries yet. Add your first salary record to start your timeline.
               </div>
-            </form>
+            ) : (
+              /* Genuine Timeline: 1px vertical line with 7px dots */
+              <div className="space-y-8">
+                {salaryTimeline.years.map(([year, entries]) => (
+                  <div key={year} className="space-y-4">
+                    <div className="text-xs font-semibold text-[var(--ink-3)] sticky top-14 bg-[var(--bg)] py-1 z-10">
+                      {year}
+                    </div>
+
+                    <div className="space-y-6">
+                      {entries.map((entry) => (
+                        <div key={entry.id} className="relative group">
+                          {/* 7px dot */}
+                          <div className="absolute -left-[28px] top-1.5 w-[7px] h-[7px] rounded-full bg-[var(--ink-3)] ring-4 ring-[var(--bg)]" />
+
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="text-sm font-medium text-[var(--ink)]">
+                                {entry.monthLabel}
+                              </div>
+                              <div className="text-xs text-[var(--ink-3)] mt-0.5">
+                                {entry.companyOrSource || entry.company || 'Source'}
+                              </div>
+                            </div>
+
+                            <div className="text-right flex items-center gap-3">
+                              <div>
+                                <Money
+                                  amount={entry.amountNum}
+                                  className="text-sm font-medium text-[var(--ink)]"
+                                />
+                                {entry.delta !== null && (
+                                  <div className="text-xs text-[var(--ink-3)] mt-0.5 tabular-nums">
+                                    {entry.delta === 0 ? (
+                                      <span>Same as {entry.deltaMonthName}</span>
+                                    ) : (
+                                      <span>
+                                        {entry.delta > 0 ? '+' : '−'}
+                                        <Money
+                                          amount={Math.abs(entry.delta)}
+                                          className="text-xs text-[var(--ink-3)] font-normal"
+                                        />{' '}
+                                        from {entry.deltaMonthName}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSalary(entry.id)}
+                                className="p-1 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                                aria-label="Delete salary entry"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* ── MODAL: LOG SALARY ── */}
-      {showSalaryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[var(--white)] border border-[var(--hairline)] rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--hairline)]">
-              <h2 className="text-base font-semibold text-[var(--navy)]">
-                Log Salary
-              </h2>
+      {/* ── MOBILE HOLDING DETAIL BOTTOM SHEET ── */}
+      {selectedMobileHolding && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Holding details"
+        >
+          <div className="w-full bg-[var(--surface)] border-t border-[var(--line)] rounded-t-[14px] p-5 space-y-4 max-h-[85dvh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--line)]">
+              <h3 className="text-base font-semibold text-[var(--ink)]">
+                {selectedMobileHolding.name}
+              </h3>
               <button
-                onClick={() => setShowSalaryModal(false)}
-                className="p-1 rounded-lg text-[var(--slate)] hover:bg-[var(--slate-faint)] transition-colors"
+                type="button"
+                onClick={() => setSelectedMobileHolding(null)}
+                className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer"
+                aria-label="Close details"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                <span className="text-[var(--ink-3)]">Asset type</span>
+                <span className="font-medium text-[var(--ink)]">
+                  {selectedMobileHolding.assetType || selectedMobileHolding.type || 'Other'}
+                </span>
+              </div>
+
+              {selectedMobileHolding.provider && (
+                <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                  <span className="text-[var(--ink-3)]">Provider / Platform</span>
+                  <span className="font-medium text-[var(--ink)]">
+                    {selectedMobileHolding.provider}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                <span className="text-[var(--ink-3)]">Invested amount</span>
+                <Money
+                  amount={Number(selectedMobileHolding.investedAmount ?? selectedMobileHolding.invested) || 0}
+                  className="font-medium text-[var(--ink)]"
+                />
+              </div>
+
+              <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                <span className="text-[var(--ink-3)]">Current value</span>
+                <Money
+                  amount={Number(selectedMobileHolding.currentValue ?? selectedMobileHolding.current) || 0}
+                  className="font-medium text-[var(--ink)]"
+                />
+              </div>
+
+              <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                <span className="text-[var(--ink-3)]">Total return</span>
+                {(() => {
+                  const inv = Number(selectedMobileHolding.investedAmount ?? selectedMobileHolding.invested) || 0;
+                  const cur = Number(selectedMobileHolding.currentValue ?? selectedMobileHolding.current) || inv;
+                  const diff = cur - inv;
+                  const pct = inv > 0 ? (diff / inv) * 100 : 0;
+                  if (diff === 0) {
+                    return <span className="text-[var(--ink-3)]">0.0% (no change yet)</span>;
+                  }
+                  return (
+                    <span
+                      className={`font-medium ${
+                        diff > 0 ? 'text-[var(--credit)]' : 'text-[var(--debit)]'
+                      }`}
+                    >
+                      {diff > 0 ? '+' : '−'}₹{Math.abs(diff).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ({Math.abs(pct).toFixed(1)}%)
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Always-reachable Delete Action */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => handleDeleteInvestment(selectedMobileHolding.id)}
+                className="btn btn-danger w-full text-xs h-10 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete holding</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADD INVESTMENT MODAL ── */}
+      {showAddInvestmentModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Add investment"
+        >
+          <div className="w-full sm:max-w-md bg-[var(--surface)] border border-[var(--line)] rounded-t-[14px] sm:rounded-[14px] shadow-[var(--shadow-pop)] p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--line)]">
+              <h3 className="text-base font-semibold text-[var(--ink)]">Add investment</h3>
+              <button
+                type="button"
+                onClick={() => setShowAddInvestmentModal(false)}
+                className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer"
+                aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSalarySubmit} className="mt-4 space-y-4">
+            <form onSubmit={handleAddInvestmentSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                  Salary Month / Label
-                </label>
+                <label className="field-label">Asset name</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Jun salary, July, Aug 2026"
-                  value={salaryForm.salaryMonth}
-                  onChange={(e) => setSalaryForm({ ...salaryForm, salaryMonth: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
+                  placeholder="e.g. Parag Parikh Flexi Cap"
+                  value={investmentForm.name}
+                  onChange={(e) =>
+                    setInvestmentForm((p) => ({ ...p, name: e.target.value }))
+                  }
+                  className="field text-sm"
+                  autoFocus
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                    Amount (₹)
-                  </label>
+                  <label className="field-label">Type</label>
+                  <select
+                    value={investmentForm.assetType}
+                    onChange={(e) =>
+                      setInvestmentForm((p) => ({ ...p, assetType: e.target.value }))
+                    }
+                    className="field text-xs bg-[var(--surface)]"
+                  >
+                    <option value="Mutual Funds">Mutual Funds</option>
+                    <option value="Fixed Deposits">Fixed Deposits</option>
+                    <option value="Gold">Gold</option>
+                    <option value="Silver">Silver</option>
+                    <option value="Stocks">Stocks / Equity</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="field-label">Provider</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Zerodha, PhonePe"
+                    value={investmentForm.provider}
+                    onChange={(e) =>
+                      setInvestmentForm((p) => ({ ...p, provider: e.target.value }))
+                    }
+                    className="field text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label">Invested amount (₹)</label>
                   <input
                     type="number"
-                    required
-                    min="1"
                     step="any"
-                    placeholder="10000"
-                    value={salaryForm.amount}
-                    onChange={(e) => setSalaryForm({ ...salaryForm, amount: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                    Credited On
-                  </label>
-                  <input
-                    type="date"
+                    inputMode="decimal"
                     required
-                    value={salaryForm.receivedDate}
-                    onChange={(e) => setSalaryForm({ ...salaryForm, receivedDate: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
+                    placeholder="0.00"
+                    value={investmentForm.investedAmount}
+                    onChange={(e) =>
+                      setInvestmentForm((p) => ({ ...p, investedAmount: e.target.value }))
+                    }
+                    className="field text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Current value (₹)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="Same as invested"
+                    value={investmentForm.currentValue}
+                    onChange={(e) =>
+                      setInvestmentForm((p) => ({ ...p, currentValue: e.target.value }))
+                    }
+                    className="field text-sm"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                  Employer / Source (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Company name or Project client"
-                  value={salaryForm.companyOrSource}
-                  onChange={(e) => setSalaryForm({ ...salaryForm, companyOrSource: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono uppercase text-[var(--slate-light)] mb-1">
-                  Notes (e.g. Date received details)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. got on 17th july"
-                  value={salaryForm.notes}
-                  onChange={(e) => setSalaryForm({ ...salaryForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--navy)] text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[var(--navy)]"
-                />
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-2 border-t border-[var(--hairline)]">
+              <div className="pt-2 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowSalaryModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-[var(--slate)] hover:bg-[var(--canvas)] transition-colors"
+                  onClick={() => setShowAddInvestmentModal(false)}
+                  className="btn btn-quiet flex-1 text-xs"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={submittingSalary}
-                  className="btn-statement-primary text-[11px]"
-                >
-                  {submittingSalary ? "Saving..." : "Log Salary"}
+                <button type="submit" className="btn btn-primary flex-1 text-xs">
+                  Save investment
                 </button>
               </div>
             </form>
@@ -1183,22 +973,104 @@ export default function Investments() {
         </div>
       )}
 
-      {/* Floating AI Assistant Integration */}
-      <AiChatbot />
+      {/* ── ADD SALARY MODAL ── */}
+      {showAddSalaryModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Log salary"
+        >
+          <div className="w-full sm:max-w-md bg-[var(--surface)] border border-[var(--line)] rounded-t-[14px] sm:rounded-[14px] shadow-[var(--shadow-pop)] p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--line)]">
+              <h3 className="text-base font-semibold text-[var(--ink)]">Log salary</h3>
+              <button
+                type="button"
+                onClick={() => setShowAddSalaryModal(false)}
+                className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-      {/* Settings & Friends Modals */}
-      {showSettingsModal && (
-        <SettingsModal
-          isOpen={showSettingsModal}
-          onClose={() => setShowSettingsModal(false)}
-          activeTab={settingsTab}
-        />
-      )}
-      {showFriendsModal && (
-        <FriendsManagerModal
-          isOpen={showFriendsModal}
-          onClose={() => setShowFriendsModal(false)}
-        />
+            <form onSubmit={handleAddSalarySubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label">Salary month</label>
+                  <select
+                    value={salaryForm.salaryMonth}
+                    onChange={(e) =>
+                      setSalaryForm((p) => ({ ...p, salaryMonth: e.target.value }))
+                    }
+                    className="field text-xs bg-[var(--surface)]"
+                  >
+                    {MONTH_NAMES.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="field-label">Received date</label>
+                  <input
+                    type="date"
+                    value={salaryForm.receivedDate}
+                    onChange={(e) =>
+                      setSalaryForm((p) => ({ ...p, receivedDate: e.target.value }))
+                    }
+                    className="field text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="field-label">Net amount (₹)</label>
+                <input
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  required
+                  placeholder="0.00"
+                  value={salaryForm.amount}
+                  onChange={(e) =>
+                    setSalaryForm((p) => ({ ...p, amount: e.target.value }))
+                  }
+                  className="field text-sm"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="field-label">Company / Source</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Acme Corp"
+                  value={salaryForm.companyOrSource}
+                  onChange={(e) =>
+                    setSalaryForm((p) => ({ ...p, companyOrSource: e.target.value }))
+                  }
+                  className="field text-sm"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSalaryModal(false)}
+                  className="btn btn-quiet flex-1 text-xs"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary flex-1 text-xs">
+                  Save salary
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

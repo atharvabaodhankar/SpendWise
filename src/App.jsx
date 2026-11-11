@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AppShell from './components/AppShell';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -20,22 +21,19 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route 
-                path="/dashboard" 
+
+              {/* Protected routes wrapped with AppShell layout */}
+              <Route
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    <AppShell />
                   </ProtectedRoute>
-                } 
-              />
-              <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
-              <Route path="/analytics" 
-                element={
-                  <ProtectedRoute>
-                    <Analytics />
-                  </ProtectedRoute>
-                } 
-              />
+                }
+              >
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/investments" element={<Investments />} />
+                <Route path="/analytics" element={<Analytics />} />
+              </Route>
             </Routes>
           </div>
         </NotificationProvider>

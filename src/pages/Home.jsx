@@ -1,34 +1,17 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  TrendingUp, 
-  Wallet, 
-  PieChart, 
-  Users, 
-  ArrowRight, 
   Check, 
-  Sparkles, 
-  Shield, 
-  Bell, 
-  Zap, 
-  Mail,
-  CreditCard,
-  Search,
-  Menu,
-  X,
-  ChevronRight,
-  Cpu,
-  Terminal,
-  Code2,
-  Copy,
-  Layers,
+  Copy, 
+  Menu, 
+  X, 
   FolderOpen,
-  CheckCircle2,
-  Lock,
-  ArrowUpRight,
+  Search,
+  ArrowRight
 } from 'lucide-react';
 import SpendWiseLogo from '../components/SpendWiseLogo';
+import Money from '../components/Money';
 import {
   getClaudeDesktopConfig,
   getCursorConfig,
@@ -41,26 +24,22 @@ import {
 export default function Home() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [scrollY, setScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // MCP Section interactive states
   const [mcpClient, setMcpClient] = useState('claude-http');
   const [mcpOs, setMcpOs] = useState('windows');
   const [copiedMcp, setCopiedMcp] = useState(false);
-  const [mcpPromptFilter, setMcpPromptFilter] = useState('all');
+  const [toolSearch, setToolSearch] = useState('');
+
+  // Interactive demo state
+  const [demoStep, setDemoStep] = useState(0);
 
   useEffect(() => {
     if (currentUser) {
       navigate('/dashboard');
     }
   }, [currentUser, navigate]);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -72,87 +51,13 @@ export default function Home() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileMenuOpen]);
 
-  const features = [
-    {
-      icon: Wallet,
-      title: 'Dual Balance Tracking',
-      description: 'Seamlessly track cash and digital wallets in one unified view for complete financial clarity.',
-      color: 'primary'
-    },
-    {
-      icon: Users,
-      title: 'Social Expense Splitting',
-      description: 'Split bills instantly with friends. Detailed debt tracking ensures everyone settles up fairly.',
-      color: 'accent'
-    },
-    {
-      icon: PieChart,
-      title: 'Intelligent Analytics',
-      description: 'Visualize your spending habits with interactive charts, monthly trends, and personalized insights.',
-      color: 'success'
-    },
-    {
-      icon: Cpu,
-      title: 'Official MCP Server (26 Tools)',
-      description: 'Control your ledger with Claude Desktop, Cursor, or Antigravity via JSON-RPC 2.0 and SHA-256 tokens.',
-      color: 'accent'
-    },
-    {
-      icon: Mail,
-      title: 'Smart Alerts',
-      description: 'Get notified about low balances, large transactions, and monthly budget limits via email.',
-      color: 'warning'
-    },
-    {
-      icon: Shield,
-      title: 'Bank-Grade Security',
-      description: 'Your financial data is encrypted and protected with enterprise-level security protocols and Firebase auth.',
-      color: 'danger'
-    }
-  ];
-
-  const mcpPrompts = [
-    {
-      category: 'transactions',
-      say: '"I just paid ₹450 for groceries on Blinkit via UPI"',
-      tool: 'add_transaction',
-      result: 'Deducts ₹450 from online balance & records expense under Groceries',
-    },
-    {
-      category: 'splitting',
-      say: '"Split ₹2,400 dinner with rahul@gmail.com and sneha@gmail.com"',
-      tool: 'split_expense',
-      result: 'Deducts ₹2,400 from payer & creates ₹800 debt records for each friend',
-    },
-    {
-      category: 'investments',
-      say: '"What is my mutual funds portfolio value and total profit?"',
-      tool: 'get_portfolio_summary',
-      result: 'Calculates total invested, current market value, ROI %, and asset allocation',
-    },
-    {
-      category: 'budget',
-      say: '"How much budget do I have remaining for July?"',
-      tool: 'get_budget',
-      result: 'Returns monthly limit, month-to-date spending, and remaining allowance',
-    },
-    {
-      category: 'debts',
-      say: '"Who owes me money and who do I owe?"',
-      tool: 'get_debts',
-      result: 'Summarizes active debts: Owed to You, You Owe, and net balance',
-    },
-    {
-      category: 'recurring',
-      say: '"Schedule my monthly Netflix subscription of ₹649 on online wallet"',
-      tool: 'add_recurring_transaction',
-      result: 'Adds scheduled recurring outlay with automated execution calculation',
-    },
-  ];
-
-  const filteredPrompts = mcpPromptFilter === 'all'
-    ? mcpPrompts
-    : mcpPrompts.filter((p) => p.category === mcpPromptFilter);
+  // Auto-cycle interactive demo every 4 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDemoStep((prev) => (prev + 1) % 2);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
   const getMcpSnippetText = () => {
     const placeholderKey = 'spw_live_YOUR_SECRET_KEY';
@@ -169,451 +74,382 @@ export default function Home() {
     setTimeout(() => setCopiedMcp(false), 2000);
   };
 
+  const filteredTools = useMemo(() => {
+    const q = toolSearch.toLowerCase().trim();
+    if (!q) return SPENDWISE_MCP_TOOLS_CATALOG;
+    return SPENDWISE_MCP_TOOLS_CATALOG.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.summary.toLowerCase().includes(q) ||
+        t.category.toLowerCase().includes(q)
+    );
+  }, [toolSearch]);
+
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] overflow-x-hidden selection:bg-[var(--accent-500)] selection:text-white">
+    <div className="min-h-dvh bg-[var(--bg)] text-[var(--ink)] flex flex-col antialiased">
       
-      {/* Navbar */}
-      <nav className="fixed w-full z-50 bg-[var(--canvas)]/90 backdrop-blur-md border-b border-[var(--hairline)]">
-        <div className="max-w-[1120px] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2.5">
-            <SpendWiseLogo size={36} />
-            <span className="text-base font-semibold tracking-wider text-[var(--navy)] uppercase">
-              SpendWise
-            </span>
-          </div>
-
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-6 text-xs font-semibold text-[var(--slate)]">
-            <a href="#features" className="hover:text-[var(--navy)] transition-colors">Features</a>
-            <a href="#mcp" className="flex items-center gap-1.5 hover:text-[var(--navy)] transition-colors">
-              <span>MCP Protocol</span>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 font-bold">
-                26 Tools
+      {/* 56px Sticky Top Bar */}
+      <header className="sticky top-0 z-40 h-14 bg-[var(--bg)]/90 backdrop-blur-[8px] border-b border-[var(--line)]">
+        <div className="max-w-[1120px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6 h-full">
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0" aria-label="SpendWise home">
+              <SpendWiseLogo size={28} />
+              <span className="font-semibold text-[var(--ink)] text-base">
+                SpendWise
               </span>
-            </a>
+            </Link>
+
+            <nav className="hidden md:flex items-center gap-6 text-xs text-[var(--ink-2)]">
+              <a href="#features" className="hover:text-[var(--ink)] transition-colors">Features</a>
+              <a href="#mcp" className="hover:text-[var(--ink)] transition-colors">MCP agent</a>
+              <a href="#catalog" className="hover:text-[var(--ink)] transition-colors">Tools</a>
+            </nav>
           </div>
 
-          {/* Desktop nav buttons */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2">
             <button 
               onClick={() => navigate('/login')}
-              className="btn-statement text-[10px]"
+              className="btn-quiet text-xs"
             >
-              Sign In
+              Sign in
             </button>
             <button 
               onClick={() => navigate('/signup')}
-              className="btn-statement-primary text-[10px]"
+              className="btn-primary text-xs"
             >
-              Get Started
+              Create account
             </button>
           </div>
 
-          {/* Mobile hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="sm:hidden w-10 h-10 rounded-lg border border-[var(--hairline)] bg-[var(--white)] flex items-center justify-center hover:border-[var(--slate-light)] transition-all"
+            className="sm:hidden p-2 text-[var(--ink-2)] hover:text-[var(--ink)] cursor-pointer"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5 text-[var(--slate)]" /> : <Menu className="w-5 h-5 text-[var(--slate)]" />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
         {/* Mobile dropdown menu */}
-        <div
-          className={`sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-            mobileMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
-          }`}
-        >
-          <div className="px-4 pb-4 pt-2 space-y-2 border-t border-[var(--hairline)] bg-[var(--white)]">
-            <a href="#features" onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-xs font-semibold text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)] transition-all"
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-b border-[var(--line)] bg-[var(--surface)] px-4 py-4 space-y-3">
+            <a 
+              href="#features" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-xs text-[var(--ink-2)] hover:text-[var(--ink)] py-1"
             >
               Features
             </a>
-            <a href="#mcp" onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-xs font-semibold text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)] transition-all"
+            <a 
+              href="#mcp" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-xs text-[var(--ink-2)] hover:text-[var(--ink)] py-1"
             >
-              MCP Protocol (26 Tools)
+              MCP agent setup
             </a>
-            <div className="pt-2 flex flex-col gap-2">
+            <a 
+              href="#catalog" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-xs text-[var(--ink-2)] hover:text-[var(--ink)] py-1"
+            >
+              Tools catalog
+            </a>
+            <div className="pt-2 flex flex-col gap-2 border-t border-[var(--line)]">
               <button 
                 onClick={() => { setMobileMenuOpen(false); navigate('/login'); }}
-                className="w-full btn-statement text-[10px] py-2.5"
+                className="w-full btn-secondary text-xs"
               >
-                Sign In
+                Sign in
               </button>
               <button 
                 onClick={() => { setMobileMenuOpen(false); navigate('/signup'); }}
-                className="w-full btn-statement-primary text-[10px] py-2.5"
+                className="w-full btn-primary text-xs"
               >
-                Get Started
+                Create free account
               </button>
             </div>
           </div>
-        </div>
-      </nav>
+        )}
+      </header>
 
-      {/* Mobile menu backdrop */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm sm:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
+      {/* Main Content */}
+      <main className="flex-1 max-w-[1120px] mx-auto w-full px-4 sm:px-6 py-12 sm:py-20 space-y-20">
 
-      {/* Hero Section */}
-      <main className="relative pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-44 lg:pb-32 max-w-[1120px] mx-auto px-4 sm:px-6">
-        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-          {/* Text Content */}
-          <div className="lg:w-1/2 text-left">
-            <div className="stamp-pill mb-6">
-              SpendWise Passbook Edition • AI Native
-            </div>
-            
-            <h1 className="text-3xl sm:text-4xl lg:text-6xl font-semibold tracking-tight text-[var(--navy)] mb-6 leading-[1.15]">
-              Personal Expense Tracking, <br className="hidden sm:block" />
-              <span className="text-[var(--slate-light)]">Redefined as a Statement.</span>
+        {/* HERO SECTION */}
+        <section className="grid lg:grid-cols-12 gap-10 items-start">
+          <div className="lg:col-span-7 space-y-6">
+            <h1 className="text-3xl sm:text-5xl font-semibold text-[var(--ink)] leading-[1.15]">
+              Log your spending by sending a message.
             </h1>
-            
-            <p className="text-sm sm:text-base text-[var(--slate)] mb-8 leading-relaxed">
-              Track daily outlays, split bills with friends, manage investment portfolios, and drive your ledger through Claude Desktop or Cursor using the official Model Context Protocol (MCP) server.
+
+            <p className="text-sm sm:text-base text-[var(--ink-2)] max-w-xl leading-relaxed">
+              SpendWise is a personal money ledger for India. Track your Online and Cash wallets, split bills with friends, and let your AI agent record transactions directly into your ledger.
             </p>
-            
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <button 
                 onClick={() => navigate('/signup')}
-                className="btn-statement-primary text-[11px] py-3.5 px-6 flex items-center justify-center gap-2"
+                className="btn-primary text-xs py-2.5 px-4"
               >
-                Start Your Ledger
-                <ArrowRight className="w-4 h-4" />
+                Create free account
               </button>
               <a 
                 href="#mcp"
-                className="btn-statement text-[11px] py-3.5 px-6 flex items-center justify-center gap-2"
+                className="btn-secondary text-xs py-2.5 px-4 inline-flex items-center gap-1.5"
               >
-                <Cpu className="w-4 h-4 text-emerald-600" />
-                Explore MCP Integration
+                See how the agent connects
+                <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </div>
           </div>
 
-          {/* Statement Preview Card */}
-          <div className="lg:w-1/2 w-full">
-            <div className="passbook-card p-5 sm:p-8 border border-[var(--hairline)] shadow-xl">
-              <div className="flex items-center justify-between pb-4 border-b border-[var(--hairline)] mb-6">
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  <SpendWiseLogo size={32} />
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-[var(--navy)]">SpendWise Statement</div>
-                    <div className="text-[10px] font-mono text-[var(--slate-light)]">JULY 2026 PASSBOOK</div>
-                  </div>
-                </div>
-                <span className="stamp-pill text-[9px] py-1 px-3 hidden sm:inline-flex">Live Ledger</span>
-              </div>
+          {/* Interactive Agent Demo: Message Bubble + Flashing Ledger Row */}
+          <div className="lg:col-span-5 border border-[var(--line)] rounded-[6px] bg-[var(--surface)] p-5 space-y-4">
+            <div className="text-xs font-medium text-[var(--ink-3)]">
+              Live agent interaction
+            </div>
 
-              <div className="mb-6">
-                <div className="text-[10px] uppercase tracking-[2px] text-[var(--slate-light)] font-semibold mb-1">Cumulative Outlay</div>
-                <div className="font-mono text-3xl sm:text-4xl font-semibold text-[var(--navy)] tabular-nums">₹63,962.67</div>
+            {/* Simulated chat bubble */}
+            <div className="flex justify-end">
+              <div className="max-w-[85%] rounded-[14px] bg-[var(--accent-soft)] text-[var(--ink)] border border-[var(--accent)]/20 px-3.5 py-2 text-xs">
+                {demoStep === 0 ? '₹450 lunch via UPI with Rahul' : 'Split ₹1,200 dinner equally with Sneha'}
               </div>
+            </div>
 
-              <div className="space-y-3">
-                <div className="ledger-row py-2">
-                  <div className="font-mono text-[10px] text-[var(--slate-light)] w-12">25 MAY</div>
-                  <div className="text-xs font-semibold text-[var(--navy)]">Anjeer and jamun</div>
-                  <div className="flex-1 border-b border-dashed border-[var(--hairline)]"></div>
-                  <div className="font-mono text-xs font-semibold text-[var(--rose)] tabular-nums">−₹110.00</div>
+            {/* Divider with transition indicator */}
+            <div className="flex items-center gap-2 text-xs text-[var(--ink-3)] py-1">
+              <span className="w-2 h-2 rounded-full bg-[var(--credit)] animate-pulse" />
+              <span>MCP agent updated your ledger</span>
+            </div>
+
+            {/* Flashing ledger row */}
+            <div className="border border-[var(--line)] rounded-[4px] overflow-hidden bg-[var(--bg)]">
+              <div className="p-3 row-flash flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-[var(--ink)] truncate">
+                    {demoStep === 0 ? 'Lunch with Rahul' : 'Dinner with Sneha'}
+                  </p>
+                  <p className="text-xs text-[var(--ink-3)]">
+                    {demoStep === 0 ? 'Food · Online' : 'Food · Cash · ₹600 split with Sneha'}
+                  </p>
                 </div>
-                <div className="ledger-row py-2">
-                  <div className="font-mono text-[10px] text-[var(--slate-light)] w-12">25 MAY</div>
-                  <div className="text-xs font-semibold text-[var(--navy)]">Vadapaav and bhaje</div>
-                  <div className="flex-1 border-b border-dashed border-[var(--hairline)]"></div>
-                  <div className="font-mono text-xs font-semibold text-[var(--rose)] tabular-nums">−₹60.00</div>
+                <div className="text-right">
+                  <Money 
+                    amount={demoStep === 0 ? 450 : 1200} 
+                    type="expense" 
+                    size="body" 
+                  />
+                  <p className="text-xs text-[var(--ink-3)]">Just now</p>
                 </div>
               </div>
+            </div>
+
+            <div className="pt-2 text-xs text-[var(--ink-3)] flex items-center justify-between">
+              <span>Online balance: ₹18,450.00</span>
+              <button 
+                onClick={() => setDemoStep((prev) => (prev + 1) % 2)}
+                className="text-[var(--accent)] hover:underline cursor-pointer"
+              >
+                Cycle example
+              </button>
             </div>
           </div>
-        </div>
-      </main>
+        </section>
 
-      {/* Features Grid */}
-      <section id="features" className="py-16 sm:py-20 max-w-[1120px] mx-auto px-4 sm:px-6 border-t border-[var(--hairline)]">
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <div className="text-[10px] tracking-[2px] text-[var(--slate-light)] uppercase font-semibold mb-2">High-Precision Tools</div>
-          <h2 className="text-2xl sm:text-3xl md:text-5xl font-semibold text-[var(--navy)] mb-4 tracking-tight">
-            Empowering Features for Modern Finances
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--slate)] max-w-xl mx-auto">
-            Built with precision and care, SpendWise provides expense tracker tools, debt splitting, and AI intelligence.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {features.map((feature, index) => (
-            <div 
-              key={index}
-              className="statement-card p-5 sm:p-6 flex flex-col justify-between hover:border-[var(--navy)] transition-all"
-            >
-              <div>
-                <div className="w-10 h-10 rounded-md bg-[var(--navy)] text-white flex items-center justify-center mb-4">
-                  <feature.icon className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-semibold text-[var(--navy)] mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-xs text-[var(--slate)] leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ======================================================== */}
-      {/* DEDICATED MODEL CONTEXT PROTOCOL (MCP) SECTION */}
-      {/* ======================================================== */}
-      <section id="mcp" className="py-16 sm:py-24 max-w-[1120px] mx-auto px-4 sm:px-6 border-t border-[var(--hairline)]">
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3">
-          <div className="inline-flex items-center gap-2 text-[10px] tracking-[2px] text-emerald-700 dark:text-emerald-400 uppercase font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <Cpu className="w-3.5 h-3.5" /> Model Context Protocol (MCP) Server
-          </div>
-          <h2 className="text-2xl sm:text-3xl md:text-5xl font-semibold text-[var(--navy)] tracking-tight">
-            Connect SpendWise Directly to Your AI Assistant
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--slate)] max-w-2xl mx-auto leading-relaxed">
-            SpendWise exposes its entire financial engine through the official Model Context Protocol. Manage expenses, split dinner bills, track mutual fund portfolios, and monitor budgets directly inside Claude Desktop, Cursor, or Google Antigravity.
-          </p>
-        </div>
-
-        {/* 3-Step Setup Workflow */}
-        <div className="grid md:grid-cols-3 gap-4 mb-10">
-          <div className="statement-card p-5 space-y-2 border border-[var(--hairline)] hover:border-[var(--slate-light)] transition-all">
-            <div className="w-8 h-8 rounded-lg bg-[var(--navy)] text-white flex items-center justify-center font-mono font-bold text-xs">
-              1
-            </div>
-            <h3 className="text-sm font-semibold text-[var(--navy)]">Generate Secret Key</h3>
-            <p className="text-xs text-[var(--slate)] leading-relaxed">
-              Create an API key in your SpendWise Dashboard Settings. Keys are formatted as <code>spw_live_...</code> and hashed with SHA-256 for zero plaintext storage.
+        {/* FEATURES: 3 TEXT ROWS (NO CARDS, NO ICON CHIPS) */}
+        <section id="features" className="space-y-4 pt-8 border-t border-[var(--line)]">
+          <div>
+            <h2 className="text-[17px] font-semibold text-[var(--ink)]">
+              Core ledger capabilities
+            </h2>
+            <p className="text-xs text-[var(--ink-3)] mt-0.5">
+              Designed around how money moves in India.
             </p>
           </div>
 
-          <div className="statement-card p-5 space-y-2 border border-[var(--hairline)] hover:border-[var(--slate-light)] transition-all">
-            <div className="w-8 h-8 rounded-lg bg-[var(--navy)] text-white flex items-center justify-center font-mono font-bold text-xs">
-              2
+          <div className="divide-y divide-[var(--line)]">
+            <div className="py-4 grid sm:grid-cols-12 gap-2 sm:gap-6 items-baseline">
+              <span className="sm:col-span-3 font-medium text-xs text-[var(--ink)]">
+                Dual wallet ledger
+              </span>
+              <p className="sm:col-span-9 text-xs text-[var(--ink-2)] leading-relaxed">
+                Online (UPI and bank account) and Cash in hand are tracked side-by-side. Chronological day groupings, daily subtotals, and no hidden calculations.
+              </p>
             </div>
-            <h3 className="text-sm font-semibold text-[var(--navy)]">Paste 1-Click Config</h3>
-            <p className="text-xs text-[var(--slate)] leading-relaxed">
-              Add SpendWise to your <code>claude_desktop_config.json</code> or <code>.cursor/mcp.json</code>. Restart the client to load all 26 financial tools automatically.
+
+            <div className="py-4 grid sm:grid-cols-12 gap-2 sm:gap-6 items-baseline">
+              <span className="sm:col-span-3 font-medium text-xs text-[var(--ink)]">
+                Social debt tracking
+              </span>
+              <p className="sm:col-span-9 text-xs text-[var(--ink-2)] leading-relaxed">
+                Split bills with friends and keep a running record of who owes whom. Settle debts with a single tap, updating your wallet records automatically.
+              </p>
+            </div>
+
+            <div className="py-4 grid sm:grid-cols-12 gap-2 sm:gap-6 items-baseline">
+              <span className="sm:col-span-3 font-medium text-xs text-[var(--ink)]">
+                Monthly budget pace
+              </span>
+              <p className="sm:col-span-9 text-xs text-[var(--ink-2)] leading-relaxed">
+                Monitor monthly spending pace against your budget with daily allowance indicators and banknote-hued category breakdowns.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* MCP SECTION */}
+        <section id="mcp" className="space-y-6 pt-8 border-t border-[var(--line)]">
+          <div className="max-w-xl">
+            <h2 className="text-[17px] font-semibold text-[var(--ink)]">
+              Model Context Protocol (MCP) connection
+            </h2>
+            <p className="text-xs text-[var(--ink-3)] mt-0.5 leading-relaxed">
+              SpendWise exposes 26 JSON-RPC tools. Add your configuration to Claude Desktop, Cursor, or Antigravity to log expenses and check balances straight from chat.
             </p>
           </div>
 
-          <div className="statement-card p-5 space-y-2 border border-[var(--hairline)] hover:border-[var(--slate-light)] transition-all">
-            <div className="w-8 h-8 rounded-lg bg-[var(--navy)] text-white flex items-center justify-center font-mono font-bold text-xs">
-              3
-            </div>
-            <h3 className="text-sm font-semibold text-[var(--navy)]">Chat Naturally</h3>
-            <p className="text-xs text-[var(--slate)] leading-relaxed">
-              Ask your assistant in plain English: &ldquo;Log ₹450 for lunch via UPI&rdquo; or &ldquo;What is my net worth?&rdquo; SpendWise executes the mutation in real time.
-            </p>
-          </div>
-        </div>
-
-        {/* Interactive Configuration Box */}
-        <div className="statement-card p-6 sm:p-8 border border-[var(--hairline)] space-y-6 shadow-lg mb-12">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--hairline)]">
-            <div>
-              <div className="text-[10px] uppercase font-mono tracking-wider text-[var(--slate-light)] font-bold">
-                Client Configuration
+          {/* Config Box */}
+          <div className="border border-[var(--line)] rounded-[6px] bg-[var(--surface)] p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--line)]">
+              {/* Client picker */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[
+                  { id: 'claude-http', label: 'Claude Desktop' },
+                  { id: 'cursor', label: 'Cursor' },
+                  { id: 'antigravity', label: 'Antigravity' },
+                  { id: 'curl', label: 'cURL' },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setMcpClient(c.id)}
+                    className={`text-xs px-2.5 py-1 rounded-[6px] transition-colors cursor-pointer ${
+                      mcpClient === c.id
+                        ? 'bg-[var(--accent)] text-[var(--on-accent)] font-medium'
+                        : 'text-[var(--ink-2)] hover:bg-[var(--sunken)]'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
               </div>
-              <h3 className="text-base font-semibold text-[var(--navy)]">
-                Copy-Paste Config Snippet
-              </h3>
+
+              {/* OS switcher for config clients */}
+              {['claude-http', 'cursor', 'antigravity'].includes(mcpClient) && (
+                <div className="flex items-center gap-1 bg-[var(--sunken)] p-0.5 rounded-[6px]">
+                  {['windows', 'macos', 'linux'].map((os) => (
+                    <button
+                      key={os}
+                      onClick={() => setMcpOs(os)}
+                      className={`text-xs px-2 py-0.5 rounded-[4px] transition-colors cursor-pointer ${
+                        mcpOs === os ? 'bg-[var(--surface)] text-[var(--ink)] font-medium' : 'text-[var(--ink-3)]'
+                      }`}
+                    >
+                      {os === 'macos' ? 'macOS' : os === 'windows' ? 'Windows' : 'Linux'}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Client selector tabs */}
-            <div className="flex items-center gap-1 bg-[var(--canvas)] p-1 rounded-lg border border-[var(--hairline)] overflow-x-auto">
-              {[
-                { id: 'claude-http', label: 'Claude Desktop' },
-                { id: 'cursor', label: 'Cursor' },
-                { id: 'antigravity', label: 'Antigravity CLI' },
-                { id: 'curl', label: 'cURL' },
-              ].map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setMcpClient(c.id)}
-                  className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all whitespace-nowrap ${
-                    mcpClient === c.id
-                      ? 'bg-[var(--navy)] text-white font-semibold shadow-xs'
-                      : 'text-[var(--slate)] hover:text-[var(--navy)]'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* OS Switcher & File Path (for config-based clients) */}
-          {['claude-http', 'cursor', 'antigravity'].includes(mcpClient) && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)] text-xs">
-              <div className="flex items-center gap-2">
-                <FolderOpen className="w-4 h-4 text-[var(--slate)]" />
-                <span className="font-semibold text-[var(--navy)]">Target File:</span>
-                <code className="font-mono text-[11px] text-[var(--slate)] overflow-x-auto">
+            {/* Target file location */}
+            {['claude-http', 'cursor', 'antigravity'].includes(mcpClient) && (
+              <div className="flex items-center gap-2 text-xs text-[var(--ink-3)]">
+                <FolderOpen className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>Config location:</span>
+                <code className="font-mono text-xs text-[var(--ink)] overflow-x-auto">
                   {CLIENT_CONFIG_PATHS[
                     mcpClient === 'antigravity' ? 'antigravity' : mcpClient === 'cursor' ? 'cursor' : 'claude'
                   ]?.[mcpOs]}
                 </code>
               </div>
+            )}
 
-              <div className="flex items-center gap-1 self-end sm:self-auto">
-                {['windows', 'macos', 'linux'].map((os) => (
-                  <button
-                    key={os}
-                    onClick={() => setMcpOs(os)}
-                    className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded ${
-                      mcpOs === os ? 'bg-[var(--navy)] text-white font-semibold' : 'text-[var(--slate)]'
-                    }`}
-                  >
-                    {os === 'macos' ? 'macOS' : os}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Code block */}
-          <div className="relative rounded-xl border border-[var(--hairline)] bg-[var(--canvas)] overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--hairline)] bg-[var(--white)] text-[11px] font-mono text-[var(--slate-light)]">
-              <span>{mcpClient === 'curl' ? 'Terminal Command' : 'JSON Configuration'}</span>
-              <button
-                onClick={copySnippet}
-                className="flex items-center gap-1 text-[var(--navy)] font-semibold hover:underline"
-              >
-                {copiedMcp ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedMcp ? 'Copied to Clipboard' : 'Copy Snippet'}
-              </button>
-            </div>
-            <pre className="p-4 text-xs font-mono text-[var(--navy)] overflow-x-auto max-h-72 leading-relaxed">
-              {getMcpSnippetText()}
-            </pre>
-          </div>
-        </div>
-
-        {/* Real Prompts Table */}
-        <div className="statement-card p-6 sm:p-8 border border-[var(--hairline)] space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--hairline)]">
-            <div>
-              <div className="text-[10px] tracking-[2px] uppercase font-mono font-bold text-[var(--slate-light)]">
-                Natural Language Ledger
-              </div>
-              <h3 className="text-base font-semibold text-[var(--navy)]">
-                What You Can Tell Your AI Assistant
-              </h3>
-            </div>
-
-            {/* Filter buttons */}
-            <div className="flex items-center gap-1 flex-wrap">
-              {[
-                { id: 'all', label: 'All' },
-                { id: 'transactions', label: 'Expenses' },
-                { id: 'splitting', label: 'Bill Splitting' },
-                { id: 'investments', label: 'Investments' },
-                { id: 'budget', label: 'Budgets' },
-              ].map((f) => (
+            {/* Sunken code block */}
+            <div className="rounded-[6px] border border-[var(--line)] bg-[var(--sunken)] overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--line)] text-xs text-[var(--ink-3)]">
+                <span>{mcpClient === 'curl' ? 'Terminal snippet' : 'Config JSON'}</span>
                 <button
-                  key={f.id}
-                  onClick={() => setMcpPromptFilter(f.id)}
-                  className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
-                    mcpPromptFilter === f.id
-                      ? 'bg-[var(--navy)] text-white font-semibold'
-                      : 'bg-[var(--canvas)] text-[var(--slate)] hover:bg-[var(--hairline)]'
-                  }`}
+                  onClick={copySnippet}
+                  className="text-xs text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer font-medium"
                 >
-                  {f.label}
+                  {copiedMcp ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copiedMcp ? 'Copied' : 'Copy snippet'}
                 </button>
-              ))}
+              </div>
+              <pre className="p-3.5 text-xs font-mono text-[var(--ink)] overflow-x-auto max-h-64 leading-relaxed">
+                {getMcpSnippetText()}
+              </pre>
+            </div>
+          </div>
+        </section>
+
+        {/* 2-COLUMN PLAIN TOOLS CATALOG */}
+        <section id="catalog" className="space-y-4 pt-8 border-t border-[var(--line)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[17px] font-semibold text-[var(--ink)]">
+                MCP tools catalog ({SPENDWISE_MCP_TOOLS_CATALOG.length})
+              </h2>
+              <p className="text-xs text-[var(--ink-3)] mt-0.5">
+                Full list of operations available to connected agents.
+              </p>
+            </div>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-3)]" />
+              <input
+                type="text"
+                placeholder="Search tools..."
+                value={toolSearch}
+                onChange={(e) => setToolSearch(e.target.value)}
+                className="input-base pl-8 text-xs w-full py-1.5"
+              />
             </div>
           </div>
 
-          <div className="divide-y divide-[var(--hairline)]">
-            {filteredPrompts.map((p, i) => (
-              <div key={i} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="space-y-0.5">
-                  <span className="text-xs font-semibold text-[var(--navy)]">{p.say}</span>
-                  <p className="text-[11px] text-[var(--slate)]">{p.result}</p>
-                </div>
-                <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
-                  <span className="font-mono text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                    {p.tool}
+          <div className="grid sm:grid-cols-2 gap-3">
+            {filteredTools.map((tool) => (
+              <div 
+                key={tool.name} 
+                className="p-3 border border-[var(--line)] rounded-[6px] bg-[var(--surface)] space-y-1.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-[var(--ink)]">
+                    {tool.name}
+                  </span>
+                  <span className="text-xs text-[var(--ink-3)]">
+                    {tool.category}
                   </span>
                 </div>
+                <p className="text-xs text-[var(--ink-2)] leading-relaxed">
+                  {tool.summary}
+                </p>
+                <p className="text-xs text-[var(--ink-3)] italic">
+                  {tool.example}
+                </p>
               </div>
             ))}
           </div>
+        </section>
+      </main>
 
-          {/* Catalog Footer link */}
-          <div className="pt-4 border-t border-[var(--hairline)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <span className="text-[var(--slate)]">
-              SpendWise supports <strong>26 dedicated MCP tools</strong> across transactions, balances, investments, debts, and deep analytics.
-            </span>
-            <button
-              onClick={() => navigate('/signup')}
-              className="btn-statement-primary text-[10px] py-2 px-4 flex items-center gap-1.5 self-start sm:self-auto"
-            >
-              Get Your API Key <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+      {/* FOOTER */}
+      <footer className="border-t border-[var(--line)] py-8 mt-12 bg-[var(--surface)] text-xs text-[var(--ink-3)]">
+        <div className="max-w-[1120px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <SpendWiseLogo size={20} />
+            <span className="font-semibold text-[var(--ink)]">SpendWise</span>
           </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="py-16 sm:py-20 bg-[var(--navy)] text-white relative overflow-hidden my-8 sm:my-12">
-        <div className="max-w-[1120px] mx-auto px-4 sm:px-6 relative z-10 text-center">
-          <div className="text-[10px] tracking-[2px] text-[var(--emerald)] uppercase font-mono font-semibold mb-3">Instant Setup</div>
-          <h2 className="text-2xl sm:text-3xl md:text-5xl font-semibold text-white mb-4 tracking-tight">
-            Ready to Transform Your Finances?
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--slate-light)] mb-8 max-w-xl mx-auto">
-            Join thousands of smart spenders who have taken control of their financial outlays with SpendWise and AI assistants.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
-            <button 
-              onClick={() => navigate('/signup')}
-              className="w-full sm:w-auto btn-statement-primary text-[11px] py-3.5 px-8 bg-white text-[var(--navy)] border-white hover:bg-[var(--canvas)]"
-            >
-              Get Started Now
-            </button>
-            <button 
-              onClick={() => navigate('/login')}
-              className="w-full sm:w-auto btn-statement text-[11px] py-3.5 px-8 text-white border-white/20 bg-transparent hover:bg-white/10"
-            >
-              Sign In To Account
-            </button>
+          <div className="flex items-center gap-4">
+            <a href="#features" className="hover:text-[var(--ink)]">Features</a>
+            <a href="#mcp" className="hover:text-[var(--ink)]">MCP</a>
+            <Link to="/login" className="hover:text-[var(--ink)]">Sign in</Link>
+            <Link to="/signup" className="hover:text-[var(--ink)]">Create account</Link>
           </div>
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="border-t border-[var(--hairline)] py-8 sm:py-12">
-        <div className="max-w-[1120px] mx-auto px-4 sm:px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2.5">
-              <SpendWiseLogo size={28} />
-              <span className="text-sm font-semibold tracking-wider text-[var(--navy)] uppercase">SpendWise</span>
-            </div>
-            
-            <div className="flex gap-6 text-xs text-[var(--slate)] font-medium">
-              <a href="#features" className="hover:text-[var(--navy)] transition-colors">Features</a>
-              <a href="#mcp" className="hover:text-[var(--navy)] transition-colors">MCP Protocol</a>
-              <a href="/login" className="hover:text-[var(--navy)] transition-colors">Sign In</a>
-              <a href="/signup" className="hover:text-[var(--navy)] transition-colors">Register</a>
-            </div>
-
-            <p className="text-xs text-[var(--slate-light)] font-mono">
-              © 2026 SpendWise Inc. All rights reserved.
-            </p>
+          <div>
+            © 2026 SpendWise. All rights reserved.
           </div>
         </div>
       </footer>
