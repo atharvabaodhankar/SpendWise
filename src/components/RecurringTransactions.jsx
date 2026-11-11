@@ -4,6 +4,7 @@ import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { Plus, Trash2, CalendarClock, Play, X, RefreshCw } from 'lucide-react';
+import CustomSelect from './CustomSelect';
 
 export default function RecurringTransactions() {
   const { currentUser } = useAuth();
@@ -208,29 +209,29 @@ export default function RecurringTransactions() {
               <div className="grid grid-cols-2 gap-3">
                  <div>
                     <label className="block text-xs font-medium text-[var(--ink-3)] mb-1">Category</label>
-                    <select
+                    <CustomSelect
                        name="category"
                        value={formData.category}
                        onChange={handleChange}
-                       className="input-base text-xs w-full py-1.5"
+                       className="text-xs w-full h-9"
                     >
                        {categories[formData.type].map(category => (
                           <option key={category} value={category}>{category}</option>
                        ))}
-                    </select>
+                    </CustomSelect>
                  </div>
                  <div>
                     <label className="block text-xs font-medium text-[var(--ink-3)] mb-1">Frequency</label>
-                    <select
+                    <CustomSelect
                        name="frequency"
                        value={formData.frequency}
                        onChange={handleChange}
-                       className="input-base text-xs w-full py-1.5"
+                       className="text-xs w-full h-9"
                     >
                        {Object.entries(frequencies).map(([key, label]) => (
                           <option key={key} value={key}>{label}</option>
                        ))}
-                    </select>
+                    </CustomSelect>
                  </div>
               </div>
               

@@ -124,11 +124,11 @@ export default function CustomSelect({
         aria-label={ariaLabel}
         disabled={disabled}
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
-        className={`field flex items-center justify-between gap-2 px-3 text-xs bg-[var(--surface)] text-[var(--ink)] cursor-pointer select-none transition-colors ${
+        className={`w-full flex flex-row items-center justify-between gap-2 px-3 text-xs bg-[var(--surface)] text-[var(--ink)] border border-[var(--line-strong)] rounded-[6px] shadow-[0_1px_2px_rgba(17,19,24,0.04)] cursor-pointer select-none transition-colors outline-none hover:border-[var(--ink-2)] box-border ${
           isOpen ? 'border-[var(--accent)] shadow-[0_0_0_1.5px_var(--accent)]' : ''
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-[var(--sunken)]' : ''} ${className}`}
       >
-        <span className="truncate">{displayLabel}</span>
+        <span className="truncate flex-1 text-left">{displayLabel}</span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-[var(--ink-3)] shrink-0 transition-transform duration-150 ${
             isOpen ? 'rotate-180 text-[var(--accent)]' : ''
@@ -168,3 +168,4 @@ export default function CustomSelect({
     </div>
   );
 }
+

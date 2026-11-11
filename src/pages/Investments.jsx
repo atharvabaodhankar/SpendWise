@@ -23,6 +23,7 @@ import {
   deleteSalary,
 } from '../utils/salaryService';
 import Money from '../components/Money';
+import CustomSelect from '../components/CustomSelect';
 
 const BANKNOTE_HUES = [
   'var(--cat-stone)',
@@ -510,13 +511,12 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                   ))}
                 </div>
 
-                {/* Mobile Native Select */}
+                {/* Mobile Custom Select */}
                 <div className="sm:hidden">
-                  <select
-                    role="combobox"
+                  <CustomSelect
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
-                    className="field h-8 px-2 text-xs rounded-[6px] bg-[var(--surface)]"
+                    className="h-8 px-2 text-xs w-32"
                     aria-label="Filter asset types"
                   >
                     <option value="all">All</option>
@@ -525,7 +525,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                         {t}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
             </div>
@@ -893,12 +893,12 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="field-label">Type</label>
-                  <select
+                  <CustomSelect
                     value={investmentForm.assetType}
                     onChange={(e) =>
                       setInvestmentForm((p) => ({ ...p, assetType: e.target.value }))
                     }
-                    className="field h-10 text-xs bg-[var(--surface)]"
+                    className="h-10 text-xs w-full"
                   >
                     <option value="Mutual Funds">Mutual Funds</option>
                     <option value="Fixed Deposits">Fixed Deposits</option>
@@ -906,7 +906,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     <option value="Silver">Silver</option>
                     <option value="Stocks">Stocks / Equity</option>
                     <option value="Other">Other</option>
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 <div>
@@ -998,19 +998,19 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="field-label">Salary month</label>
-                  <select
+                  <CustomSelect
                     value={salaryForm.salaryMonth}
                     onChange={(e) =>
                       setSalaryForm((p) => ({ ...p, salaryMonth: e.target.value }))
                     }
-                    className="field h-10 text-xs bg-[var(--surface)]"
+                    className="h-10 text-xs w-full"
                   >
                     {MONTH_NAMES.map((m) => (
                       <option key={m} value={m}>
                         {m}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
 
                 <div>

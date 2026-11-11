@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, MoreHorizontal, Trash2, X } from 'lucide-react';
 import Money from './Money';
+import CustomSelect from './CustomSelect';
 
 /**
  * Format a date string into "Today", "Yesterday", or human friendly "10 November 2026"
@@ -154,13 +155,13 @@ export default function TransactionList({
         {/* Desktop Search & Filters (>=1024px) */}
         <div className="hidden lg:flex items-center gap-2">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[var(--ink-3)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-[var(--ink-3)] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search transactions..."
-              className="field h-8 pl-8 pr-3 text-xs w-48 rounded-[6px]"
+              className="field h-8 pl-[32px] pr-3 text-xs w-48 rounded-[6px]"
             />
             {searchQuery && (
               <button
@@ -174,27 +175,27 @@ export default function TransactionList({
             )}
           </div>
 
-          <select
+          <CustomSelect
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="field h-8 px-2 text-xs rounded-[6px] w-28 bg-[var(--surface)]"
+            className="h-8 px-2.5 text-xs w-32"
             aria-label="Filter by type"
           >
             <option value="all">All types</option>
             <option value="expense">Expense</option>
             <option value="income">Income</option>
-          </select>
+          </CustomSelect>
 
-          <select
+          <CustomSelect
             value={selectedMethod}
             onChange={(e) => setSelectedMethod(e.target.value)}
-            className="field h-8 px-2 text-xs rounded-[6px] w-28 bg-[var(--surface)]"
+            className="h-8 px-2.5 text-xs w-32"
             aria-label="Filter by wallet"
           >
             <option value="all">All wallets</option>
             <option value="online">Online</option>
             <option value="cash">Cash</option>
-          </select>
+          </CustomSelect>
         </div>
 
         {/* Mobile Filter Trigger (<1024px) */}
