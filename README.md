@@ -48,9 +48,9 @@ npm run dev:vercel
 - **Transaction Integration**: All debts linked to original split transactions
 
 ### 🤖 AI & Model Context Protocol (MCP)
-- **Official MCP Server**: Turn SpendWise into an AI-native conversational finance agent
+- **Official MCP Server (26 Tools)**: Complete protocol coverage for all SpendWise features. Full guide in [`docs/mcp.md`](docs/mcp.md)
 - **Secret API Key Management**: Generate, view, and revoke `spw_live_...` API keys with SHA-256 secure hashing
-- **AI Client Support**: 1-click config templates for Claude Desktop, Cursor, Windsurf, and Antigravity
+- **AI Client Support**: 1-click config templates with exact file paths for Claude Desktop, Cursor, Windsurf, and Antigravity
 - **Natural Language Actions**: Log expenses, check budgets, split bills, and query debts via conversation
 - **Dual Connectivity**: Supports both remote HTTP/SSE (`/api/mcp`) on Vercel and local stdio runner (`npm run mcp`)
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Key,
   Plus,
@@ -12,6 +12,16 @@ import {
   Cpu,
   ExternalLink,
   RefreshCw,
+  Terminal,
+  Layers,
+  Sparkles,
+  Search,
+  BookOpen,
+  ArrowRight,
+  FolderOpen,
+  CheckCircle2,
+  Monitor,
+  Laptop,
 } from 'lucide-react';
 import {
   collection,
@@ -29,10 +39,16 @@ import {
   generateApiKey,
   hashApiKey,
   formatKeyPrefix,
+  getEffectiveApiUrl,
   getClaudeDesktopConfig,
   getClaudeDesktopStdioConfig,
   getCursorConfig,
+  getAntigravityConfig,
+  getWindsurfConfig,
   getCurlSnippet,
+  getPythonSnippet,
+  CLIENT_CONFIG_PATHS,
+  SPENDWISE_MCP_TOOLS_CATALOG,
 } from '../utils/apiKeyUtils';
 
 const FIRESTORE_RULE_SNIPPET = `    // API Keys collection - users can manage their own API keys
@@ -46,6 +62,10 @@ export default function ApiKeyManager() {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useNotification();
 
+  // Top-level subtab: 'keys' | 'setup' | 'tools'
+  const [managerTab, setManagerTab] = useState('keys');
+
+  // Keys state
   const [keys, setKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -54,11 +74,22 @@ export default function ApiKeyManager() {
   const [rulesNeeded, setRulesNeeded] = useState(false);
   const [copiedRule, setCopiedRule] = useState(false);
 
-  // Newly created key display state (shown once)
+  // Newly created key display state
   const [newlyCreatedKey, setNewlyCreatedKey] = useState(null);
   const [copiedKey, setCopiedKey] = useState(false);
-  const [activeSnippetTab, setActiveSnippetTab] = useState('claude-http');
-  const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [copiedModalSnippet, setCopiedModalSnippet] = useState(false);
+  const [modalSnippetClient, setModalSnippetClient] = useState('claude-http');
+
+  // Setup tab state
+  const [selectedClient, setSelectedClient] = useState('claude-http');
+  const [selectedOs, setSelectedOs] = useState('windows');
+  const [copiedSetupSnippet, setCopiedSetupSnippet] = useState(false);
+  const [copiedPath, setCopiedPath] = useState(false);
+
+  // Tools tab state
+  const [toolSearch, setToolSearch] = useState('');
+  const [toolCategory, setToolCategory] = useState('all');
+  const [copiedPromptIndex, setCopiedPromptIndex] = useState(null);
 
   // Revoke state
   const [revokingId, setRevokingId] = useState(null);
@@ -133,7 +164,7 @@ export default function ApiKeyManager() {
       });
       setKeyName('');
       setShowCreateModal(false);
-      showSuccess('API Key created successfully!');
+      showSuccess('API Key generated successfully! Save it now.');
     } catch (err) {
       console.error('Error creating API key:', err);
       const isPermissionDenied =
@@ -151,7 +182,11 @@ export default function ApiKeyManager() {
   };
 
   const handleRevokeKey = async (keyId, name) => {
-    if (!window.confirm(`Are you sure you want to revoke "${name}"? Any agent using this key will immediately lose access.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to revoke "${name}"? Any AI client or script using this key will immediately lose access.`
+      )
+    ) {
       return;
     }
 
@@ -168,19 +203,9 @@ export default function ApiKeyManager() {
     }
   };
 
-  const copyToClipboard = (text, type = 'key') => {
+  const copyToClipboard = (text, label = 'Copied') => {
     navigator.clipboard.writeText(text);
-    if (type === 'key') {
-      setCopiedKey(true);
-      setTimeout(() => setCopiedKey(false), 2000);
-    } else if (type === 'rule') {
-      setCopiedRule(true);
-      setTimeout(() => setCopiedRule(false), 2000);
-    } else {
-      setCopiedSnippet(true);
-      setTimeout(() => setCopiedSnippet(false), 2000);
-    }
-    showSuccess('Copied to clipboard!');
+    showSuccess(`${label} copied to clipboard!`);
   };
 
   const formatDate = (isoString) => {
@@ -197,63 +222,74 @@ export default function ApiKeyManager() {
     }
   };
 
-  const renderSnippet = () => {
-    if (!newlyCreatedKey) return null;
-    const { rawKey } = newlyCreatedKey;
+  // Determine key to show in snippets (newly created key if active, else latest active prefix or placeholder)
+  const displayApiKey = newlyCreatedKey ? newlyCreatedKey.rawKey : 'spw_live_YOUR_SECRET_KEY';
+  const effectiveApiUrl = getEffectiveApiUrl();
 
-    let content = '';
-    let filename = '';
-
-    if (activeSnippetTab === 'claude-http') {
-      content = getClaudeDesktopConfig(rawKey);
-      filename = 'claude_desktop_config.json (Remote URL)';
-    } else if (activeSnippetTab === 'claude-stdio') {
-      content = getClaudeDesktopStdioConfig(rawKey);
-      filename = 'claude_desktop_config.json (Local stdio)';
-    } else if (activeSnippetTab === 'cursor') {
-      content = getCursorConfig(rawKey);
-      filename = '.cursor/mcp.json';
-    } else if (activeSnippetTab === 'curl') {
-      content = getCurlSnippet(rawKey);
-      filename = 'Terminal (cURL)';
+  // Snippet generator
+  const getSnippetForClient = (clientId, keyToUse) => {
+    switch (clientId) {
+      case 'claude-http':
+        return getClaudeDesktopConfig(keyToUse, effectiveApiUrl);
+      case 'cursor':
+        return getCursorConfig(keyToUse, effectiveApiUrl);
+      case 'claude-stdio':
+        return getClaudeDesktopStdioConfig(keyToUse, effectiveApiUrl);
+      case 'antigravity':
+        return getAntigravityConfig(keyToUse, effectiveApiUrl);
+      case 'windsurf':
+        return getWindsurfConfig(keyToUse, effectiveApiUrl);
+      case 'curl':
+        return getCurlSnippet(keyToUse, effectiveApiUrl);
+      case 'python':
+        return getPythonSnippet(keyToUse, effectiveApiUrl);
+      default:
+        return getClaudeDesktopConfig(keyToUse, effectiveApiUrl);
     }
-
-    return (
-      <div className="space-y-2 mt-3">
-        <div className="flex items-center justify-between text-[11px] text-[var(--slate-light)]">
-          <span className="font-mono">{filename}</span>
-          <button
-            onClick={() => copyToClipboard(content, 'snippet')}
-            className="flex items-center gap-1 text-[var(--navy)] hover:text-black font-semibold"
-          >
-            {copiedSnippet ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-            {copiedSnippet ? 'Copied Config' : 'Copy Config'}
-          </button>
-        </div>
-        <pre className="p-3 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)] text-[11px] font-mono text-[var(--navy)] overflow-x-auto max-h-48 leading-relaxed">
-          {content}
-        </pre>
-      </div>
-    );
   };
+
+  // Filter tools
+  const categories = useMemo(() => {
+    const cats = ['all'];
+    SPENDWISE_MCP_TOOLS_CATALOG.forEach((t) => {
+      if (!cats.includes(t.category)) cats.push(t.category);
+    });
+    return cats;
+  }, []);
+
+  const filteredTools = useMemo(() => {
+    return SPENDWISE_MCP_TOOLS_CATALOG.filter((tool) => {
+      const matchesCat = toolCategory === 'all' || tool.category === toolCategory;
+      const q = toolSearch.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        tool.name.toLowerCase().includes(q) ||
+        tool.summary.toLowerCase().includes(q) ||
+        tool.example.toLowerCase().includes(q) ||
+        tool.params.some((p) => p.toLowerCase().includes(q));
+      return matchesCat && matchesSearch;
+    });
+  }, [toolSearch, toolCategory]);
 
   return (
     <div className="space-y-6">
-      {/* Overview Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-[var(--canvas)] border border-[var(--hairline)]">
+      {/* Primary Header Card */}
+      <div className="p-4 sm:p-5 rounded-xl bg-[var(--canvas)] border border-[var(--hairline)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[var(--navy)] text-white flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Cpu className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-lg bg-[var(--navy)] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+            <Cpu className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-[var(--navy)] flex items-center gap-2">
-              Model Context Protocol (MCP) & API
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                Ready
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-semibold text-[var(--navy)]">
+                Model Context Protocol (MCP) & API Keys
+              </h3>
+              <span className="text-[10px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                26 Tools Active
               </span>
-            </h4>
-            <p className="text-xs text-[var(--slate)] mt-0.5 max-w-lg leading-relaxed">
-              Generate secret keys to let Claude, Cursor, Antigravity, or custom AI agents track expenses, check balances, and split bills seamlessly.
+            </div>
+            <p className="text-xs text-[var(--slate)] mt-1 max-w-xl leading-relaxed">
+              Connect SpendWise natively to Claude Desktop, Cursor, Antigravity, or custom agents. All requests run through standard JSON-RPC 2.0 with SHA-256 hashed authentication.
             </p>
           </div>
         </div>
@@ -270,7 +306,49 @@ export default function ApiKeyManager() {
         </button>
       </div>
 
-      {/* Firebase Rules Alert (if permission denied) */}
+      {/* Sub-Navigation Tabs */}
+      <div className="flex items-center gap-1 border-b border-[var(--hairline)] pb-2 overflow-x-auto scrollbar-none">
+        <button
+          onClick={() => setManagerTab('keys')}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+            managerTab === 'keys'
+              ? 'bg-[var(--navy)] text-white shadow-sm'
+              : 'text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)]'
+          }`}
+        >
+          <Key className="w-3.5 h-3.5" />
+          My Secret Keys
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-black/10 dark:bg-white/10">
+            {keys.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setManagerTab('setup')}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+            managerTab === 'setup'
+              ? 'bg-[var(--navy)] text-white shadow-sm'
+              : 'text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)]'
+          }`}
+        >
+          <Terminal className="w-3.5 h-3.5" />
+          Client Setup Guides
+        </button>
+
+        <button
+          onClick={() => setManagerTab('tools')}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+            managerTab === 'tools'
+              ? 'bg-[var(--navy)] text-white shadow-sm'
+              : 'text-[var(--slate)] hover:bg-[var(--canvas)] hover:text-[var(--navy)]'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          Available Tools Catalog (26)
+        </button>
+      </div>
+
+      {/* Firebase Rules Alert */}
       {rulesNeeded && (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs space-y-3 animate-fade-in">
           <div className="flex items-start justify-between gap-2">
@@ -281,133 +359,437 @@ export default function ApiKeyManager() {
                   Firebase Security Rule Update Needed
                 </h5>
                 <p className="text-[11px] text-amber-800/90 dark:text-amber-200/90 mt-1 leading-relaxed">
-                  Firestore blocked access to the <code>apiKeys</code> collection because the security rule hasn't been published to your Firebase Console yet.
+                  Firestore blocked access to <code>apiKeys</code> because the security rule is pending in Firebase Console.
                 </p>
               </div>
             </div>
             <button
               onClick={loadKeys}
               className="btn-statement text-[10px] py-1 px-2.5 flex items-center gap-1 flex-shrink-0"
-              title="Retry fetching keys"
             >
-              <RefreshCw className="w-3 h-3" />
-              Retry
+              <RefreshCw className="w-3 h-3" /> Retry
             </button>
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="font-semibold text-amber-800 dark:text-amber-300">
-                Rule to paste in Firebase Console:
-              </span>
-              <button
-                onClick={() => copyToClipboard(FIRESTORE_RULE_SNIPPET, 'rule')}
-                className="flex items-center gap-1 font-semibold text-amber-900 dark:text-amber-100 hover:underline"
-              >
-                {copiedRule ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                {copiedRule ? 'Copied' : 'Copy Rule'}
-              </button>
-            </div>
-            <pre className="p-2.5 rounded-lg bg-black/10 dark:bg-black/30 border border-amber-500/20 text-[10px] font-mono overflow-x-auto leading-relaxed">
-              {FIRESTORE_RULE_SNIPPET}
-            </pre>
+          <pre className="p-2.5 rounded-lg bg-black/10 dark:bg-black/30 border border-amber-500/20 text-[10px] font-mono overflow-x-auto leading-relaxed">
+            {FIRESTORE_RULE_SNIPPET}
+          </pre>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 1: KEYS LIST */}
+      {/* ======================================================== */}
+      {managerTab === 'keys' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs text-[var(--slate)]">
+            <span className="font-semibold text-[var(--navy)]">Active Access Tokens</span>
+            <span>Authentication: Bearer Token</span>
           </div>
 
-          <div className="pt-1">
-            <a
-              href="https://console.firebase.google.com/project/spendwise-a875c/firestore/rules"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 hover:underline"
+          {loading ? (
+            <div className="flex items-center justify-center py-12 border border-[var(--hairline)] rounded-xl">
+              <Loader2 className="w-5 h-5 animate-spin text-[var(--navy)]" />
+            </div>
+          ) : keys.length === 0 ? (
+            <div className="text-center py-12 px-4 border border-dashed border-[var(--hairline)] rounded-xl bg-[var(--canvas)] space-y-3">
+              <Key className="w-8 h-8 text-[var(--slate-light)] mx-auto opacity-50" />
+              <div>
+                <p className="text-sm font-semibold text-[var(--navy)]">No secret keys generated yet</p>
+                <p className="text-xs text-[var(--slate-light)] mt-1 max-w-sm mx-auto">
+                  Click &ldquo;Create Secret Key&rdquo; to generate an authentication token for Claude, Cursor, or Antigravity.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setKeyName('');
+                  setShowCreateModal(true);
+                }}
+                className="btn-statement-primary text-xs py-2 px-4 inline-flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" /> Generate First Key
+              </button>
+            </div>
+          ) : (
+            <div className="border border-[var(--hairline)] rounded-xl overflow-hidden divide-y divide-[var(--hairline)] bg-[var(--white)] shadow-sm">
+              {keys.map((k) => (
+                <div
+                  key={k.id}
+                  className="p-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[var(--canvas)]/40 transition-colors"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-[var(--navy)]">{k.name}</span>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-mono font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        <ShieldCheck className="w-2.5 h-2.5" /> Active
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2.5 text-[11px] text-[var(--slate-light)] font-mono flex-wrap">
+                      <span className="bg-[var(--canvas)] px-1.5 py-0.5 rounded border border-[var(--hairline)]">
+                        {k.prefix}
+                      </span>
+                      <span>•</span>
+                      <span>Created {formatDate(k.createdAt)}</span>
+                      <span>•</span>
+                      <span>Last used {formatDate(k.lastUsedAt)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <button
+                      onClick={() => handleRevokeKey(k.id, k.name)}
+                      disabled={revokingId === k.id}
+                      className="p-1.5 rounded-lg border border-[var(--hairline)] text-[var(--slate)] hover:border-[var(--rose)] hover:text-[var(--rose)] transition-colors text-xs flex items-center gap-1"
+                      title="Revoke key"
+                    >
+                      {revokingId === k.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline text-[11px]">Revoke</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Setup Card */}
+          <div className="p-4 rounded-xl border border-[var(--hairline)] bg-[var(--canvas)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <span className="text-xs font-semibold text-[var(--navy)]">Ready to configure your AI assistant?</span>
+              <p className="text-[11px] text-[var(--slate)]">
+                Switch to the Client Setup tab to view exact file paths and one-click JSON configurations for Claude, Cursor, and Antigravity.
+              </p>
+            </div>
+            <button
+              onClick={() => setManagerTab('setup')}
+              className="btn-statement text-xs py-1.5 px-3 flex items-center gap-1.5 whitespace-nowrap self-start sm:self-auto"
             >
-              Open Firebase Console Rules
-              <ExternalLink className="w-3 h-3" />
-            </a>
+              Setup Guides <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}
 
-      {/* Keys List */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h5 className="text-[11px] font-bold uppercase tracking-wider text-[var(--slate-light)]">
-            Active Secret Keys ({keys.length})
-          </h5>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-10 border border-[var(--hairline)] rounded-xl">
-            <Loader2 className="w-5 h-5 animate-spin text-[var(--navy)]" />
-          </div>
-        ) : keys.length === 0 ? (
-          <div className="text-center py-10 px-4 border border-dashed border-[var(--hairline)] rounded-xl bg-[var(--canvas)]">
-            <Key className="w-8 h-8 text-[var(--slate-light)] mx-auto mb-2 opacity-60" />
-            <p className="text-xs font-semibold text-[var(--navy)]">No API keys created yet</p>
-            <p className="text-[11px] text-[var(--slate-light)] mt-1 max-w-sm mx-auto">
-              Create an API key above to connect SpendWise with your AI assistants.
-            </p>
-          </div>
-        ) : (
-          <div className="border border-[var(--hairline)] rounded-xl overflow-hidden divide-y divide-[var(--hairline)] bg-[var(--white)]">
-            {keys.map((k) => (
-              <div
-                key={k.id}
-                className="p-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[var(--canvas)]/40 transition-colors"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[var(--navy)]">{k.name}</span>
-                    <span className="inline-flex items-center gap-1 text-[9px] font-mono font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                      <ShieldCheck className="w-2.5 h-2.5" /> Active
+      {/* ======================================================== */}
+      {/* TAB 2: CLIENT SETUP GUIDES */}
+      {/* ======================================================== */}
+      {managerTab === 'setup' && (
+        <div className="space-y-5">
+          {/* Client Selector Pills */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--slate-light)]">
+              1. Select Your AI Client
+            </label>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: 'claude-http', label: 'Claude Desktop (HTTP)', badge: 'Recommended' },
+                { id: 'cursor', label: 'Cursor', badge: '.cursor/mcp.json' },
+                { id: 'antigravity', label: 'Google Antigravity', badge: 'CLI' },
+                { id: 'windsurf', label: 'Windsurf', badge: 'Config' },
+                { id: 'claude-stdio', label: 'Claude (stdio runner)' },
+                { id: 'curl', label: 'cURL / Direct Test' },
+                { id: 'python', label: 'Python Script' },
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedClient(c.id)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 border ${
+                    selectedClient === c.id
+                      ? 'bg-[var(--navy)] text-white border-[var(--navy)] shadow-sm'
+                      : 'bg-[var(--white)] text-[var(--slate)] border-[var(--hairline)] hover:border-[var(--slate-light)]'
+                  }`}
+                >
+                  <span>{c.label}</span>
+                  {c.badge && (
+                    <span
+                      className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                        selectedClient === c.id
+                          ? 'bg-white/20 text-white'
+                          : 'bg-emerald-500/10 text-emerald-600'
+                      }`}
+                    >
+                      {c.badge}
                     </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[11px] text-[var(--slate-light)] font-mono">
-                    <span>{k.prefix}</span>
-                    <span>•</span>
-                    <span>Created: {formatDate(k.createdAt)}</span>
-                    <span>•</span>
-                    <span>Last used: {formatDate(k.lastUsedAt)}</span>
-                  </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Config file path card (for file-based clients) */}
+          {['claude-http', 'claude-stdio', 'cursor', 'antigravity', 'windsurf'].includes(selectedClient) && (
+            <div className="p-3.5 rounded-xl border border-[var(--hairline)] bg-[var(--white)] space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[var(--navy)]">
+                  <FolderOpen className="w-4 h-4 text-[var(--navy)]" />
+                  <span>Configuration File Location</span>
                 </div>
 
-                <div className="flex items-center gap-2 self-end sm:self-auto">
+                {/* OS Switcher */}
+                <div className="flex items-center gap-1 bg-[var(--canvas)] p-0.5 rounded-md border border-[var(--hairline)]">
+                  {['windows', 'macos', 'linux'].map((os) => (
+                    <button
+                      key={os}
+                      onClick={() => setSelectedOs(os)}
+                      className={`text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded transition-colors ${
+                        selectedOs === os
+                          ? 'bg-[var(--navy)] text-white shadow-xs'
+                          : 'text-[var(--slate)] hover:text-[var(--navy)]'
+                      }`}
+                    >
+                      {os === 'macos' ? 'macOS' : os}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Exact path */}
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)]">
+                <code className="text-xs font-mono text-[var(--navy)] flex-1 overflow-x-auto whitespace-nowrap">
+                  {CLIENT_CONFIG_PATHS[
+                    selectedClient.startsWith('claude')
+                      ? 'claude'
+                      : selectedClient === 'antigravity'
+                      ? 'antigravity'
+                      : selectedClient === 'windsurf'
+                      ? 'windsurf'
+                      : 'cursor'
+                  ]?.[selectedOs] || 'Config file'}
+                </code>
+                <button
+                  onClick={() => {
+                    const p =
+                      CLIENT_CONFIG_PATHS[
+                        selectedClient.startsWith('claude')
+                          ? 'claude'
+                          : selectedClient === 'antigravity'
+                          ? 'antigravity'
+                          : selectedClient === 'windsurf'
+                          ? 'windsurf'
+                          : 'cursor'
+                      ]?.[selectedOs];
+                    copyToClipboard(p, 'Path');
+                    setCopiedPath(true);
+                    setTimeout(() => setCopiedPath(false), 2000);
+                  }}
+                  className="btn-statement text-[10px] py-1 px-2 flex items-center gap-1 flex-shrink-0"
+                >
+                  {copiedPath ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                  {copiedPath ? 'Copied' : 'Copy Path'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Config Snippet Card */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-[var(--navy)] flex items-center gap-1.5">
+                <Code2 className="w-3.5 h-3.5 text-emerald-600" />
+                2. Configuration Snippet
+              </span>
+              <button
+                onClick={() => {
+                  const snippet = getSnippetForClient(selectedClient, displayApiKey);
+                  copyToClipboard(snippet, 'Configuration');
+                  setCopiedSetupSnippet(true);
+                  setTimeout(() => setCopiedSetupSnippet(false), 2000);
+                }}
+                className="btn-statement-primary text-xs py-1 px-3 flex items-center gap-1"
+              >
+                {copiedSetupSnippet ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-white" /> Copied Config
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" /> Copy Config
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="relative rounded-xl border border-[var(--hairline)] bg-[var(--canvas)] overflow-hidden">
+              <pre className="p-4 text-[11px] font-mono text-[var(--navy)] overflow-x-auto max-h-72 leading-relaxed">
+                {getSnippetForClient(selectedClient, displayApiKey)}
+              </pre>
+            </div>
+
+            {!newlyCreatedKey && (
+              <p className="text-[11px] text-[var(--slate-light)] italic">
+                Note: Replace <code>spw_live_YOUR_SECRET_KEY</code> with your real key from the &ldquo;My Secret Keys&rdquo; tab.
+              </p>
+            )}
+          </div>
+
+          {/* 3-Step Walkthrough */}
+          <div className="p-4 rounded-xl border border-[var(--hairline)] bg-[var(--white)] space-y-3">
+            <h4 className="text-xs font-semibold text-[var(--navy)] uppercase tracking-wider">
+              3. Verification & How To Use
+            </h4>
+            <div className="grid sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)] space-y-1">
+                <div className="font-bold text-[var(--navy)] flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded-full bg-[var(--navy)] text-white text-[10px] flex items-center justify-center font-mono">
+                    1
+                  </span>
+                  Paste & Save
+                </div>
+                <p className="text-[11px] text-[var(--slate)] leading-relaxed">
+                  Open your config file in any text editor, paste the JSON snippet, and save the file.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)] space-y-1">
+                <div className="font-bold text-[var(--navy)] flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded-full bg-[var(--navy)] text-white text-[10px] flex items-center justify-center font-mono">
+                    2
+                  </span>
+                  Restart Client
+                </div>
+                <p className="text-[11px] text-[var(--slate)] leading-relaxed">
+                  Quit and reopen Claude Desktop or Cursor so it establishes the new MCP server connection.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)] space-y-1">
+                <div className="font-bold text-[var(--navy)] flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded-full bg-[var(--navy)] text-white text-[10px] flex items-center justify-center font-mono">
+                    3
+                  </span>
+                  Chat Naturally
+                </div>
+                <p className="text-[11px] text-[var(--slate)] leading-relaxed">
+                  Ask your assistant: <em>&ldquo;Log ₹450 for lunch via UPI&rdquo;</em> or <em>&ldquo;What is my net worth?&rdquo;</em>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 3: TOOL CATALOG */}
+      {/* ======================================================== */}
+      {managerTab === 'tools' && (
+        <div className="space-y-4">
+          {/* Search & Filter Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--slate-light)]" />
+              <input
+                type="text"
+                placeholder="Search tools by name, parameter, or prompt..."
+                value={toolSearch}
+                onChange={(e) => setToolSearch(e.target.value)}
+                className="input-premium pl-8 text-xs w-full py-1.5"
+              />
+            </div>
+          </div>
+
+          {/* Category Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setToolCategory(cat)}
+                className={`text-[11px] px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
+                  toolCategory === cat
+                    ? 'bg-[var(--navy)] text-white font-semibold'
+                    : 'bg-[var(--canvas)] text-[var(--slate)] hover:bg-[var(--hairline)]'
+                }`}
+              >
+                {cat === 'all' ? `All Tools (${SPENDWISE_MCP_TOOLS_CATALOG.length})` : cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Tools Grid */}
+          <div className="grid sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-1">
+            {filteredTools.map((tool, idx) => (
+              <div
+                key={tool.name}
+                className="p-3.5 rounded-xl border border-[var(--hairline)] bg-[var(--white)] space-y-2 flex flex-col justify-between hover:border-[var(--slate-light)] transition-all shadow-xs"
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-bold text-[var(--navy)] bg-[var(--canvas)] px-2 py-0.5 rounded border border-[var(--hairline)]">
+                      {tool.name}
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
+                      {tool.tag}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--slate)] leading-relaxed">{tool.summary}</p>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-[var(--hairline)]">
+                  {/* Parameter chips */}
+                  {tool.params.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[10px] text-[var(--slate-light)] font-mono">params:</span>
+                      {tool.params.map((p) => (
+                        <span
+                          key={p}
+                          className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[var(--canvas)] text-[var(--slate)] border border-[var(--hairline)]"
+                        >
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Click to copy prompt */}
                   <button
-                    onClick={() => handleRevokeKey(k.id, k.name)}
-                    disabled={revokingId === k.id}
-                    className="p-1.5 rounded-lg border border-[var(--hairline)] text-[var(--slate)] hover:border-[var(--rose)] hover:text-[var(--rose)] transition-colors text-xs flex items-center gap-1"
-                    title="Revoke key"
+                    onClick={() => {
+                      copyToClipboard(tool.example.replace(/^"|"$/g, ''), 'Sample prompt');
+                      setCopiedPromptIndex(idx);
+                      setTimeout(() => setCopiedPromptIndex(null), 2000);
+                    }}
+                    className="w-full text-left p-2 rounded-lg bg-[var(--canvas)] hover:bg-[var(--slate-faint)]/50 transition-colors flex items-center justify-between gap-2 group"
+                    title="Click to copy sample prompt"
                   >
-                    {revokingId === k.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline text-[11px]">Revoke</span>
-                      </>
-                    )}
+                    <span className="text-[11px] font-medium text-[var(--navy)] truncate italic">
+                      {tool.example}
+                    </span>
+                    <span className="text-[10px] font-semibold text-[var(--slate-light)] group-hover:text-[var(--navy)] flex items-center gap-0.5 flex-shrink-0">
+                      {copiedPromptIndex === idx ? (
+                        <Check className="w-3 h-3 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                      {copiedPromptIndex === idx ? 'Copied' : 'Copy'}
+                    </span>
                   </button>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Create Key Modal */}
+      {/* ======================================================== */}
+      {/* MODAL 1: CREATE KEY */}
+      {/* ======================================================== */}
       {showCreateModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="statement-card shadow-2xl w-full max-w-md overflow-hidden p-6 border border-[var(--hairline)]">
             <div className="flex items-center gap-2 mb-1">
               <Key className="w-4 h-4 text-[var(--navy)]" />
-              <h3 className="text-base font-semibold text-[var(--navy)]">Generate New Secret Key</h3>
+              <h3 className="text-base font-semibold text-[var(--navy)]">Generate Secret Key</h3>
             </div>
-            <p className="text-xs text-[var(--slate)] mb-4">
-              Enter a descriptive label so you remember where this key is being used.
+            <p className="text-xs text-[var(--slate)] mb-4 leading-relaxed">
+              Name this key to easily track where it is being used (e.g. &ldquo;Claude Desktop Work Mac&rdquo;).
             </p>
 
             <form onSubmit={handleCreateKey} className="space-y-4">
               <div>
-                <label className="label-premium">Key Label</label>
+                <label className="label-premium">Key Label / Client Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Claude Desktop, Cursor, Personal CLI"
@@ -420,9 +802,9 @@ export default function ApiKeyManager() {
               </div>
 
               <div className="p-3 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)] text-[11px] text-[var(--slate)] flex items-start gap-2">
-                <ShieldCheck className="w-4 h-4 text-[var(--navy)] flex-shrink-0 mt-0.5" />
+                <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                 <span>
-                  SpendWise keys are hashed with SHA-256 before storage. Full secret keys are never stored plaintext in our database.
+                  SpendWise keys are hashed client-side with SHA-256 before storage. Secret keys are never stored plaintext in our database.
                 </span>
               </div>
 
@@ -442,8 +824,7 @@ export default function ApiKeyManager() {
                 >
                   {creating ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Generating...
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...
                     </>
                   ) : (
                     'Generate Key'
@@ -455,11 +836,13 @@ export default function ApiKeyManager() {
         </div>
       )}
 
-      {/* Newly Created Key Modal (Shown once!) */}
+      {/* ======================================================== */}
+      {/* MODAL 2: NEWLY CREATED KEY (SHOWN ONCE) */}
+      {/* ======================================================== */}
       {newlyCreatedKey && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="statement-card shadow-2xl w-full max-w-xl overflow-hidden p-6 border border-[var(--hairline)] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="statement-card shadow-2xl w-full max-w-xl overflow-hidden p-6 border border-[var(--hairline)] max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center flex-shrink-0">
                 <Check className="w-4 h-4" />
               </div>
@@ -468,14 +851,14 @@ export default function ApiKeyManager() {
               </h3>
             </div>
 
-            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs flex items-start gap-2 my-3">
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
               <div>
-                <strong>Please copy your secret key now.</strong> For your security, you will not be able to view it again after closing this window.
+                <strong>Please copy your secret key right now.</strong> For your protection, it will never be displayed again after closing this dialog.
               </div>
             </div>
 
-            {/* Secret key display */}
+            {/* Secret key box */}
             <div className="space-y-1.5">
               <label className="label-premium">Your Secret API Key</label>
               <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)]">
@@ -483,7 +866,11 @@ export default function ApiKeyManager() {
                   {newlyCreatedKey.rawKey}
                 </code>
                 <button
-                  onClick={() => copyToClipboard(newlyCreatedKey.rawKey, 'key')}
+                  onClick={() => {
+                    copyToClipboard(newlyCreatedKey.rawKey, 'Secret Key');
+                    setCopiedKey(true);
+                    setTimeout(() => setCopiedKey(false), 2000);
+                  }}
                   className="btn-statement-primary text-xs py-1.5 px-3 flex items-center gap-1 whitespace-nowrap"
                 >
                   {copiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -492,66 +879,58 @@ export default function ApiKeyManager() {
               </div>
             </div>
 
-            {/* MCP Config Snippets */}
-            <div className="mt-5 pt-4 border-t border-[var(--hairline)]">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--navy)] mb-2">
-                <Code2 className="w-4 h-4 text-[var(--navy)]" />
-                1-Click MCP Setup Config
+            {/* 1-Click Client Config Preview */}
+            <div className="pt-3 border-t border-[var(--hairline)] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-[var(--navy)] flex items-center gap-1.5">
+                  <Code2 className="w-4 h-4 text-emerald-600" /> Pre-filled Client Configuration
+                </span>
+                <button
+                  onClick={() => {
+                    const snippet = getSnippetForClient(modalSnippetClient, newlyCreatedKey.rawKey);
+                    copyToClipboard(snippet, 'Configuration');
+                    setCopiedModalSnippet(true);
+                    setTimeout(() => setCopiedModalSnippet(false), 2000);
+                  }}
+                  className="text-xs font-semibold text-[var(--navy)] hover:underline flex items-center gap-1"
+                >
+                  {copiedModalSnippet ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedModalSnippet ? 'Copied' : 'Copy Config'}
+                </button>
               </div>
 
-              {/* Tabs */}
               <div className="flex items-center gap-1 border-b border-[var(--hairline)] pb-1.5">
-                <button
-                  onClick={() => setActiveSnippetTab('claude-http')}
-                  className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors ${
-                    activeSnippetTab === 'claude-http'
-                      ? 'bg-[var(--navy)] text-white font-semibold'
-                      : 'text-[var(--slate)] hover:bg-[var(--canvas)]'
-                  }`}
-                >
-                  Claude Desktop (HTTP)
-                </button>
-                <button
-                  onClick={() => setActiveSnippetTab('claude-stdio')}
-                  className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors ${
-                    activeSnippetTab === 'claude-stdio'
-                      ? 'bg-[var(--navy)] text-white font-semibold'
-                      : 'text-[var(--slate)] hover:bg-[var(--canvas)]'
-                  }`}
-                >
-                  Claude Desktop (stdio)
-                </button>
-                <button
-                  onClick={() => setActiveSnippetTab('cursor')}
-                  className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors ${
-                    activeSnippetTab === 'cursor'
-                      ? 'bg-[var(--navy)] text-white font-semibold'
-                      : 'text-[var(--slate)] hover:bg-[var(--canvas)]'
-                  }`}
-                >
-                  Cursor / Windsurf
-                </button>
-                <button
-                  onClick={() => setActiveSnippetTab('curl')}
-                  className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors ${
-                    activeSnippetTab === 'curl'
-                      ? 'bg-[var(--navy)] text-white font-semibold'
-                      : 'text-[var(--slate)] hover:bg-[var(--canvas)]'
-                  }`}
-                >
-                  cURL Test
-                </button>
+                {[
+                  { id: 'claude-http', label: 'Claude Desktop' },
+                  { id: 'cursor', label: 'Cursor' },
+                  { id: 'antigravity', label: 'Antigravity' },
+                  { id: 'curl', label: 'cURL' },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setModalSnippetClient(c.id)}
+                    className={`text-[11px] font-medium px-2 py-0.5 rounded transition-colors ${
+                      modalSnippetClient === c.id
+                        ? 'bg-[var(--navy)] text-white font-semibold'
+                        : 'text-[var(--slate)] hover:bg-[var(--canvas)]'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
               </div>
 
-              {renderSnippet()}
+              <pre className="p-3 rounded-lg bg-[var(--canvas)] border border-[var(--hairline)] text-[11px] font-mono text-[var(--navy)] overflow-x-auto max-h-40 leading-relaxed">
+                {getSnippetForClient(modalSnippetClient, newlyCreatedKey.rawKey)}
+              </pre>
             </div>
 
-            <div className="flex justify-end pt-5 mt-4 border-t border-[var(--hairline)]">
+            <div className="flex justify-end pt-3 border-t border-[var(--hairline)]">
               <button
                 onClick={() => setNewlyCreatedKey(null)}
                 className="btn-statement-primary text-xs py-2 px-5"
               >
-                I Have Saved My Key
+                I Have Saved My Secret Key
               </button>
             </div>
           </div>

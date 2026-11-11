@@ -106,7 +106,7 @@ export default function SettingsModal({ isOpen, onClose, onUpdatePreferences, in
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="statement-card shadow-2xl w-full max-w-2xl overflow-hidden p-6 max-h-[92vh] flex flex-col">
+      <div className={`statement-card shadow-2xl w-full ${activeTab === 'api' ? 'max-w-3xl' : 'max-w-2xl'} overflow-hidden p-6 max-h-[92vh] flex flex-col transition-all duration-200`}>
         {/* Header */}
         <div className="flex justify-between items-center pb-3 border-b border-[var(--hairline)] flex-shrink-0">
           <div>
