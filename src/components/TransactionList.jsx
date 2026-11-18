@@ -1,15 +1,46 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Filter, MoreHorizontal, Trash2, X } from 'lucide-react';
+import { Search, Filter, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Money from './Money';
 import CustomSelect from './CustomSelect';
+
+const PAGE_SIZE = 20;
+
+/**
+ * Safely parse a date value into a Date object representing the local calendar day.
+ */
+function parseLocalDate(dateVal) {
+  if (!dateVal) return null;
+  if (dateVal instanceof Date) return isNaN(dateVal.getTime()) ? null : dateVal;
+  if (typeof dateVal === 'object' && typeof dateVal.toDate === 'function') {
+    try {
+      const d = dateVal.toDate();
+      return isNaN(d.getTime()) ? null : d;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof dateVal === 'string') {
+    const trimmed = dateVal.trim();
+    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const y = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10) - 1;
+      const d = parseInt(match[3], 10);
+      return new Date(y, m, d);
+    }
+    const d = new Date(trimmed);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
 
 /**
  * Format a date string into "Today", "Yesterday", or human friendly "10 November 2026"
  */
 function getDayHeading(dateString) {
   if (!dateString) return 'Undated';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return dateString;
+  const d = parseLocalDate(dateString);
+  if (!d) return String(dateString);
 
   const today = new Date();
   const isToday =
@@ -36,8 +67,8 @@ function getDayHeading(dateString) {
 
 function getDateKey(dateString) {
   if (!dateString) return 'undated';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return dateString.split('T')[0] || dateString;
+  const d = parseLocalDate(dateString);
+  if (!d) return String(dateString).split('T')[0] || String(dateString);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -51,26 +82,7 @@ export default function TransactionList({
   const [selectedType, setSelectedType] = useState('all'); // 'all', 'expense', 'income'
   const [selectedMethod, setSelectedMethod] = useState('all'); // 'all', 'online', 'cash'
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
-  const [activeMenuId, setActiveMenuId] = useState(null);
-
-  // Close overflow menu on outside click or Esc
-  useEffect(() => {
-    if (!activeMenuId) return;
-    const handleDown = (e) => {
-      if (!e.target.closest('[data-menu-container]')) {
-        setActiveMenuId(null);
-      }
-    };
-    const handleKey = (e) => {
-      if (e.key === 'Escape') setActiveMenuId(null);
-    };
-    document.addEventListener('mousedown', handleDown);
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('mousedown', handleDown);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [activeMenuId]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Track initial transaction IDs so only truly newly inserted rows get row-flash
   const initialIdsRef = useRef(null);
@@ -82,7 +94,11 @@ export default function TransactionList({
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
       if (selectedType !== 'all' && t.type !== selectedType) return false;
-      if (selectedMethod !== 'all' && (t.paymentMethod || 'online').toLowerCase() !== selectedMethod) return false;
+      if (selectedMethod !== 'all') {
+        const isCash = (t.paymentMethod || '').toLowerCase() === 'cash';
+        if (selectedMethod === 'cash' && !isCash) return false;
+        if (selectedMethod === 'online' && isCash) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const desc = (t.description || '').toLowerCase();
@@ -93,10 +109,31 @@ export default function TransactionList({
     });
   }, [transactions, selectedType, selectedMethod, searchQuery]);
 
-  // Group by day (sorted newest first)
+  // Reset page to 1 when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedType, selectedMethod]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  // Ensure current page does not exceed totalPages
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  // Sliced paginated transactions (20 per page)
+  const paginatedTransactions = useMemo(() => {
+    const start = (safeCurrentPage - 1) * PAGE_SIZE;
+    return filteredTransactions.slice(start, start + PAGE_SIZE);
+  }, [filteredTransactions, safeCurrentPage]);
+
+  // Group visible paginated transactions by day (sorted newest first)
   const groupedDays = useMemo(() => {
     const groups = {};
-    filteredTransactions.forEach((t) => {
+    paginatedTransactions.forEach((t) => {
       const key = getDateKey(t.date);
       if (!groups[key]) {
         groups[key] = {
@@ -116,7 +153,7 @@ export default function TransactionList({
     });
 
     return Object.values(groups);
-  }, [filteredTransactions]);
+  }, [paginatedTransactions]);
 
   if (transactions.length === 0) {
     return (
@@ -326,8 +363,7 @@ export default function TransactionList({
               <span className="tabular-nums">
                 <Money
                   amount={group.netAmount}
-                  signed
-                  tone="auto"
+                  showSign
                   className="text-[13px] text-[var(--ink-3)]"
                 />
               </span>
@@ -352,8 +388,6 @@ export default function TransactionList({
                 const isNewlyInserted =
                   Boolean(transaction.isNew) ||
                   (initialIdsRef.current && !initialIdsRef.current.has(transaction.id));
-
-                const isMenuOpen = activeMenuId === transaction.id;
 
                 return (
                   <div
@@ -380,50 +414,25 @@ export default function TransactionList({
                       </div>
                     </div>
 
-                    {/* Right: Amount + Overflow Menu */}
+                    {/* Right: Amount + Delete Button */}
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <div className="text-right">
                         <Money
                           amount={signedAmount}
-                          signed
-                          tone="auto"
+                          showSign
                           className="text-[15px] font-medium"
                         />
                       </div>
 
-                      {/* Row Action Menu (…) */}
-                      <div className="relative" data-menu-container>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActiveMenuId(isMenuOpen ? null : transaction.id)
-                          }
-                          aria-label="Transaction actions menu"
-                          className="w-11 h-11 flex items-center justify-center rounded-[6px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--sunken)] transition-colors sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 opacity-100 cursor-pointer"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-
-                        {isMenuOpen && (
-                          <div
-                            className="absolute right-0 top-full mt-1 w-36 rounded-[8px] bg-[var(--surface)] border border-[var(--line)] shadow-[var(--shadow-pop)] py-1 z-30"
-                            role="menu"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveMenuId(null);
-                                if (onDelete) onDelete(transaction);
-                              }}
-                              className="w-full px-3 py-2 text-left text-xs text-[var(--debit)] hover:bg-[var(--sunken)] flex items-center gap-2 cursor-pointer"
-                              role="menuitem"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      {/* Always-visible Delete Trash Button (touch target min 40px) */}
+                      <button
+                        type="button"
+                        onClick={() => onDelete?.(transaction)}
+                        aria-label={`Delete transaction: ${transaction.description || transaction.category || 'expense'}`}
+                        className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] hover:bg-[var(--sunken)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -432,6 +441,44 @@ export default function TransactionList({
           </div>
         ))}
       </div>
+
+      {/* ── PAGINATION CONTROLS ── */}
+      {filteredTransactions.length > 0 && (
+        <div className="pt-4 border-t border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--ink-2)]">
+          <div>
+            <span>
+              Page {safeCurrentPage} of {totalPages}
+            </span>
+            <span className="text-[var(--ink-3)] ml-1">
+              ({filteredTransactions.length} {filteredTransactions.length === 1 ? 'transaction' : 'transactions'})
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+              disabled={safeCurrentPage <= 1}
+              className="btn btn-quiet h-9 px-3 text-xs flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Previous</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+              disabled={safeCurrentPage >= totalPages}
+              className="btn btn-quiet h-9 px-3 text-xs flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              aria-label="Next page"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

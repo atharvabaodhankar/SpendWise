@@ -363,11 +363,14 @@ export default function Analytics({ initialTransactions } = {}) {
                 No online or cash expenses recorded in this period.
               </div>
             ) : (
-              <div className="w-full h-[240px] pt-2">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="w-full h-[240px] pt-2" style={{ height: 240, minHeight: 240 }}>
+                <ResponsiveContainer width="100%" height={240} minHeight={240}>
                   <BarChart
                     data={walletBarData}
                     margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                    maxBarSize={48}
+                    barGap={8}
+                    barCategoryGap="40%"
                   >
                     <XAxis
                       dataKey="name"
@@ -388,6 +391,7 @@ export default function Analytics({ initialTransactions } = {}) {
                       dataKey="amount"
                       fill="var(--accent)"
                       barSize={36}
+                      maxBarSize={48}
                       radius={[4, 4, 0, 0]}
                     >
                       {walletBarData.map((entry) => (
@@ -416,8 +420,8 @@ export default function Analytics({ initialTransactions } = {}) {
                 No expenses recorded in the last 6 months.
               </div>
             ) : (
-              <div className="w-full h-[240px] pt-2">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="w-full h-[240px] pt-2" style={{ height: 240, minHeight: 240 }}>
+                <ResponsiveContainer width="100%" height={240} minHeight={240}>
                   <LineChart
                     data={monthlyTrendData}
                     margin={{ top: 10, right: 16, left: 0, bottom: 0 }}

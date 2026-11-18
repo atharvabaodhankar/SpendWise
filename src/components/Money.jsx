@@ -14,10 +14,15 @@
 export function formatMoneyValue(amount, options = {}) {
   const {
     showSign = false,
+    signed = false,
     currency = '₹',
     type,
+    tone,
     decimals = 2,
   } = options;
+
+  const effectiveShowSign = Boolean(showSign || signed);
+  const effectiveType = type || (tone && tone !== 'auto' ? tone : undefined);
 
   let numericAmount;
   if (typeof amount === 'number') {
@@ -36,11 +41,11 @@ export function formatMoneyValue(amount, options = {}) {
   const isNegative = validAmount < 0;
   const absAmount = isZero ? 0 : Math.abs(validAmount);
 
-  let resolvedType = type;
+  let resolvedType = effectiveType;
   if (!resolvedType) {
     if (isNegative) {
       resolvedType = 'debit';
-    } else if (validAmount > 0 && showSign) {
+    } else if (validAmount > 0 && effectiveShowSign) {
       resolvedType = 'credit';
     } else {
       resolvedType = 'neutral';
@@ -49,9 +54,9 @@ export function formatMoneyValue(amount, options = {}) {
 
   let sign = '';
   if (!isZero) {
-    if (isNegative || (resolvedType === 'debit' && showSign)) {
+    if (isNegative || (resolvedType === 'debit' && effectiveShowSign)) {
       sign = '\u2212'; // True minus sign U+2212
-    } else if ((validAmount > 0 && showSign) || (resolvedType === 'credit' && showSign)) {
+    } else if ((validAmount > 0 && effectiveShowSign) || (resolvedType === 'credit' && effectiveShowSign)) {
       sign = '+';
     }
   }
@@ -91,7 +96,9 @@ export function formatMoneyValue(amount, options = {}) {
 export default function Money({
   amount,
   type,
+  tone,
   showSign = false,
+  signed,
   currency = '₹',
   className = '',
   isCash = false,
@@ -99,6 +106,9 @@ export default function Money({
   subtext,
   decimals = 2,
 }) {
+  const effectiveShowSign = Boolean(showSign || signed);
+  const effectiveType = type || (tone && tone !== 'auto' ? tone : undefined);
+
   let numericAmount;
   if (typeof amount === 'number') {
     numericAmount = amount;
@@ -116,11 +126,11 @@ export default function Money({
   const isNegative = validAmount < 0;
   const absAmount = isZero ? 0 : Math.abs(validAmount);
 
-  let resolvedType = type;
+  let resolvedType = effectiveType;
   if (!resolvedType) {
     if (isNegative) {
       resolvedType = 'debit';
-    } else if (validAmount > 0 && showSign) {
+    } else if (validAmount > 0 && effectiveShowSign) {
       resolvedType = 'credit';
     } else {
       resolvedType = 'neutral';
@@ -129,9 +139,9 @@ export default function Money({
 
   let sign = '';
   if (!isZero) {
-    if (isNegative || (resolvedType === 'debit' && showSign)) {
+    if (isNegative || (resolvedType === 'debit' && effectiveShowSign)) {
       sign = '\u2212'; // True minus sign U+2212
-    } else if ((validAmount > 0 && showSign) || (resolvedType === 'credit' && showSign)) {
+    } else if ((validAmount > 0 && effectiveShowSign) || (resolvedType === 'credit' && effectiveShowSign)) {
       sign = '+';
     }
   }

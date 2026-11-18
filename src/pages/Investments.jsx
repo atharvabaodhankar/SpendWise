@@ -224,12 +224,13 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
   const handleDeleteInvestment = async (invId) => {
     try {
       if (currentUser) {
-        await deleteInvestment(invId);
+        await deleteInvestment(currentUser.uid, invId);
       }
       setInvestments((prev) => prev.filter((i) => i.id !== invId));
       setSelectedMobileHolding(null);
       showSuccess('Investment deleted.');
-    } catch {
+    } catch (err) {
+      console.error('Failed to delete investment:', err);
       showError('Failed to delete investment.');
     }
   };
@@ -282,11 +283,12 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
   const handleDeleteSalary = async (salId) => {
     try {
       if (currentUser) {
-        await deleteSalary(salId);
+        await deleteSalary(currentUser.uid, salId);
       }
       setSalaries((prev) => prev.filter((s) => s.id !== salId));
       showSuccess('Salary entry deleted.');
-    } catch {
+    } catch (err) {
+      console.error('Failed to delete salary entry:', err);
       showError('Failed to delete salary entry.');
     }
   };
@@ -599,7 +601,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                             <button
                               type="button"
                               onClick={() => handleDeleteInvestment(inv.id)}
-                              className="p-1.5 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] hover:bg-[var(--sunken)] sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
+                              className="p-1.5 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
                               aria-label="Delete holding"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -741,7 +743,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                               <button
                                 type="button"
                                 onClick={() => handleDeleteSalary(entry.id)}
-                                className="p-1 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                                className="w-8 h-8 flex items-center justify-center rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
                                 aria-label="Delete salary entry"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />

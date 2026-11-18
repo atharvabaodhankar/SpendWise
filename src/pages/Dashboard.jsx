@@ -34,7 +34,57 @@ const BANKNOTE_HUES = [
   'var(--cat-cocoa)',
 ];
 
-export default function Dashboard({ initialBalances, initialDebts } = {}) {
+const HERO_METRIC_STORAGE_KEY = 'spendwise_hero_metric_preference';
+
+function getLocalDateString(dateVal) {
+  if (!dateVal) return '';
+  if (typeof dateVal === 'string') {
+    const trimmed = dateVal.trim();
+    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      if (trimmed.includes('T')) {
+        const d = new Date(trimmed);
+        if (!isNaN(d.getTime())) {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        }
+      }
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+    return trimmed.split('T')[0] || '';
+  }
+  if (dateVal instanceof Date) {
+    if (isNaN(dateVal.getTime())) return '';
+    const y = dateVal.getFullYear();
+    const m = String(dateVal.getMonth() + 1).padStart(2, '0');
+    const day = String(dateVal.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  if (dateVal && typeof dateVal.toDate === 'function') {
+    try {
+      const d = dateVal.toDate();
+      if (isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
+export default function Dashboard({ initialBalances, initialDebts, initialPreferences, initialHeroMetric } = {}) {
   const auth = useAuth?.() || {};
   const currentUser = auth.currentUser;
   const notification = useNotification?.() || {};
@@ -60,6 +110,47 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
     owedToYou: initialDebts?.lent ?? initialDebts?.owedToYou ?? 0,
   }));
   const [isRecurringExpanded, setIsRecurringExpanded] = useState(false);
+
+  const [heroMetric, setHeroMetric] = useState(() => {
+    if (initialHeroMetric) return initialHeroMetric;
+    try {
+      const saved = localStorage.getItem(HERO_METRIC_STORAGE_KEY);
+      if (saved === 'month' || saved === 'today' || saved === 'net') {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return 'month';
+  });
+
+  const [showBalancesPreference, setShowBalancesPreference] = useState(() => {
+    if (initialPreferences?.showBalances !== undefined) {
+      return Boolean(initialPreferences.showBalances);
+    }
+    return true;
+  });
+
+  const handleMetricChange = (metric) => {
+    setHeroMetric(metric);
+    try {
+      localStorage.setItem(HERO_METRIC_STORAGE_KEY, metric);
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    if (initialHeroMetric && (initialHeroMetric === 'month' || initialHeroMetric === 'today' || initialHeroMetric === 'net')) {
+      setHeroMetric(initialHeroMetric);
+    }
+  }, [initialHeroMetric]);
+
+  useEffect(() => {
+    if (initialPreferences?.showBalances !== undefined) {
+      setShowBalancesPreference(Boolean(initialPreferences.showBalances));
+    }
+  }, [initialPreferences]);
 
   useEffect(() => {
     if (initialBalances) {
@@ -144,9 +235,25 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
       });
     }
 
+    let unsubscribeUser = () => {};
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    unsubscribeUser = onSnapshot(
+      userDocRef,
+      (ds) => {
+        if (ds && typeof ds.exists === 'function' && ds.exists()) {
+          const userData = ds.data();
+          if (userData?.preferences?.showBalances !== undefined) {
+            setShowBalancesPreference(Boolean(userData.preferences.showBalances));
+          }
+        }
+      },
+      () => {}
+    );
+
     return () => {
       unsubscribeTransactions();
       unsubscribeBalances();
+      unsubscribeUser();
       unsubDebtor();
       unsubCreditor();
     };
@@ -186,10 +293,9 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
         await checkBalanceAlert(currentUser.email, updatedBalances, currentBalances);
       }
 
-      const today = new Date().toISOString().split('T')[0];
       const todayExpenses =
         transactions
-          .filter((t) => t.type === 'expense' && t.date === today)
+          .filter((t) => t.type === 'expense' && getLocalDateString(t.date) === todayStr)
           .reduce((sum, t) => sum + t.amount, 0) +
         (transactionData.type === 'expense' ? transactionToSave.amount : 0);
       await checkDailyExpenseAlert(currentUser.email, todayExpenses);
@@ -287,6 +393,44 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
   const cashBalance = currentBalances?.cash ?? 0;
   const netBalance = onlineBalance + cashBalance;
 
+  // Calculate local date strings
+  const { todayStr, currentMonthStr } = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return {
+      todayStr: `${y}-${m}-${d}`,
+      currentMonthStr: `${y}-${m}`,
+    };
+  }, []);
+
+  const spentThisMonth = useMemo(() => {
+    return transactions
+      .filter(
+        (t) =>
+          (t.type || '').toLowerCase() === 'expense' &&
+          getLocalDateString(t.date).startsWith(currentMonthStr)
+      )
+      .reduce((sum, t) => sum + (Math.abs(Number(t.amount)) || 0), 0);
+  }, [transactions, currentMonthStr]);
+
+  const spentToday = useMemo(() => {
+    return transactions
+      .filter(
+        (t) =>
+          (t.type || '').toLowerCase() === 'expense' &&
+          getLocalDateString(t.date) === todayStr
+      )
+      .reduce((sum, t) => sum + (Math.abs(Number(t.amount)) || 0), 0);
+  }, [transactions, todayStr]);
+
+  const heroAmount = useMemo(() => {
+    if (heroMetric === 'today') return spentToday;
+    if (heroMetric === 'net') return netBalance;
+    return spentThisMonth;
+  }, [heroMetric, spentToday, netBalance, spentThisMonth]);
+
   // Proportional bar calculation
   const onlinePositive = Math.max(0, onlineBalance);
   const cashPositive = Math.max(0, cashBalance);
@@ -295,12 +439,15 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
   const cashPercent = positiveSum > 0 ? (cashPositive / positiveSum) * 100 : 50;
 
   // Category breakdown for current month (Top 5)
-  const currentMonth = new Date().toISOString().slice(0, 7);
   const topCategories = useMemo(() => {
     const map = {};
     let totalSpent = 0;
     transactions
-      .filter((t) => t.type === 'expense' && t.date?.startsWith(currentMonth))
+      .filter(
+        (t) =>
+          (t.type || '').toLowerCase() === 'expense' &&
+          getLocalDateString(t.date).startsWith(currentMonthStr)
+      )
       .forEach((t) => {
         const cat = t.category || 'Other';
         const amt = Number(t.amount) || 0;
@@ -320,7 +467,7 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
       items: sorted.slice(0, 5),
       totalSpent,
     };
-  }, [transactions, currentMonth]);
+  }, [transactions, currentMonthStr]);
 
   if (loading) {
     return (
@@ -335,15 +482,55 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
   return (
     <>
       <div className="max-w-[1120px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
-        {/* ── BALANCE BLOCK ── */}
-        <section aria-label="Wallet balances">
+        {/* ── BALANCE / SPENDING HERO BLOCK ── */}
+        <section aria-label="Wallet balances and spending">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <div className="text-xs text-[var(--ink-3)] font-normal mb-1">
-                Net balance
+              {/* Hero Metric Selector (Quiet segmented toggle) */}
+              <div
+                aria-label="Select hero metric"
+                className="flex items-center gap-1 mb-2.5 bg-[var(--sunken)] p-0.5 rounded-[6px] w-fit"
+              >
+                <button
+                  type="button"
+                  aria-pressed={heroMetric === 'month'}
+                  onClick={() => handleMetricChange('month')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                    heroMetric === 'month'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                      : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  Spent this month
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={heroMetric === 'today'}
+                  onClick={() => handleMetricChange('today')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                    heroMetric === 'today'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                      : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  Spent today
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={heroMetric === 'net'}
+                  onClick={() => handleMetricChange('net')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                    heroMetric === 'net'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                      : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  Net balance
+                </button>
               </div>
+
               <div className="text-[clamp(40px,8vw,64px)] font-light leading-none tracking-[-0.02em] tabular-nums text-[var(--ink)]">
-                <Money amount={netBalance} tone="neutral" />
+                <Money amount={heroAmount} tone="neutral" />
               </div>
             </div>
 
@@ -360,75 +547,77 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
             </div>
           </div>
 
-          {/* Proportional Online vs Cash Bar */}
-          <div className="mt-5 space-y-2">
-            <button
-              type="button"
-              onClick={() => setShowBalanceManager(true)}
-              className="w-full text-left group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] rounded-[4px] cursor-pointer"
-              aria-label="Edit balances"
-            >
-              {/* 8px Proportional Bar */}
-              <div className="h-2 w-full rounded-[4px] bg-[var(--sunken)] overflow-hidden flex">
-                {positiveSum > 0 ? (
-                  <>
-                    <div
-                      className="h-full bg-[var(--accent)] transition-all"
-                      style={{ width: `${onlinePercent}%` }}
-                      title={`Online: ₹${onlinePositive}`}
-                    />
-                    <div
-                      className="h-full bg-[var(--cat-saffron)] transition-all"
-                      style={{ width: `${cashPercent}%` }}
-                      title={`Cash: ₹${cashPositive}`}
-                    />
-                  </>
-                ) : (
-                  <div className="h-full w-full bg-[var(--sunken)]" />
-                )}
-              </div>
-
-              {/* Labels under each end */}
-              <div className="mt-2 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
-                  <span className="text-[var(--ink-2)]">Online</span>
-                  <Money
-                    amount={onlineBalance}
-                    tone={onlineBalance < 0 ? 'debit' : 'auto'}
-                    className="font-medium"
-                  />
+          {/* Proportional Online vs Cash Bar (Only visible when viewing Net balance AND showBalances preference is true) */}
+          {heroMetric === 'net' && showBalancesPreference && (
+            <div className="mt-5 space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowBalanceManager(true)}
+                className="w-full text-left group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] rounded-[4px] cursor-pointer"
+                aria-label="Edit balances"
+              >
+                {/* 8px Proportional Bar */}
+                <div className="h-2 w-full rounded-[4px] bg-[var(--sunken)] overflow-hidden flex">
+                  {positiveSum > 0 ? (
+                    <>
+                      <div
+                        className="h-full bg-[var(--accent)] transition-all"
+                        style={{ width: `${onlinePercent}%` }}
+                        title={`Online: ₹${onlinePositive}`}
+                      />
+                      <div
+                        className="h-full bg-[var(--cat-saffron)] transition-all"
+                        style={{ width: `${cashPercent}%` }}
+                        title={`Cash: ₹${cashPositive}`}
+                      />
+                    </>
+                  ) : (
+                    <div className="h-full w-full bg-[var(--sunken)]" />
+                  )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[var(--cat-saffron)]" />
-                  <span className="text-[var(--ink-2)]">Cash</span>
-                  <Money
-                    amount={cashBalance}
-                    tone={cashBalance < 0 ? 'debit' : 'auto'}
-                    className="font-medium"
-                  />
-                  <span className="text-xs text-[var(--ink-3)] group-hover:text-[var(--ink)] ml-2">
-                    Edit balances
-                  </span>
-                </div>
-              </div>
-            </button>
+                {/* Labels under each end */}
+                <div className="mt-2 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+                    <span className="text-[var(--ink-2)]">Online</span>
+                    <Money
+                      amount={onlineBalance}
+                      type={onlineBalance < 0 ? 'debit' : 'neutral'}
+                      className="font-medium"
+                    />
+                  </div>
 
-            {/* Negative Cash Warning */}
-            {cashBalance < 0 && (
-              <div className="text-xs text-[var(--debit)] pt-1 flex items-center gap-2">
-                <span>Cash is below zero. Check your entries.</span>
-                <button
-                  type="button"
-                  onClick={() => setShowBalanceManager(true)}
-                  className="underline hover:opacity-80 cursor-pointer"
-                >
-                  Adjust balance
-                </button>
-              </div>
-            )}
-          </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--cat-saffron)]" />
+                    <span className="text-[var(--ink-2)]">Cash</span>
+                    <Money
+                      amount={cashBalance}
+                      type={cashBalance < 0 ? 'debit' : 'neutral'}
+                      className="font-medium"
+                    />
+                    <span className="text-xs text-[var(--ink-3)] group-hover:text-[var(--ink)] ml-2">
+                      Edit balances
+                    </span>
+                  </div>
+                </div>
+              </button>
+
+              {/* Negative Cash Warning */}
+              {cashBalance < 0 && (
+                <div className="text-xs text-[var(--debit)] pt-1 flex items-center gap-2">
+                  <span>Cash is below zero. Check your entries.</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowBalanceManager(true)}
+                    className="underline hover:opacity-80 cursor-pointer"
+                  >
+                    Adjust balance
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* ── 2-COLUMN DESKTOP (8/4 split, 48px gap) / 1-COLUMN MOBILE ── */}
@@ -467,7 +656,7 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
                   >
                     <span className="text-[var(--ink-2)]">Owed to you</span>
                     <div className="flex items-center gap-1.5 font-medium">
-                      <Money amount={debts.owedToYou} tone="credit" />
+                      <Money amount={debts.owedToYou} type="credit" />
                       <ChevronRight className="w-3.5 h-3.5 text-[var(--ink-3)]" />
                     </div>
                   </button>
@@ -479,7 +668,7 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
                   >
                     <span className="text-[var(--ink-2)]">You owe</span>
                     <div className="flex items-center gap-1.5 font-medium">
-                      <Money amount={debts.youOwe} tone="debit" />
+                      <Money amount={debts.youOwe} type="debit" />
                       <ChevronRight className="w-3.5 h-3.5 text-[var(--ink-3)]" />
                     </div>
                   </button>
@@ -562,6 +751,9 @@ export default function Dashboard({ initialBalances, initialDebts } = {}) {
           cashBalance={cashBalance}
           externalShowManager={showBalanceManager}
           setExternalShowManager={setShowBalanceManager}
+          onBalanceUpdate={(newBal) =>
+            setCurrentBalances((prev) => ({ ...prev, ...newBal }))
+          }
         />
       )}
 

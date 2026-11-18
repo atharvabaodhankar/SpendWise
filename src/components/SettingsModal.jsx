@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { 
   X, 
@@ -19,6 +19,8 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'preferenc
   const notification = useNotification();
   const showSuccess = notification?.showSuccess || (() => {});
   const showError = notification?.showError || (() => {});
+  const showErrorRef = useRef(showError);
+  showErrorRef.current = showError;
   
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'preferenc
         }
       } catch (error) {
         console.error("Error loading settings:", error);
-        showError("Failed to load settings.");
+        showErrorRef.current?.("Failed to load settings.");
       } finally {
         setLoading(false);
       }
@@ -64,18 +66,20 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'preferenc
     if (isOpen) {
       loadPreferences();
     }
-  }, [isOpen, currentUser, showError]);
+  }, [isOpen, currentUser]);
 
   const handleSave = async () => {
     if (!currentUser) return;
     try {
       setSaving(true);
       const userRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userRef, {
+      await setDoc(userRef, {
         displayName: preferences.displayName.trim(),
-        'preferences.showBalances': preferences.showBalances,
+        preferences: {
+          showBalances: preferences.showBalances,
+        },
         updatedAt: new Date()
-      });
+      }, { merge: true });
       showSuccess("Settings updated successfully.");
       onClose();
     } catch (error) {

@@ -51,6 +51,14 @@
   --banknote-olive: #4D7C0F;    /* ₹500 note */
   --banknote-cocoa: #9A3412;    /* ₹20 note */
 
+  /* Category Color Aliases */
+  --cat-stone: var(--banknote-stone);
+  --cat-saffron: var(--banknote-saffron);
+  --cat-lagoon: var(--banknote-lagoon);
+  --cat-lavender: var(--banknote-lavender);
+  --cat-olive: var(--banknote-olive);
+  --cat-cocoa: var(--banknote-cocoa);
+
   /* Backward Compatibility Aliases (Bridge until M2–M6 page refactors) */
   --canvas: var(--bg);
   --white: var(--surface);
@@ -96,6 +104,14 @@
   --banknote-lavender: #A78BFA;
   --banknote-olive: #84CC16;
   --banknote-cocoa: #EA580C;
+
+  /* Category Color Aliases (Dark) */
+  --cat-stone: var(--banknote-stone);
+  --cat-saffron: var(--banknote-saffron);
+  --cat-lagoon: var(--banknote-lagoon);
+  --cat-lavender: var(--banknote-lavender);
+  --cat-olive: var(--banknote-olive);
+  --cat-cocoa: var(--banknote-cocoa);
 
   /* Backward Compatibility Aliases */
   --canvas: var(--bg);
@@ -151,14 +167,18 @@
     color: var(--ink);
   }
 
-  /* Remove default number spin buttons */
+  /* Remove default number spin buttons completely across all browsers */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    margin: 0 !important;
+    display: none !important;
   }
   input[type="number"] {
-    -moz-appearance: textfield;
+    -webkit-appearance: none !important;
+    -moz-appearance: textfield !important;
+    appearance: none !important;
   }
 
   /* Date picker icon styling */
@@ -244,7 +264,7 @@
   .input-base:focus-visible {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 1.5px var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft), 0 1px 2px rgba(17, 19, 24, 0.04);
   }
 
   .field::placeholder,

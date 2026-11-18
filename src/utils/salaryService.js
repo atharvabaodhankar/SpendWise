@@ -61,11 +61,14 @@ export async function updateSalary(userId, salaryId, updates) {
 }
 
 export async function deleteSalary(userId, salaryId) {
-  const ref = doc(db, 'salaries', salaryId);
+  const actualSalaryId = salaryId || userId;
+  const actualUserId = salaryId ? userId : null;
+
+  const ref = doc(db, 'salaries', actualSalaryId);
   const snapshot = await getDoc(ref);
   if (!snapshot.exists()) throw new Error('Salary record not found.');
-  if (snapshot.data().userId !== userId) throw new Error('Unauthorized.');
+  if (actualUserId && snapshot.data().userId !== actualUserId) throw new Error('Unauthorized.');
 
   await deleteDoc(ref);
-  return { id: salaryId };
+  return { id: actualSalaryId };
 }

@@ -90,15 +90,18 @@ export async function updateInvestment(userId, investmentId, updates) {
 }
 
 export async function deleteInvestment(userId, investmentId) {
-  const invRef = doc(db, 'investments', investmentId);
+  const actualInvestmentId = investmentId || userId;
+  const actualUserId = investmentId ? userId : null;
+
+  const invRef = doc(db, 'investments', actualInvestmentId);
   const snapshot = await getDoc(invRef);
   if (!snapshot.exists()) throw new Error('Investment not found.');
-  if (snapshot.data().userId !== userId) throw new Error('Unauthorized.');
+  if (actualUserId && snapshot.data().userId !== actualUserId) throw new Error('Unauthorized.');
 
   const existing = snapshot.data();
   await deleteDoc(invRef);
   return {
-    id: investmentId,
-    message: `Removed ${existing.name || 'investment'}.`,
+    id: actualInvestmentId,
+    message: `Removed ${existing?.name || 'investment'}.`,
   };
 }

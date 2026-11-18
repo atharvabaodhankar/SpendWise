@@ -46,6 +46,8 @@ describe('Tier 4: Scenario 1 - Onboarding and Initial Balance Setup Workflow', (
       { wrapper: TestAppWrapper }
     );
     expect(dashContainer.innerHTML).not.toContain('statement-card');
+    // Switch to Net balance view to inspect wallet balances
+    fireEvent.click(screen.getByRole('button', { name: /net balance/i }));
     // Prominent net balance should reflect total (50,000)
     expect(dashContainer.textContent).toMatch(/(50,000|50000)/);
   });

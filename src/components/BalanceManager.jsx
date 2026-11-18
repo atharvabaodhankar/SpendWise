@@ -12,14 +12,18 @@ import {
   orderBy,
   limit,
   doc,
-  updateDoc,
   setDoc,
-  getDoc,
 } from "firebase/firestore";
 import { X, History, RefreshCw, Loader2 } from "lucide-react";
 import Money from "./Money";
 
-export default function BalanceManager({ onlineBalance, cashBalance, externalShowManager, setExternalShowManager }) {
+export default function BalanceManager({ 
+  onlineBalance = 0, 
+  cashBalance = 0, 
+  externalShowManager, 
+  setExternalShowManager,
+  onBalanceUpdate 
+}) {
   const { currentUser } = useAuth();
   const notification = useNotification();
   const showSuccess = notification?.showSuccess || (() => {});
@@ -28,13 +32,38 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
   
   const isManagerOpen = externalShowManager !== undefined ? externalShowManager : showManager;
   const setManagerOpen = setExternalShowManager || setShowManager;
+  
+  // Mode: 'relative' (+/- adjustment) or 'exact' (set new exact balance)
+  const [mode, setMode] = useState('exact');
+  
   const [adjustments, setAdjustments] = useState({
     online: "",
     cash: "",
     reason: "",
   });
+
+  const [exactBalances, setExactBalances] = useState({
+    online: "",
+    cash: "",
+  });
+  
   const [recentAdjustments, setRecentAdjustments] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Sync initial exact balances when modal opens
+  useEffect(() => {
+    if (isManagerOpen) {
+      setExactBalances({
+        online: onlineBalance.toFixed(2),
+        cash: cashBalance.toFixed(2),
+      });
+      setAdjustments({
+        online: "",
+        cash: "",
+        reason: "",
+      });
+    }
+  }, [isManagerOpen, onlineBalance, cashBalance]);
 
   useEffect(() => {
     if (!currentUser || !isManagerOpen) return;
@@ -60,54 +89,82 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
   const handleAdjustment = async (e) => {
     e.preventDefault();
 
-    if (!adjustments.online && !adjustments.cash) {
-      showError("Please enter at least one adjustment amount.");
-      return;
+    let onlineDelta = 0;
+    let cashDelta = 0;
+    let newOnlineBalance = onlineBalance;
+    let newCashBalance = cashBalance;
+
+    if (mode === 'exact') {
+      const parsedOnline = exactBalances.online !== '' ? parseFloat(exactBalances.online) : onlineBalance;
+      const parsedCash = exactBalances.cash !== '' ? parseFloat(exactBalances.cash) : cashBalance;
+
+      if (isNaN(parsedOnline) || isNaN(parsedCash)) {
+        showError("Please enter valid balance figures.");
+        return;
+      }
+
+      onlineDelta = Number((parsedOnline - onlineBalance).toFixed(2));
+      cashDelta = Number((parsedCash - cashBalance).toFixed(2));
+      newOnlineBalance = parsedOnline;
+      newCashBalance = parsedCash;
+
+      if (Math.abs(onlineDelta) < 0.001 && Math.abs(cashDelta) < 0.001) {
+        showError("No changes made to the balances.");
+        return;
+      }
+    } else {
+      if (!adjustments.online && !adjustments.cash) {
+        showError("Please enter at least one adjustment amount.");
+        return;
+      }
+
+      onlineDelta = parseFloat(adjustments.online) || 0;
+      cashDelta = parseFloat(adjustments.cash) || 0;
+      newOnlineBalance = Number((onlineBalance + onlineDelta).toFixed(2));
+      newCashBalance = Number((cashBalance + cashDelta).toFixed(2));
     }
 
-    if (!adjustments.reason.trim()) {
-      showError("Please provide a reason for the adjustment.");
-      return;
-    }
+    const reason = (adjustments.reason || '').trim() || (mode === 'exact' ? 'Balance calibration' : 'Balance adjustment');
 
     setLoading(true);
 
     try {
+      const todayDate = new Date().toISOString().split("T")[0];
       const adjustmentData = {
         userId: currentUser.uid,
-        onlineAdjustment: parseFloat(adjustments.online) || 0,
-        cashAdjustment: parseFloat(adjustments.cash) || 0,
-        reason: adjustments.reason.trim(),
+        onlineAdjustment: onlineDelta,
+        cashAdjustment: cashDelta,
+        reason,
         previousOnlineBalance: onlineBalance,
         previousCashBalance: cashBalance,
+        newOnlineBalance,
+        newCashBalance,
         createdAt: new Date(),
-        date: new Date().toISOString().split("T")[0],
+        date: todayDate,
       };
 
-      if (adjustments.online) {
-        const onlineAmount = parseFloat(adjustments.online);
+      if (onlineDelta !== 0) {
         await addDoc(collection(db, "transactions"), {
-          type: onlineAmount > 0 ? "income" : "expense",
-          amount: Math.abs(onlineAmount),
+          type: onlineDelta > 0 ? "income" : "expense",
+          amount: Math.abs(onlineDelta),
           category: "Balance Adjustment",
-          description: `Online balance adjustment: ${adjustments.reason}`,
+          description: `Online balance adjustment: ${reason}`,
           paymentMethod: "online",
-          date: new Date().toISOString().split("T")[0],
+          date: todayDate,
           userId: currentUser.uid,
           createdAt: new Date(),
           isBalanceAdjustment: true,
         });
       }
 
-      if (adjustments.cash) {
-        const cashAmount = parseFloat(adjustments.cash);
+      if (cashDelta !== 0) {
         await addDoc(collection(db, "transactions"), {
-          type: cashAmount > 0 ? "income" : "expense",
-          amount: Math.abs(cashAmount),
+          type: cashDelta > 0 ? "income" : "expense",
+          amount: Math.abs(cashDelta),
           category: "Balance Adjustment",
-          description: `Cash balance adjustment: ${adjustments.reason}`,
+          description: `Cash balance adjustment: ${reason}`,
           paymentMethod: "cash",
-          date: new Date().toISOString().split("T")[0],
+          date: todayDate,
           userId: currentUser.uid,
           createdAt: new Date(),
           isBalanceAdjustment: true,
@@ -116,25 +173,25 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
 
       await addDoc(collection(db, "balanceAdjustments"), adjustmentData);
 
-      const newOnlineBalance = onlineBalance + (parseFloat(adjustments.online) || 0);
-      const newCashBalance = cashBalance + (parseFloat(adjustments.cash) || 0);
+      // ── CRITICAL: Update currentBalances collection that Dashboard.jsx, InitialBalanceSetup, and BalanceTracker rely on! ──
+      const currentBalancesRef = doc(db, "currentBalances", currentUser.uid);
+      await setDoc(currentBalancesRef, {
+        online: newOnlineBalance,
+        cash: newCashBalance,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
 
+      // Update user doc for backwards compatibility
       const userDocRef = doc(db, "users", currentUser.uid);
-      const userDocSnap = await getDoc(userDocRef);
+      await setDoc(userDocRef, {
+        onlineBalance: newOnlineBalance,
+        cashBalance: newCashBalance,
+        updatedAt: new Date(),
+      }, { merge: true });
 
-      if (userDocSnap.exists()) {
-        await updateDoc(userDocRef, {
-          onlineBalance: newOnlineBalance,
-          cashBalance: newCashBalance,
-          updatedAt: new Date(),
-        });
-      } else {
-        await setDoc(userDocRef, {
-          onlineBalance: newOnlineBalance,
-          cashBalance: newCashBalance,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+      // Notify parent Dashboard state immediately for zero-latency local update
+      if (onBalanceUpdate) {
+        onBalanceUpdate({ online: newOnlineBalance, cash: newCashBalance });
       }
 
       await sendBalanceAdjustmentAlert({
@@ -142,18 +199,15 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
         adjustmentData,
         previousOnlineBalance: onlineBalance,
         previousCashBalance: cashBalance,
-        newOnlineBalance: newOnlineBalance,
-        newCashBalance: newCashBalance
+        newOnlineBalance,
+        newCashBalance
       });
 
       setAdjustments({ online: "", cash: "", reason: "" });
       setManagerOpen(false);
 
-      const totalAdjustment =
-        (parseFloat(adjustments.online) || 0) +
-        (parseFloat(adjustments.cash) || 0);
       showSuccess(
-        `Balance adjusted successfully. Total change: ₹${totalAdjustment.toFixed(2)}`
+        `Balances updated successfully. Online: ₹${newOnlineBalance.toFixed(2)}, Cash: ₹${newCashBalance.toFixed(2)}`
       );
     } catch (error) {
       console.error("Error adjusting balance:", error);
@@ -217,76 +271,165 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
               </div>
             </div>
 
+            {/* Mode Selector Toggle: Set exact balance vs Add/Deduct */}
+            <div className="flex items-center gap-1 bg-[var(--sunken)] p-0.5 rounded-[6px] w-fit">
+              <button
+                type="button"
+                onClick={() => setMode('exact')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                  mode === 'exact'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                    : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
+                }`}
+              >
+                Set exact balance
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('relative')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-[4px] transition-colors cursor-pointer ${
+                  mode === 'relative'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-sm'
+                    : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
+                }`}
+              >
+                Add / Deduct (+/−)
+              </button>
+            </div>
+
             {/* Adjustment Form */}
             <form onSubmit={handleAdjustment} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="field-label">
-                    Online adjustment
-                  </label>
-                  <input
-                    type="number"
-                    name="online"
-                    value={adjustments.online}
-                    onChange={handleChange}
-                    step="0.01"
-                    placeholder="+/- 0.00"
-                    className="field h-10 text-xs w-full tabular-nums"
-                  />
-                  <p className="text-xs text-[var(--ink-3)] mt-1">Positive to add, negative to deduct</p>
+              {mode === 'exact' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="field-label" htmlFor="exact-online">
+                      Exact online balance (₹)
+                    </label>
+                    <input
+                      id="exact-online"
+                      type="number"
+                      step="any"
+                      inputMode="decimal"
+                      value={exactBalances.online}
+                      onChange={(e) => setExactBalances((p) => ({ ...p, online: e.target.value }))}
+                      placeholder={onlineBalance.toFixed(2)}
+                      className="field h-10 text-xs w-full tabular-nums"
+                    />
+                    <p className="text-xs text-[var(--ink-3)] mt-1">Directly set your actual bank/UPI balance</p>
+                  </div>
+                  <div>
+                    <label className="field-label" htmlFor="exact-cash">
+                      Exact cash in hand (₹)
+                    </label>
+                    <input
+                      id="exact-cash"
+                      type="number"
+                      step="any"
+                      inputMode="decimal"
+                      value={exactBalances.cash}
+                      onChange={(e) => setExactBalances((p) => ({ ...p, cash: e.target.value }))}
+                      placeholder={cashBalance.toFixed(2)}
+                      className="field h-10 text-xs w-full tabular-nums"
+                    />
+                    <p className="text-xs text-[var(--ink-3)] mt-1">Directly set your real physical cash</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="field-label">
-                    Cash adjustment
-                  </label>
-                  <input
-                    type="number"
-                    name="cash"
-                    value={adjustments.cash}
-                    onChange={handleChange}
-                    step="0.01"
-                    placeholder="+/- 0.00"
-                    className="field h-10 text-xs w-full tabular-nums"
-                  />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="field-label" htmlFor="relative-online">
+                      Online adjustment
+                    </label>
+                    <input
+                      id="relative-online"
+                      type="number"
+                      name="online"
+                      step="any"
+                      inputMode="decimal"
+                      value={adjustments.online}
+                      onChange={handleChange}
+                      placeholder="+/- 0.00"
+                      className="field h-10 text-xs w-full tabular-nums"
+                    />
+                    <p className="text-xs text-[var(--ink-3)] mt-1">Positive to add, negative to deduct</p>
+                  </div>
+                  <div>
+                    <label className="field-label" htmlFor="relative-cash">
+                      Cash adjustment
+                    </label>
+                    <input
+                      id="relative-cash"
+                      type="number"
+                      name="cash"
+                      step="any"
+                      inputMode="decimal"
+                      value={adjustments.cash}
+                      onChange={handleChange}
+                      placeholder="+/- 0.00"
+                      className="field h-10 text-xs w-full tabular-nums"
+                    />
+                    <p className="text-xs text-[var(--ink-3)] mt-1">Positive to add, negative to deduct</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
-                <label className="field-label">
-                  Reason *
+                <label className="field-label" htmlFor="balance-reason">
+                  Reason {mode === 'relative' && '*'}
                 </label>
                 <input
+                  id="balance-reason"
                   type="text"
                   name="reason"
                   value={adjustments.reason}
                   onChange={handleChange}
-                  required
-                  placeholder="e.g. Correction, Found cash, Bank interest"
+                  required={mode === 'relative'}
+                  placeholder={mode === 'exact' ? "e.g. Wallet recalibration (optional)" : "e.g. Correction, Found cash, Bank interest"}
                   className="field h-10 text-xs w-full"
                 />
               </div>
 
               {/* Projected Result */}
-              {(adjustments.online || adjustments.cash) && (
-                <div className="p-3 rounded-[6px] bg-[var(--sunken)] border border-[var(--line)] text-xs space-y-1.5">
-                  <p className="font-medium text-[var(--ink)]">Projected balance</p>
-                  {adjustments.online && (
+              {mode === 'exact' ? (
+                (exactBalances.online !== onlineBalance.toFixed(2) || exactBalances.cash !== cashBalance.toFixed(2)) && (
+                  <div className="p-3 rounded-[6px] bg-[var(--sunken)] border border-[var(--line)] text-xs space-y-1.5">
+                    <p className="font-medium text-[var(--ink)]">Resulting balances</p>
                     <div className="flex justify-between items-center text-[var(--ink-2)] tabular-nums">
                       <span>Online:</span>
                       <span>
-                        ₹{onlineBalance.toFixed(2)} → ₹{(onlineBalance + (parseFloat(adjustments.online) || 0)).toFixed(2)}
+                        ₹{onlineBalance.toFixed(2)} → ₹{Number(exactBalances.online || onlineBalance).toFixed(2)}
                       </span>
                     </div>
-                  )}
-                  {adjustments.cash && (
                     <div className="flex justify-between items-center text-[var(--ink-2)] tabular-nums">
                       <span>Cash:</span>
                       <span>
-                        ₹{cashBalance.toFixed(2)} → ₹{(cashBalance + (parseFloat(adjustments.cash) || 0)).toFixed(2)}
+                        ₹{cashBalance.toFixed(2)} → ₹{Number(exactBalances.cash || cashBalance).toFixed(2)}
                       </span>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )
+              ) : (
+                (adjustments.online || adjustments.cash) && (
+                  <div className="p-3 rounded-[6px] bg-[var(--sunken)] border border-[var(--line)] text-xs space-y-1.5">
+                    <p className="font-medium text-[var(--ink)]">Projected balance</p>
+                    {adjustments.online && (
+                      <div className="flex justify-between items-center text-[var(--ink-2)] tabular-nums">
+                        <span>Online:</span>
+                        <span>
+                          ₹{onlineBalance.toFixed(2)} → ₹{(onlineBalance + (parseFloat(adjustments.online) || 0)).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    {adjustments.cash && (
+                      <div className="flex justify-between items-center text-[var(--ink-2)] tabular-nums">
+                        <span>Cash:</span>
+                        <span>
+                          ₹{cashBalance.toFixed(2)} → ₹{(cashBalance + (parseFloat(adjustments.cash) || 0)).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )
               )}
 
               <div className="flex justify-end gap-2 pt-2">
@@ -303,7 +446,7 @@ export default function BalanceManager({ onlineBalance, cashBalance, externalSho
                   className="btn-primary text-xs"
                 >
                   {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  Confirm adjustment
+                  Save balance
                 </button>
               </div>
             </form>

@@ -98,7 +98,7 @@ export default function CustomSelect({
     <div ref={containerRef} className="relative inline-block text-left w-full sm:w-auto">
       {/* Hidden native select for form serialization & DOM tests */}
       <select
-        id={selectId}
+        id={id ? `${id}-native` : `${selectId}-native`}
         name={name}
         value={value}
         onChange={onChange}
@@ -106,6 +106,7 @@ export default function CustomSelect({
         aria-hidden="true"
         tabIndex={-1}
         className="sr-only"
+        style={{ pointerEvents: 'none' }}
       >
         {normalizedOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -117,7 +118,7 @@ export default function CustomSelect({
       {/* Custom Trigger Button */}
       <button
         type="button"
-        id={`${selectId}-button`}
+        id={id || `${selectId}-button`}
         role="combobox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
@@ -125,7 +126,7 @@ export default function CustomSelect({
         disabled={disabled}
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
         className={`w-full flex flex-row items-center justify-between gap-2 px-3 text-xs bg-[var(--surface)] text-[var(--ink)] border border-[var(--line-strong)] rounded-[6px] shadow-[0_1px_2px_rgba(17,19,24,0.04)] cursor-pointer select-none transition-colors outline-none hover:border-[var(--ink-2)] box-border ${
-          isOpen ? 'border-[var(--accent)] shadow-[0_0_0_1.5px_var(--accent)]' : ''
+          isOpen ? 'border-[var(--accent)] shadow-[0_0_0_2px_var(--accent-soft)]' : ''
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-[var(--sunken)]' : ''} ${className}`}
       >
         <span className="truncate flex-1 text-left">{displayLabel}</span>
@@ -142,7 +143,7 @@ export default function CustomSelect({
           role="listbox"
           tabIndex={-1}
           className={`absolute z-50 mt-1 min-w-full w-max max-w-[280px] max-h-60 overflow-y-auto bg-[var(--surface)] border border-[var(--line)] rounded-[8px] shadow-[var(--shadow-pop)] py-1 focus:outline-none ${menuClassName}`}
-          style={{ right: 0 }}
+          style={{ left: 0 }}
         >
           {normalizedOptions.map((opt) => {
             const isSelected = String(opt.value) === String(value);
