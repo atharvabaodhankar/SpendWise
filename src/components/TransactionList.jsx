@@ -2,75 +2,17 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Money from './Money';
 import CustomSelect from './CustomSelect';
+import {
+  parseLocalDate,
+  getDateKey,
+  getDayHeading,
+  sortTransactionsChronological,
+} from '../utils/dateUtils';
+
+// Re-export for backward-compatibility with existing tests and imports
+export { parseLocalDate, getDateKey, getDayHeading };
 
 const PAGE_SIZE = 20;
-
-/**
- * Safely parse a date value into a Date object representing the local calendar day.
- */
-function parseLocalDate(dateVal) {
-  if (!dateVal) return null;
-  if (dateVal instanceof Date) return isNaN(dateVal.getTime()) ? null : dateVal;
-  if (typeof dateVal === 'object' && typeof dateVal.toDate === 'function') {
-    try {
-      const d = dateVal.toDate();
-      return isNaN(d.getTime()) ? null : d;
-    } catch {
-      return null;
-    }
-  }
-  if (typeof dateVal === 'string') {
-    const trimmed = dateVal.trim();
-    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (match) {
-      const y = parseInt(match[1], 10);
-      const m = parseInt(match[2], 10) - 1;
-      const d = parseInt(match[3], 10);
-      return new Date(y, m, d);
-    }
-    const d = new Date(trimmed);
-    return isNaN(d.getTime()) ? null : d;
-  }
-  return null;
-}
-
-/**
- * Format a date string into "Today", "Yesterday", or human friendly "10 November 2026"
- */
-function getDayHeading(dateString) {
-  if (!dateString) return 'Undated';
-  const d = parseLocalDate(dateString);
-  if (!d) return String(dateString);
-
-  const today = new Date();
-  const isToday =
-    d.getDate() === today.getDate() &&
-    d.getMonth() === today.getMonth() &&
-    d.getFullYear() === today.getFullYear();
-
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday =
-    d.getDate() === yesterday.getDate() &&
-    d.getMonth() === yesterday.getMonth() &&
-    d.getFullYear() === yesterday.getFullYear();
-
-  if (isToday) return 'Today';
-  if (isYesterday) return 'Yesterday';
-
-  return d.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'long',
-    year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
-  });
-}
-
-function getDateKey(dateString) {
-  if (!dateString) return 'undated';
-  const d = parseLocalDate(dateString);
-  if (!d) return String(dateString).split('T')[0] || String(dateString);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 export default function TransactionList({
   transactions = [],
@@ -90,9 +32,9 @@ export default function TransactionList({
     initialIdsRef.current = new Set(transactions.map((t) => t.id));
   }
 
-  // Filter transactions
+  // Filter and sort transactions (strictly newest date first, with createdAt fallback)
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => {
+    const list = transactions.filter((t) => {
       if (selectedType !== 'all' && t.type !== selectedType) return false;
       if (selectedMethod !== 'all') {
         const isCash = (t.paymentMethod || '').toLowerCase() === 'cash';
@@ -107,6 +49,9 @@ export default function TransactionList({
       }
       return true;
     });
+
+    // Explicit chronological sort: newest calendar date first, tie-break with createdAt descending
+    return sortTransactionsChronological(list);
   }, [transactions, selectedType, selectedMethod, searchQuery]);
 
   // Reset page to 1 when search or filters change
@@ -130,7 +75,7 @@ export default function TransactionList({
     return filteredTransactions.slice(start, start + PAGE_SIZE);
   }, [filteredTransactions, safeCurrentPage]);
 
-  // Group visible paginated transactions by day (sorted newest first)
+  // Group visible paginated transactions by day (strictly newest first)
   const groupedDays = useMemo(() => {
     const groups = {};
     paginatedTransactions.forEach((t) => {
@@ -152,7 +97,11 @@ export default function TransactionList({
       }
     });
 
-    return Object.values(groups);
+    return Object.values(groups).sort((a, b) => {
+      if (a.dateKey === 'undated') return 1;
+      if (b.dateKey === 'undated') return -1;
+      return b.dateKey.localeCompare(a.dateKey);
+    });
   }, [paginatedTransactions]);
 
   if (transactions.length === 0) {

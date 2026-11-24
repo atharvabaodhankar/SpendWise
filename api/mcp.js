@@ -364,9 +364,9 @@ const TOOLS = [
         },
         action: {
           type: 'string',
-          enum: ['mark_paid', 'confirm_receipt'],
+          enum: ['mark_paid', 'confirm_receipt', 'decline', 'cancel'],
           description:
-            'mark_paid: Debtor indicates payment was sent; confirm_receipt: Creditor confirms payment was received.',
+            'mark_paid: Debtor indicates payment was sent; confirm_receipt: Creditor confirms payment was received; decline: Creditor declines payment; cancel: Debtor cancels mark-paid.',
         },
       },
       required: ['debtId', 'action'],
@@ -612,6 +612,156 @@ const TOOLS = [
 // TOOL IMPLEMENTATION HANDLERS
 // ==========================================
 
+function getTimestampMs(val) {
+  if (!val) return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  if (typeof val.toDate === 'function') {
+    try {
+      const d = val.toDate();
+      return isNaN(d.getTime()) ? 0 : d.getTime();
+    } catch {
+      return 0;
+    }
+  }
+  if (typeof val.seconds === 'number') {
+    return val.seconds * 1000 + (val.nanoseconds ? Math.floor(val.nanoseconds / 1e6) : 0);
+  }
+  if (val instanceof Date) return isNaN(val.getTime()) ? 0 : val.getTime();
+  const t = new Date(val).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+function getLocalDateString(dateVal) {
+  if (!dateVal) return '';
+  const tz = process.env.APP_TIMEZONE || 'Asia/Kolkata';
+
+  if (typeof dateVal === 'string') {
+    const trimmed = dateVal.trim();
+    // If it has a full ISO timestamp with time component (T), evaluate in local timezone
+    if (trimmed.includes('T')) {
+      try {
+        const d = new Date(trimmed);
+        if (!isNaN(d.getTime())) {
+          return new Intl.DateTimeFormat('en-CA', {
+            timeZone: tz,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(d);
+        }
+      } catch {}
+    }
+
+    const isoMatch = trimmed.match(/(\d{4})[-/](\d{2})[-/](\d{2})/);
+    if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    const ddmmyyyy = trimmed.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+    if (ddmmyyyy) return `${ddmmyyyy[3]}-${ddmmyyyy[2].padStart(2, '0')}-${ddmmyyyy[1].padStart(2, '0')}`;
+    const lower = trimmed.toLowerCase();
+    if (lower.includes('yesterday')) {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    if (lower.includes('today')) {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+      try {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(d);
+      } catch {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+    }
+    return '';
+  }
+  if (dateVal instanceof Date) {
+    if (isNaN(dateVal.getTime())) return '';
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(dateVal);
+    } catch {
+      const y = dateVal.getFullYear();
+      const m = String(dateVal.getMonth() + 1).padStart(2, '0');
+      const day = String(dateVal.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+  }
+  if (dateVal && typeof dateVal.toDate === 'function') {
+    try {
+      const d = dateVal.toDate();
+      if (isNaN(d.getTime())) return '';
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(d);
+    } catch {
+      return '';
+    }
+  }
+  if (dateVal && typeof dateVal.seconds === 'number') {
+    const d = new Date(dateVal.seconds * 1000);
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(d);
+    } catch {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+  }
+  return '';
+}
+
+function getTodayLocalDate(tz = process.env.APP_TIMEZONE || 'Asia/Kolkata') {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    return fmt.format(new Date());
+  } catch {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+}
+
+function getCurrentMonthBounds(tz = process.env.APP_TIMEZONE || 'Asia/Kolkata') {
+  const today = getTodayLocalDate(tz);
+  const monthPrefix = today.slice(0, 7);
+  const [y, m] = monthPrefix.split('-').map(Number);
+  const firstDayOfMonth = `${monthPrefix}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const lastDayOfMonth = `${monthPrefix}-${String(lastDay).padStart(2, '0')}`;
+  const now = new Date(y, m - 1, 1);
+  return { now, monthPrefix, firstDayOfMonth, lastDayOfMonth };
+}
+
 async function handleAddTransaction(db, userId, args) {
   const amount = Number(args.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -622,7 +772,7 @@ async function handleAddTransaction(db, userId, args) {
   const category = (args.category || 'Other').trim();
   const paymentMethod = args.paymentMethod === 'cash' ? 'cash' : 'online';
   const description = (args.description || '').trim();
-  const date = args.date || new Date().toISOString().split('T')[0];
+  const date = args.date ? (getLocalDateString(args.date) || getTodayLocalDate()) : getTodayLocalDate();
   const affectCurrentBalance = args.affectCurrentBalance !== false;
 
   const transactionData = {
@@ -695,8 +845,17 @@ async function handleListTransactions(db, userId, args) {
   let items = [];
   snapshot.forEach((d) => items.push({ id: d.id, ...d.data() }));
 
-  // In-memory sort by date descending
-  items.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  // In-memory sort by date descending (calendar date descending, tie-break createdAt ms)
+  items.sort((a, b) => {
+    const dateA = getLocalDateString(a.date);
+    const dateB = getLocalDateString(b.date);
+    if (!dateA && !dateB) return getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt);
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    const cmp = dateB.localeCompare(dateA);
+    if (cmp !== 0) return cmp;
+    return getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt);
+  });
 
   // Filters
   if (args.type) {
@@ -707,10 +866,10 @@ async function handleListTransactions(db, userId, args) {
     items = items.filter((t) => (t.category || '').toLowerCase().includes(catLower));
   }
   if (args.startDate) {
-    items = items.filter((t) => t.date >= args.startDate);
+    items = items.filter((t) => getLocalDateString(t.date) >= args.startDate);
   }
   if (args.endDate) {
-    items = items.filter((t) => t.date <= args.endDate);
+    items = items.filter((t) => getLocalDateString(t.date) <= args.endDate);
   }
   if (args.search) {
     const searchLower = args.search.toLowerCase();
@@ -723,7 +882,7 @@ async function handleListTransactions(db, userId, args) {
 
   const resultItems = items.slice(0, limit).map((t) => ({
     id: t.id,
-    date: t.date,
+    date: getLocalDateString(t.date) || t.date,
     type: t.type,
     amount: Number(t.amount) || 0,
     category: t.category,
@@ -879,16 +1038,12 @@ async function handleGetSummary(db, userId) {
   const budgetDoc = await db.collection('budgets').doc(userId).get();
   const budget = budgetDoc.exists ? budgetDoc.data() : null;
 
-  // Month-to-date calculation
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split('T')[0];
+  // Month-to-date calculation (calendar-safe and timezone-consistent with Dashboard)
+  const { now, monthPrefix } = getCurrentMonthBounds();
 
   const transactionsSnap = await db
     .collection('transactions')
     .where('userId', '==', userId)
-    .where('date', '>=', firstDayOfMonth)
     .get();
 
   let monthExpenses = 0;
@@ -897,12 +1052,16 @@ async function handleGetSummary(db, userId) {
 
   transactionsSnap.forEach((doc) => {
     const d = doc.data();
-    const amt = Number(d.amount) || 0;
-    if (d.type === 'expense') {
+    const dateStr = getLocalDateString(d.date);
+    if (!dateStr.startsWith(monthPrefix)) return;
+
+    const amt = Math.abs(Number(d.amount)) || 0;
+    const type = (d.type || '').toLowerCase();
+    if (type === 'expense') {
       monthExpenses += amt;
       const cat = d.category || 'Other';
       categorySpend[cat] = (categorySpend[cat] || 0) + amt;
-    } else if (d.type === 'income') {
+    } else if (type === 'income') {
       monthIncome += amt;
     }
   });
@@ -982,20 +1141,22 @@ async function handleGetBudget(db, userId) {
   const budgetDoc = await db.collection('budgets').doc(userId).get();
   const budget = budgetDoc.exists ? budgetDoc.data() : null;
 
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split('T')[0];
+  // Month-to-date calculation (calendar-safe and timezone-consistent with Dashboard)
+  const { now, monthPrefix } = getCurrentMonthBounds();
 
   const transactionsSnap = await db
     .collection('transactions')
     .where('userId', '==', userId)
-    .where('date', '>=', firstDayOfMonth)
     .get();
 
   let spent = 0;
   transactionsSnap.forEach((d) => {
-    if (d.data().type === 'expense') spent += Number(d.data().amount) || 0;
+    const data = d.data();
+    const dateStr = getLocalDateString(data.date);
+    if (!dateStr.startsWith(monthPrefix)) return;
+    if ((data.type || '').toLowerCase() === 'expense') {
+      spent += Math.abs(Number(data.amount)) || 0;
+    }
   });
 
   const limit = budget?.monthlyLimit ? Number(budget.monthlyLimit) : null;
@@ -1056,6 +1217,7 @@ async function handleListRecurring(db, userId, args) {
       frequency: i.frequency,
       type: i.type || 'expense',
       paymentMethod: i.paymentMethod || 'online',
+      status: i.status || 'active',
       nextExecution: i.nextExecution || null,
       lastExecuted: i.lastExecuted || null,
     })),
@@ -1071,7 +1233,10 @@ function computeNextExecution(frequency) {
   } else {
     d.setMonth(d.getMonth() + 1);
   }
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 async function handleAddRecurring(db, userId, args) {
@@ -1096,6 +1261,7 @@ async function handleAddRecurring(db, userId, args) {
     frequency,
     type,
     paymentMethod,
+    status: 'active',
     nextExecution: computeNextExecution(frequency),
     lastExecuted: null,
     createdAt: new Date(),
@@ -1147,7 +1313,7 @@ async function handleSplitExpense(db, userId, args) {
   const description = (args.description || 'Split Bill').trim();
   const paymentMethod = args.paymentMethod === 'cash' ? 'cash' : 'online';
   const category = (args.category || 'Food & Dining').trim();
-  const date = args.date || new Date().toISOString().split('T')[0];
+  const date = args.date ? (getLocalDateString(args.date) || getTodayLocalDate()) : getTodayLocalDate();
 
   const totalPeople = friendEmails.length + 1;
   const perPersonShare = Math.round((totalAmount / totalPeople) * 100) / 100;
@@ -1327,7 +1493,39 @@ async function handleSettleDebt(db, userId, args) {
     };
   }
 
-  throw new Error(`Invalid action: ${action}. Expected "mark_paid" or "confirm_receipt".`);
+  if (action === 'decline' || action === 'reject') {
+    if (debt.creditorId !== userId) {
+      throw new Error('Only the creditor can decline a payment confirmation.');
+    }
+    await debtRef.update({
+      status: 'unpaid',
+      lastDeclinedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    return {
+      success: true,
+      status: 'unpaid',
+      message: `Payment confirmation declined. Debt of ₹${debt.amount} for "${debt.description}" reset to unpaid.`,
+    };
+  }
+
+  if (action === 'cancel') {
+    if (debt.debtorId !== userId && debt.debtorEmail !== userId) {
+      throw new Error('Only the debtor can cancel marking a payment as sent.');
+    }
+    await debtRef.update({
+      status: 'unpaid',
+      cancelledAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    return {
+      success: true,
+      status: 'unpaid',
+      message: `Payment marking cancelled. Debt of ₹${debt.amount} for "${debt.description}" reset to unpaid.`,
+    };
+  }
+
+  throw new Error(`Invalid action: ${action}. Expected "mark_paid", "confirm_receipt", "decline", or "cancel".`);
 }
 
 async function handleListFriends(db, userId) {
@@ -1467,7 +1665,7 @@ async function handleAddInvestment(db, userId, args) {
 
   const assetType = args.assetType || 'other';
   const currentValue = args.currentValue !== undefined ? Number(args.currentValue) : investedAmount;
-  const purchaseDate = args.purchaseDate || new Date().toISOString().split('T')[0];
+  const purchaseDate = args.purchaseDate ? (getLocalDateString(args.purchaseDate) || getTodayLocalDate()) : getTodayLocalDate();
 
   const payload = {
     userId,
@@ -1506,8 +1704,13 @@ async function handleUpdateInvestment(db, userId, args) {
   if (snap.data().userId !== userId) throw new Error('Unauthorized.');
 
   const updates = {};
+  if (args.name !== undefined) updates.name = String(args.name).trim();
+  if (args.assetType !== undefined) updates.assetType = String(args.assetType).trim();
+  if (args.provider !== undefined) updates.provider = String(args.provider).trim();
   if (args.currentValue !== undefined) updates.currentValue = Number(args.currentValue);
   if (args.investedAmount !== undefined) updates.investedAmount = Number(args.investedAmount);
+  if (args.interestRate !== undefined) updates.interestRate = Number(args.interestRate);
+  if (args.maturityDate !== undefined) updates.maturityDate = String(args.maturityDate).trim();
   if (args.units !== undefined) updates.units = Number(args.units);
   if (args.notes !== undefined) updates.notes = String(args.notes).trim();
   updates.updatedAt = new Date();
@@ -1612,7 +1815,7 @@ async function handleAddSalary(db, userId, args) {
   }
 
   const salaryMonth = (args.salaryMonth || 'Salary').trim();
-  const receivedDate = args.receivedDate || new Date().toISOString().split('T')[0];
+  const receivedDate = args.receivedDate ? (getLocalDateString(args.receivedDate) || getTodayLocalDate()) : getTodayLocalDate();
   const companyOrSource = (args.companyOrSource || '').trim();
   const status = args.status === 'pending' ? 'pending' : 'received';
   const notes = (args.notes || '').trim();
@@ -1666,7 +1869,7 @@ async function handleGetAnalytics(db, userId, args) {
   snap.forEach((d) => allTxs.push({ id: d.id, ...d.data() }));
 
   if (targetMonth && targetMonth !== 'all') {
-    allTxs = allTxs.filter((t) => (t.date || '').startsWith(targetMonth));
+    allTxs = allTxs.filter((t) => getLocalDateString(t.date).startsWith(targetMonth));
   }
 
   let totalExpenses = 0;
@@ -1679,7 +1882,7 @@ async function handleGetAnalytics(db, userId, args) {
 
   allTxs.forEach((t) => {
     const amt = Number(t.amount) || 0;
-    const dateStr = t.date || '';
+    const dateStr = getLocalDateString(t.date);
 
     // Month group
     const m = dateStr.slice(0, 7);

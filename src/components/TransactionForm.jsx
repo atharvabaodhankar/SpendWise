@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { collection, query, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { getLocalTodayString } from '../utils/dateUtils';
 
 const CATEGORIES = [
   'Food',
@@ -40,7 +41,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
   const [category, setCategory] = useState('Food');
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cash'
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => getLocalTodayString());
   const [description, setDescription] = useState('');
   const [isSplit, setIsSplit] = useState(false);
   const [splitWith, setSplitWith] = useState([]); // array of friendIds
@@ -93,7 +94,7 @@ export default function TransactionForm({ onSubmit, onCancel }) {
   }, [currentUser]);
 
   const isHistoricalDate = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalTodayString();
     return date < today;
   };
 

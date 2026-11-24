@@ -5,6 +5,7 @@ import { db } from '../firebase/config';
 import { doc, setDoc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { Edit2, Check, X } from 'lucide-react';
 import Money from './Money';
+import { getCurrentMonthString, getLocalDateString } from '../utils/dateUtils';
 
 /**
  * BudgetGoals component
@@ -60,7 +61,7 @@ export default function BudgetGoals({ goals, mockDate }) {
 
     loadBudget();
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const currentMonth = getCurrentMonthString();
     const q = query(
       collection(db, 'transactions'),
       where('userId', '==', currentUser.uid),
@@ -71,7 +72,8 @@ export default function BudgetGoals({ goals, mockDate }) {
       let monthlyExpenses = 0;
       querySnapshot.forEach((d) => {
         const transaction = d.data();
-        if (transaction.date && transaction.date.startsWith(currentMonth)) {
+        const dStr = getLocalDateString(transaction.date);
+        if (dStr && dStr.startsWith(currentMonth)) {
           monthlyExpenses += parseFloat(transaction.amount) || 0;
         }
       });

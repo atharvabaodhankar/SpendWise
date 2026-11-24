@@ -1,39 +1,16 @@
 import { AlertTriangle, X } from 'lucide-react';
 import Money from './Money';
+import { parseLocalDate } from '../utils/dateUtils';
 
 function formatTransactionDate(dateVal) {
   if (!dateVal) return '';
-  if (typeof dateVal === 'string') {
-    const trimmed = dateVal.trim();
-    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (match) {
-      const y = parseInt(match[1], 10);
-      const m = parseInt(match[2], 10) - 1;
-      const d = parseInt(match[3], 10);
-      return new Date(y, m, d).toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
-    }
-    const parsed = new Date(trimmed);
-    if (!isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
-    }
-    return trimmed;
-  }
-  if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
-    return dateVal.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  }
-  return '';
+  const d = parseLocalDate(dateVal);
+  if (!d) return String(dateVal);
+  return d.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 export default function DeleteConfirmationModal({ transaction, onConfirm, onCancel }) {

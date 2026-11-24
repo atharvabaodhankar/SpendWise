@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, NavLink, Link, useLocation } from 'react-router-dom';
 import {
   Users, Key, Settings, LogOut, Sun, Moon, Monitor,
-  Plus, Wallet, TrendingUp, BarChart3, MessageSquare,
+  Plus, Wallet, TrendingUp, BarChart3, MessageSquare, Code2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
@@ -261,6 +261,16 @@ export default function AppShell({ children }) {
                       <Key className="w-4 h-4 text-[var(--ink-2)]" />
                       <span>API and MCP keys</span>
                     </button>
+
+                    <Link
+                      to="/dev"
+                      onClick={() => setIsAvatarMenuOpen(false)}
+                      className="w-full px-4 py-2 text-left text-xs text-[var(--ink)] hover:bg-[var(--sunken)] flex items-center gap-2.5 transition-colors cursor-pointer"
+                      role="menuitem"
+                    >
+                      <Code2 className="w-4 h-4 text-[var(--ink-2)]" />
+                      <span>Developer & MCP docs (/dev)</span>
+                    </Link>
 
                     <button
                       type="button"

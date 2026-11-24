@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import Money from '../components/Money';
 import CustomSelect from '../components/CustomSelect';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const NOTE_COLORS = [
   '#7D8A82', // Stone (₹500)
@@ -100,12 +101,9 @@ export default function Analytics({ initialTransactions } = {}) {
     transactions
       .filter((t) => t.type === 'expense')
       .forEach((t) => {
-        if (t.date) {
-          const d = new Date(t.date);
-          if (!isNaN(d.getTime())) {
-            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            months.add(key);
-          }
+        const dateStr = getLocalDateString(t.date);
+        if (dateStr) {
+          months.add(dateStr.slice(0, 7));
         }
       });
     return Array.from(months).sort().reverse();
@@ -114,7 +112,10 @@ export default function Analytics({ initialTransactions } = {}) {
   // Filtered transactions for selected period
   const filteredTransactions = useMemo(() => {
     if (selectedMonth === 'all') return transactions;
-    return transactions.filter((t) => t.date && t.date.startsWith(selectedMonth));
+    return transactions.filter((t) => {
+      const dateStr = getLocalDateString(t.date);
+      return dateStr.startsWith(selectedMonth);
+    });
   }, [transactions, selectedMonth]);
 
   // Period label
@@ -166,7 +167,7 @@ export default function Analytics({ initialTransactions } = {}) {
     const expenseList = filteredTransactions.filter((t) => t.type === 'expense');
 
     expenseList.forEach((t) => {
-      const d = t.date ? t.date.split('T')[0] : 'undated';
+      const d = getLocalDateString(t.date) || 'undated';
       dayMap[d] = (dayMap[d] || 0) + (Number(t.amount) || 0);
     });
 
@@ -229,8 +230,9 @@ export default function Analytics({ initialTransactions } = {}) {
     transactions
       .filter((t) => t.type === 'expense')
       .forEach((t) => {
-        if (t.date) {
-          const key = t.date.slice(0, 7);
+        const dateStr = getLocalDateString(t.date);
+        if (dateStr) {
+          const key = dateStr.slice(0, 7);
           if (monthMap[key]) {
             monthMap[key].amount += Number(t.amount) || 0;
           }

@@ -1,10 +1,26 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { Plus, Trash2, CalendarClock, Play, X, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, CalendarClock, Play, Pause, X, RefreshCw } from 'lucide-react';
 import CustomSelect from './CustomSelect';
+import { getLocalTodayString } from '../utils/dateUtils';
+
+function computeNextExecution(frequency) {
+  const d = new Date();
+  if (frequency === 'weekly') {
+    d.setDate(d.getDate() + 7);
+  } else if (frequency === 'yearly') {
+    d.setFullYear(d.getFullYear() + 1);
+  } else {
+    d.setMonth(d.getMonth() + 1);
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 export default function RecurringTransactions() {
   const { currentUser } = useAuth();
@@ -72,6 +88,8 @@ export default function RecurringTransactions() {
         userId: currentUser.uid,
         createdAt: new Date().toISOString(),
         lastExecuted: null,
+        nextExecution: computeNextExecution(formData.frequency),
+        status: 'active',
       });
 
       setShowForm(false);
@@ -100,20 +118,65 @@ export default function RecurringTransactions() {
     }
   };
 
+  const togglePause = async (transaction) => {
+    try {
+      const nextStatus = transaction.status === 'paused' ? 'active' : 'paused';
+      await updateDoc(doc(db, 'recurringTransactions', transaction.id), {
+        status: nextStatus,
+        updatedAt: new Date().toISOString(),
+      });
+      showSuccess(`Recurring entry ${nextStatus === 'paused' ? 'paused' : 'resumed'}.`);
+    } catch (error) {
+      console.error("Error updating recurring status:", error);
+      showError('Failed to update status.');
+    }
+  };
+
   const executeNow = async (transaction) => {
     try {
+      const today = getLocalTodayString();
       await addDoc(collection(db, 'transactions'), {
         amount: transaction.amount,
         type: transaction.type,
         category: transaction.category,
         paymentMethod: transaction.paymentMethod,
         description: `${transaction.description || transaction.category} (Automated)`,
-        date: new Date().toISOString().split('T')[0],
+        date: today,
         userId: currentUser.uid,
-        createdAt: new Date().toISOString()
+        createdAt: new Date(),
+        affectCurrentBalance: true,
+        source: 'recurring_schedule',
       });
 
-      showSuccess('Transaction executed successfully.');
+      // Adjust wallet balances
+      const amt = Number(transaction.amount) || 0;
+      const pm = (transaction.paymentMethod || '').toLowerCase() === 'cash' ? 'cash' : 'online';
+      const delta = transaction.type === 'income' ? amt : -amt;
+      const balanceRef = doc(db, 'currentBalances', currentUser.uid);
+      const bSnap = await getDoc(balanceRef);
+      if (bSnap.exists()) {
+        const cur = bSnap.data();
+        await setDoc(
+          balanceRef,
+          {
+            ...cur,
+            [pm]: (Number(cur[pm]) || 0) + delta,
+            lastUpdated: new Date(),
+            updatedBy: 'recurring_runner',
+          },
+          { merge: true }
+        );
+      }
+
+      // Update lastExecuted and nextExecution
+      if (transaction.id) {
+        await updateDoc(doc(db, 'recurringTransactions', transaction.id), {
+          lastExecuted: today,
+          nextExecution: computeNextExecution(transaction.frequency),
+        });
+      }
+
+      showSuccess('Transaction executed and wallet balance adjusted.');
     } catch (error) {
       console.error("Error executing transaction:", error);
       showError('Failed to execute transaction.');
@@ -281,6 +344,15 @@ export default function RecurringTransactions() {
                                   {transaction.description || transaction.category}
                                </span>
                                <span className="text-xs text-[var(--ink-3)]">({transaction.frequency})</span>
+                               {transaction.status === 'paused' ? (
+                                  <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--sunken)] text-[var(--ink-3)] font-medium">
+                                    Paused
+                                  </span>
+                               ) : (
+                                  <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--credit-soft)] text-[var(--credit)] font-medium">
+                                    Active
+                                  </span>
+                               )}
                             </div>
                             <div className="text-xs text-[var(--ink-3)] mt-0.5">
                                {transaction.category} · {transaction.paymentMethod === 'online' ? 'Online' : 'Cash'}
@@ -294,6 +366,19 @@ export default function RecurringTransactions() {
                             
                             <div className="flex items-center gap-1">
                                <button
+                                  type="button"
+                                  onClick={() => togglePause(transaction)}
+                                  className="btn-quiet p-1 text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer"
+                                  title={transaction.status === 'paused' ? 'Resume recurring schedule' : 'Pause recurring schedule'}
+                               >
+                                  {transaction.status === 'paused' ? (
+                                    <RefreshCw className="w-3.5 h-3.5 text-[var(--accent)]" />
+                                  ) : (
+                                    <Pause className="w-3.5 h-3.5" />
+                                  )}
+                               </button>
+                               <button
+                                  type="button"
                                   onClick={() => executeNow(transaction)}
                                   className="btn-quiet p-1 text-[var(--ink-3)] hover:text-[var(--credit)] cursor-pointer"
                                   title="Run now"

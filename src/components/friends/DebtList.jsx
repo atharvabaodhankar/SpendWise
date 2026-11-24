@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { TrendingUp, TrendingDown, CheckCircle, Clock, Check } from 'lucide-react';
 
@@ -86,28 +86,38 @@ export default function DebtList({ debts: propDebts, onSettle }) {
   const handleMarkPaid = async (debt) => {
     if (onSettle) onSettle(debt);
     try {
-      await updateDoc(doc(db, 'debts', debt.id), {
-        status: 'pending_confirmation'
-      });
+      if (currentUser && debt.id && !debt.id.startsWith('mock-') && !debt.id.startsWith('d-')) {
+        await updateDoc(doc(db, 'debts', debt.id), {
+          status: 'pending_confirmation',
+          markedPaidAt: new Date().toISOString(),
+        });
+      }
+      if (propDebts) {
+        setYouOwe((prev) =>
+          prev.map((d) => (d.id === debt.id ? { ...d, status: 'pending_confirmation' } : d))
+        );
+      }
       showSuccess('Marked as paid. Waiting for friend to confirm.');
       
       // Notify creditor via email
       try {
-        const creditorDoc = await getDoc(doc(db, 'users', debt.creditorId));
-        if (creditorDoc.exists()) {
-          await fetch('/api/send-email-gmail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'debt_marked_paid',
-              userEmail: creditorDoc.data().email,
-              data: {
-                debtorName: currentUser.displayName || currentUser.email,
-                amount: debt.amount,
-                description: debt.description
-              }
-            })
-          });
+        if (debt.creditorId) {
+          const creditorDoc = await getDoc(doc(db, 'users', debt.creditorId));
+          if (creditorDoc.exists()) {
+            await fetch('/api/send-email-gmail', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'debt_marked_paid',
+                userEmail: creditorDoc.data().email,
+                data: {
+                  debtorName: currentUser?.displayName || currentUser?.email || 'Friend',
+                  amount: debt.amount,
+                  description: debt.description
+                }
+              })
+            });
+          }
         }
       } catch (emailError) {
         console.error("Failed to send debt marked paid email:", emailError);
@@ -118,30 +128,61 @@ export default function DebtList({ debts: propDebts, onSettle }) {
     }
   };
 
-  const handleConfirmReceipt = async (debt) => {
+  const handleCancelMarkPaid = async (debt) => {
     try {
-      // Delete the debt record to clear it
-      await deleteDoc(doc(db, 'debts', debt.id));
+      if (currentUser && debt.id && !debt.id.startsWith('mock-') && !debt.id.startsWith('d-')) {
+        await updateDoc(doc(db, 'debts', debt.id), {
+          status: 'unpaid',
+        });
+      }
+      if (propDebts) {
+        setYouOwe((prev) =>
+          prev.map((d) => (d.id === debt.id ? { ...d, status: 'unpaid' } : d))
+        );
+      }
+      showSuccess('Payment status reset to unpaid.');
+    } catch (error) {
+      console.error("Error resetting payment status:", error);
+      showError('Failed to reset status.');
+    }
+  };
+
+  const handleConfirmReceipt = async (debt) => {
+    if (onSettle) onSettle(debt);
+    try {
+      // Mark the debt as paid (consistent with MCP handleSettleDebt and preserves audit trail)
+      if (currentUser && debt.id && !debt.id.startsWith('mock-') && !debt.id.startsWith('d-')) {
+        await updateDoc(doc(db, 'debts', debt.id), {
+          status: 'paid',
+          settledAt: new Date().toISOString(),
+          settledBy: currentUser.uid,
+        });
+      }
+      if (propDebts) {
+        setOwedToYou((prev) => prev.filter((d) => d.id !== debt.id));
+      }
       
       showSuccess('Payment confirmed! Debt settled.');
 
       // Notify debtor via email
       try {
-        const debtorDoc = await getDoc(doc(db, 'users', debt.debtorId));
-        if (debtorDoc.exists()) {
-          await fetch('/api/send-email-gmail', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'payment_confirmed',
-              userEmail: debtorDoc.data().email,
-              data: {
-                creditorName: currentUser.displayName || currentUser.email,
-                amount: debt.amount,
-                description: debt.description
-              }
-            })
-          });
+        if (debt.debtorId) {
+          const debtorDoc = await getDoc(doc(db, 'users', debt.debtorId));
+          if (debtorDoc.exists()) {
+            await fetch('/api/send-email-gmail', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'payment_confirmed',
+                userEmail: debtorDoc.data().email,
+                data: {
+                  creditorName: currentUser?.displayName || currentUser?.email || 'Friend',
+                  amount: debt.amount,
+                  description: debt.description
+                }
+              })
+            });
+          }
         }
       } catch (emailError) {
         console.error("Failed to send payment confirmed email:", emailError);
@@ -149,6 +190,26 @@ export default function DebtList({ debts: propDebts, onSettle }) {
     } catch (error) {
       console.error("Error confirming receipt:", error);
       showError('Failed to confirm payment.');
+    }
+  };
+
+  const handleRejectReceipt = async (debt) => {
+    try {
+      if (currentUser && debt.id && !debt.id.startsWith('mock-') && !debt.id.startsWith('d-')) {
+        await updateDoc(doc(db, 'debts', debt.id), {
+          status: 'unpaid',
+          lastDeclinedAt: new Date().toISOString(),
+        });
+      }
+      if (propDebts) {
+        setOwedToYou((prev) =>
+          prev.map((d) => (d.id === debt.id ? { ...d, status: 'unpaid' } : d))
+        );
+      }
+      showSuccess('Payment declined. Friend can re-submit after sending.');
+    } catch (error) {
+      console.error("Error declining payment:", error);
+      showError('Failed to decline payment.');
     }
   };
 
@@ -179,11 +240,22 @@ export default function DebtList({ debts: propDebts, onSettle }) {
                     </div>
                     <div>
                        {debt.status === 'pending_confirmation' ? (
-                          <span className="text-xs text-[var(--ink-3)]">
-                             <Clock className="w-3 h-3 inline mr-1" /> Pending
-                          </span>
+                          <div className="flex items-center gap-2">
+                             <span className="text-xs text-[var(--ink-3)]">
+                                <Clock className="w-3 h-3 inline mr-1" /> Pending
+                             </span>
+                             <button
+                                type="button"
+                                onClick={() => handleCancelMarkPaid(debt)}
+                                className="text-xs text-[var(--ink-3)] hover:text-[var(--ink)] underline cursor-pointer"
+                                title="Reset to unpaid"
+                             >
+                                Cancel
+                             </button>
+                          </div>
                         ) : (
                           <button
+                             type="button"
                              onClick={() => handleMarkPaid(debt)}
                              className="btn-secondary text-xs py-1 px-2.5"
                           >
@@ -213,12 +285,22 @@ export default function DebtList({ debts: propDebts, onSettle }) {
                     </div>
                     <div>
                        {debt.status === 'pending_confirmation' ? (
-                          <button
-                             onClick={() => handleConfirmReceipt(debt)}
-                             className="btn-primary text-xs py-1 px-2.5"
-                          >
-                             <Check className="w-3.5 h-3.5 inline mr-1" /> Confirm
-                          </button>
+                          <div className="flex items-center gap-2">
+                             <button
+                                type="button"
+                                onClick={() => handleConfirmReceipt(debt)}
+                                className="btn-primary text-xs py-1 px-2.5"
+                             >
+                                <Check className="w-3.5 h-3.5 inline mr-1" /> Confirm
+                             </button>
+                             <button
+                                type="button"
+                                onClick={() => handleRejectReceipt(debt)}
+                                className="btn-secondary text-xs py-1 px-2 text-[var(--debit)] hover:text-[var(--debit)]"
+                             >
+                                Decline
+                             </button>
+                          </div>
                         ) : (
                           <span className="text-xs text-[var(--ink-3)]">Awaiting repayment</span>
                         )}

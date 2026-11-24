@@ -227,13 +227,34 @@ export default function AiChatbot({
     if (!currentUser) return undefined;
     setLoadingContext(true);
 
-    const unsubscribeTransactions = onSnapshot(
-      query(collection(db, 'transactions'), where('userId', '==', currentUser.uid), orderBy('date', 'desc')),
+    let unsubscribeTransactions = () => {};
+    const transactionsQuery = query(
+      collection(db, 'transactions'),
+      where('userId', '==', currentUser.uid),
+      orderBy('date', 'desc')
+    );
+
+    unsubscribeTransactions = onSnapshot(
+      transactionsQuery,
       (snapshot) => {
         setTransactions(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
         setLoadingContext(false);
       },
-      () => setLoadingContext(false),
+      () => {
+        // Fallback if composite index is building or missing
+        const fallbackQuery = query(
+          collection(db, 'transactions'),
+          where('userId', '==', currentUser.uid)
+        );
+        unsubscribeTransactions = onSnapshot(
+          fallbackQuery,
+          (snapshot) => {
+            setTransactions(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+            setLoadingContext(false);
+          },
+          () => setLoadingContext(false)
+        );
+      }
     );
 
     const unsubscribeBudget = onSnapshot(doc(db, 'budgets', currentUser.uid), (s) =>

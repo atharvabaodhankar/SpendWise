@@ -322,6 +322,16 @@ export default function ApiKeyManager() {
           <Layers className="w-3.5 h-3.5" />
           Tool catalog ({SPENDWISE_MCP_TOOLS_CATALOG.length})
         </button>
+
+        <a
+          href="/dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-auto pb-2.5 text-xs font-medium text-[var(--accent)] hover:underline flex items-center gap-1"
+        >
+          <span>Full MCP documentation (/dev)</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </a>
       </div>
 
       {/* Firebase Rules Alert */}

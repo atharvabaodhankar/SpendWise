@@ -13,6 +13,7 @@ import {
   Trash2,
   X,
   ChevronRight,
+  Check,
 } from 'lucide-react';
 import {
   addInvestment,
@@ -20,10 +21,12 @@ import {
 } from '../utils/investmentService';
 import {
   addSalary,
+  updateSalary,
   deleteSalary,
 } from '../utils/salaryService';
 import Money from '../components/Money';
 import CustomSelect from '../components/CustomSelect';
+import { getLocalTodayString } from '../utils/dateUtils';
 
 const BANKNOTE_HUES = [
   'var(--cat-stone)',
@@ -38,6 +41,29 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
+
+export function formatAssetType(type) {
+  if (!type) return 'Other';
+  const norm = String(type).trim().toLowerCase();
+  const map = {
+    fd: 'Fixed Deposits',
+    fixed_deposit: 'Fixed Deposits',
+    'fixed deposits': 'Fixed Deposits',
+    'fixed deposit': 'Fixed Deposits',
+    mutual_fund: 'Mutual Funds',
+    mutual_funds: 'Mutual Funds',
+    'mutual funds': 'Mutual Funds',
+    'mutual fund': 'Mutual Funds',
+    stocks: 'Stocks / Equity',
+    stock: 'Stocks / Equity',
+    crypto: 'Cryptocurrency',
+    cryptocurrency: 'Cryptocurrency',
+    gold: 'Gold',
+    silver: 'Silver',
+    other: 'Other',
+  };
+  return map[norm] || type;
+}
 
 export default function Investments({ initialHoldings, initialSalaryHistory } = {}) {
   const auth = useAuth?.() || {};
@@ -66,15 +92,18 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
     provider: '',
     investedAmount: '',
     currentValue: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
+    interestRate: '',
+    maturityDate: '',
+    purchaseDate: getLocalTodayString(),
     notes: '',
   });
 
   const [salaryForm, setSalaryForm] = useState({
     salaryMonth: MONTH_NAMES[new Date().getMonth()],
     amount: '',
-    receivedDate: new Date().toISOString().split('T')[0],
+    receivedDate: getLocalTodayString(),
     companyOrSource: '',
+    status: 'received',
     notes: '',
   });
 
@@ -129,7 +158,8 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
       investments.forEach((inv) => {
         const invAmt = Number(inv.investedAmount ?? inv.invested) || 0;
         const curAmt = Number(inv.currentValue ?? inv.current) || invAmt;
-        const type = inv.assetType || inv.type || 'Other';
+        const rawType = inv.assetType || inv.type || 'Other';
+        const type = formatAssetType(rawType);
 
         invested += invAmt;
         current += curAmt;
@@ -165,9 +195,10 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
   // Filtered investments
   const filteredInvestments = useMemo(() => {
     if (filterType === 'all') return investments;
+    const fNorm = filterType.toLowerCase();
     return investments.filter((inv) => {
       const t = (inv.assetType || inv.type || '').toLowerCase();
-      return t === filterType.toLowerCase();
+      return t === fNorm || formatAssetType(t).toLowerCase() === fNorm;
     });
   }, [investments, filterType]);
 
@@ -183,13 +214,15 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
     }
 
     try {
-      if (currentUser) {
+      if (currentUser && !initialHoldings) {
         await addInvestment(currentUser.uid, {
           name: investmentForm.name.trim(),
           assetType: investmentForm.assetType,
           provider: investmentForm.provider.trim(),
           investedAmount: invAmt,
           currentValue: curAmt,
+          interestRate: investmentForm.interestRate ? parseFloat(investmentForm.interestRate) : null,
+          maturityDate: investmentForm.maturityDate || null,
           purchaseDate: investmentForm.purchaseDate,
           notes: investmentForm.notes.trim(),
         });
@@ -201,6 +234,8 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
             ...investmentForm,
             investedAmount: invAmt,
             currentValue: curAmt,
+            interestRate: investmentForm.interestRate ? parseFloat(investmentForm.interestRate) : null,
+            maturityDate: investmentForm.maturityDate || null,
           },
         ]);
       }
@@ -211,6 +246,8 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
         provider: '',
         investedAmount: '',
         currentValue: '',
+        interestRate: '',
+        maturityDate: '',
         purchaseDate: new Date().toISOString().split('T')[0],
         notes: '',
       });
@@ -223,7 +260,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
   // Handle delete investment
   const handleDeleteInvestment = async (invId) => {
     try {
-      if (currentUser) {
+      if (currentUser && !initialHoldings) {
         await deleteInvestment(currentUser.uid, invId);
       }
       setInvestments((prev) => prev.filter((i) => i.id !== invId));
@@ -245,12 +282,13 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
     }
 
     try {
-      if (currentUser) {
+      if (currentUser && !initialSalaryHistory) {
         await addSalary(currentUser.uid, {
           salaryMonth: salaryForm.salaryMonth,
           amount: amt,
           receivedDate: salaryForm.receivedDate,
           companyOrSource: salaryForm.companyOrSource.trim() || 'Company',
+          status: salaryForm.status || 'received',
           notes: salaryForm.notes.trim(),
         });
       } else {
@@ -260,6 +298,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
             id: `sal-${Date.now()}`,
             ...salaryForm,
             amount: amt,
+            status: salaryForm.status || 'received',
             company: salaryForm.companyOrSource,
             date: salaryForm.receivedDate,
           },
@@ -269,8 +308,9 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
       setSalaryForm({
         salaryMonth: MONTH_NAMES[new Date().getMonth()],
         amount: '',
-        receivedDate: new Date().toISOString().split('T')[0],
+        receivedDate: getLocalTodayString(),
         companyOrSource: '',
+        status: 'received',
         notes: '',
       });
       showSuccess('Salary recorded.');
@@ -293,6 +333,28 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
     }
   };
 
+  // Handle mark pending salary as received
+  const handleMarkSalaryReceived = async (salId) => {
+    try {
+      const today = getLocalTodayString();
+      if (currentUser && !initialSalaryHistory) {
+        await updateSalary(currentUser.uid, salId, {
+          status: 'received',
+          receivedDate: today,
+        });
+      }
+      setSalaries((prev) =>
+        prev.map((s) =>
+          s.id === salId ? { ...s, status: 'received', receivedDate: today } : s
+        )
+      );
+      showSuccess('Salary marked as received.');
+    } catch (err) {
+      console.error('Failed to update salary status:', err);
+      showError('Failed to update salary status.');
+    }
+  };
+
   // Chronological timeline grouping for salary (newest first, grouped by year)
   const salaryTimeline = useMemo(() => {
     // Sort newest first
@@ -303,9 +365,14 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
     });
 
     let totalReceived = 0;
+    let totalPending = 0;
     const itemsWithDelta = sorted.map((entry, index) => {
       const amt = Number(entry.amount) || 0;
-      totalReceived += amt;
+      if (entry.status === 'pending') {
+        totalPending += amt;
+      } else {
+        totalReceived += amt;
+      }
 
       // Delta compared to the chronologically prior entry (which is at index + 1 in a newest-first array)
       const nextOlder = sorted[index + 1];
@@ -347,6 +414,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
 
     return {
       totalReceived,
+      totalPending,
       monthCount: sorted.length,
       years: Object.entries(yearGroups).sort(([yA], [yB]) => Number(yB) - Number(yA)),
     };
@@ -465,7 +533,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                         className="w-2 h-2 rounded-full"
                         style={{ backgroundColor: BANKNOTE_HUES[idx % BANKNOTE_HUES.length] }}
                       />
-                      <span className="text-[var(--ink-2)]">{item.type}</span>
+                      <span className="text-[var(--ink-2)]">{formatAssetType(item.type)}</span>
                       <Money amount={item.value} className="text-[var(--ink)] font-medium" />
                       <span className="text-[var(--ink-3)] font-normal">
                         ({Math.round(item.percent)}%)
@@ -503,12 +571,13 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                       type="button"
                       onClick={() => setFilterType(t)}
                       className={`px-2.5 py-1 text-xs rounded-[6px] transition-colors cursor-pointer ${
-                        filterType.toLowerCase() === t.toLowerCase()
+                        filterType.toLowerCase() === t.toLowerCase() ||
+                        filterType.toLowerCase() === formatAssetType(t).toLowerCase()
                           ? 'bg-[var(--sunken)] text-[var(--ink)] font-medium'
                           : 'text-[var(--ink-3)] hover:text-[var(--ink)]'
                       }`}
                     >
-                      {t}
+                      {formatAssetType(t)}
                     </button>
                   ))}
                 </div>
@@ -524,7 +593,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     <option value="all">All</option>
                     {assetTypesPresent.map((t) => (
                       <option key={t} value={t}>
-                        {t}
+                        {formatAssetType(t)}
                       </option>
                     ))}
                   </CustomSelect>
@@ -532,10 +601,10 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
               </div>
             </div>
 
-            {/* Desktop Holdings Table (>=768px): sticky header, right-aligned numbers */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead className="sticky top-14 bg-[var(--bg)] border-b border-[var(--line)] text-xs text-[var(--ink-3)] font-normal z-10">
+            {/* Desktop Holdings Table (>=768px): clean sticky header at top-0, right-aligned numbers */}
+            <div className="hidden md:block overflow-x-auto rounded-[6px]">
+              <table className="w-full min-w-[640px] text-left text-sm border-collapse">
+                <thead className="sticky top-0 bg-[var(--bg)] border-b border-[var(--line)] text-xs text-[var(--ink-3)] font-normal z-10">
                   <tr>
                     <th className="py-2.5 pr-4 font-normal">Name</th>
                     <th className="py-2.5 px-4 font-normal">Type</th>
@@ -559,6 +628,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                       const diff = curAmt - invAmt;
                       const pct = invAmt > 0 ? (diff / invAmt) * 100 : 0;
                       const assetType = inv.assetType || inv.type || 'Other';
+                      const isMatured = inv.maturityDate && new Date(inv.maturityDate) <= new Date();
 
                       return (
                         <tr key={inv.id} className="hover:bg-[var(--sunken)]/40 transition-colors group">
@@ -566,14 +636,37 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                             <div className="font-medium text-[var(--ink)] leading-snug">
                               {inv.name || 'Holding'}
                             </div>
-                            {inv.provider && (
-                              <div className="text-xs text-[var(--ink-3)] mt-0.5">
-                                {inv.provider}
-                              </div>
-                            )}
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--ink-3)] mt-0.5">
+                              {inv.provider && <span>{inv.provider}</span>}
+                              {inv.provider && (inv.interestRate || inv.maturityDate) && (
+                                <span className="opacity-40">·</span>
+                              )}
+                              {inv.interestRate ? (
+                                <span className="text-[var(--credit)] font-medium">
+                                  {inv.interestRate}% p.a.
+                                </span>
+                              ) : null}
+                              {inv.interestRate && inv.maturityDate ? (
+                                <span className="opacity-40">·</span>
+                              ) : null}
+                              {inv.maturityDate ? (
+                                <span>Matures {inv.maturityDate}</span>
+                              ) : null}
+                              {inv.maturityDate ? (
+                                <span
+                                  className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                                    isMatured
+                                      ? 'bg-[var(--sunken)] text-[var(--ink-2)]'
+                                      : 'bg-[var(--credit-soft)] text-[var(--credit)]'
+                                  }`}
+                                >
+                                  {isMatured ? 'Matured' : 'Active'}
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 text-xs text-[var(--ink-2)]">
-                            {assetType}
+                            {formatAssetType(assetType)}
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             <Money amount={invAmt} className="font-medium text-[var(--ink-2)]" />
@@ -647,8 +740,9 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                       {/* Line 2: Type and provider left, return right */}
                       <div className="flex items-center justify-between text-xs text-[var(--ink-3)]">
                         <span className="truncate max-w-[200px]">
-                          {assetType}
+                          {formatAssetType(assetType)}
                           {inv.provider ? ` · ${inv.provider}` : ''}
+                          {inv.interestRate ? ` · ${inv.interestRate}% p.a.` : ''}
                         </span>
                         {diff === 0 ? (
                           <span className="text-[var(--ink-3)]">0.0%</span>
@@ -663,6 +757,20 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                           </span>
                         )}
                       </div>
+                      {inv.maturityDate && (
+                        <div className="flex items-center justify-between text-xs text-[var(--ink-3)] mt-0.5">
+                          <span>Matures: {inv.maturityDate}</span>
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                              new Date(inv.maturityDate) <= new Date()
+                                ? 'bg-[var(--sunken)] text-[var(--ink-2)]'
+                                : 'bg-[var(--credit-soft)] text-[var(--credit)]'
+                            }`}
+                          >
+                            {new Date(inv.maturityDate) <= new Date() ? 'Matured' : 'Active'}
+                          </span>
+                        </div>
+                      )}
                     </button>
                   );
                 })
@@ -676,13 +784,27 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
       {activeTab === 'salary' && (
         <div className="space-y-6">
           {/* Summary Line: "Received ₹X across N months." */}
-          <div className="text-xs text-[var(--ink-3)] font-normal border-b border-[var(--line)] pb-3">
-            Received{' '}
-            <Money
-              amount={salaryTimeline.totalReceived}
-              className="font-medium text-[var(--ink)]"
-            />{' '}
-            across {salaryTimeline.monthCount} {salaryTimeline.monthCount === 1 ? 'month' : 'months'}.
+          <div className="text-xs text-[var(--ink-3)] font-normal border-b border-[var(--line)] pb-3 flex flex-wrap items-center gap-x-2">
+            <span>
+              Received{' '}
+              <Money
+                amount={salaryTimeline.totalReceived}
+                className="font-medium text-[var(--ink)]"
+              />{' '}
+              across {salaryTimeline.monthCount} {salaryTimeline.monthCount === 1 ? 'month' : 'months'}.
+            </span>
+            {salaryTimeline.totalPending > 0 && (
+              <>
+                <span className="text-[var(--ink-3)]">·</span>
+                <span className="text-[var(--ink-2)]">
+                  Expected pending:{' '}
+                  <Money
+                    amount={salaryTimeline.totalPending}
+                    className="font-medium text-[var(--ink)]"
+                  />
+                </span>
+              </>
+            )}
           </div>
 
           {/* Timeline */}
@@ -708,15 +830,26 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
 
                           <div className="flex items-start justify-between gap-4">
                             <div>
-                              <div className="text-sm font-medium text-[var(--ink)]">
-                                {entry.monthLabel}
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-[var(--ink)]">
+                                  {entry.monthLabel}
+                                </span>
+                                <span
+                                  className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                                    entry.status === 'pending'
+                                      ? 'bg-[var(--sunken)] text-[var(--ink-2)]'
+                                      : 'bg-[var(--credit-soft)] text-[var(--credit)]'
+                                  }`}
+                                >
+                                  {entry.status === 'pending' ? 'Pending' : 'Received'}
+                                </span>
                               </div>
                               <div className="text-xs text-[var(--ink-3)] mt-0.5">
                                 {entry.companyOrSource || entry.company || 'Source'}
                               </div>
                             </div>
 
-                            <div className="text-right flex items-center gap-3">
+                            <div className="text-right flex items-center gap-2.5">
                               <div>
                                 <Money
                                   amount={entry.amountNum}
@@ -739,6 +872,19 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                                   </div>
                                 )}
                               </div>
+
+                              {entry.status === 'pending' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkSalaryReceived(entry.id)}
+                                  className="btn btn-secondary h-7 px-2 text-xs flex items-center gap-1 cursor-pointer"
+                                  title="Mark as received"
+                                  aria-label="Mark salary as received"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Received</span>
+                                </button>
+                              )}
 
                               <button
                                 type="button"
@@ -788,7 +934,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
               <div className="flex justify-between py-1 border-b border-[var(--line)]">
                 <span className="text-[var(--ink-3)]">Asset type</span>
                 <span className="font-medium text-[var(--ink)]">
-                  {selectedMobileHolding.assetType || selectedMobileHolding.type || 'Other'}
+                  {formatAssetType(selectedMobileHolding.assetType || selectedMobileHolding.type)}
                 </span>
               </div>
 
@@ -797,6 +943,58 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                   <span className="text-[var(--ink-3)]">Provider / Platform</span>
                   <span className="font-medium text-[var(--ink)]">
                     {selectedMobileHolding.provider}
+                  </span>
+                </div>
+              )}
+
+              {selectedMobileHolding.interestRate && (
+                <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                  <span className="text-[var(--ink-3)]">Interest rate</span>
+                  <span className="font-medium text-[var(--credit)]">
+                    {selectedMobileHolding.interestRate}% p.a.
+                  </span>
+                </div>
+              )}
+
+              {selectedMobileHolding.maturityDate && (
+                <>
+                  <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                    <span className="text-[var(--ink-3)]">Maturity date</span>
+                    <span className="font-medium text-[var(--ink)]">
+                      {selectedMobileHolding.maturityDate}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                    <span className="text-[var(--ink-3)]">Status</span>
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                        new Date(selectedMobileHolding.maturityDate) <= new Date()
+                          ? 'bg-[var(--sunken)] text-[var(--ink-2)]'
+                          : 'bg-[var(--credit-soft)] text-[var(--credit)]'
+                      }`}
+                    >
+                      {new Date(selectedMobileHolding.maturityDate) <= new Date()
+                        ? 'Matured'
+                        : 'Active'}
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {selectedMobileHolding.purchaseDate && (
+                <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                  <span className="text-[var(--ink-3)]">Purchase date</span>
+                  <span className="font-medium text-[var(--ink)]">
+                    {selectedMobileHolding.purchaseDate}
+                  </span>
+                </div>
+              )}
+
+              {selectedMobileHolding.notes && (
+                <div className="flex justify-between py-1 border-b border-[var(--line)]">
+                  <span className="text-[var(--ink-3)]">Notes</span>
+                  <span className="font-medium text-[var(--ink)]">
+                    {selectedMobileHolding.notes}
                   </span>
                 </div>
               )}
@@ -958,6 +1156,61 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label">Interest rate (% p.a.)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 7.5"
+                    value={investmentForm.interestRate}
+                    onChange={(e) =>
+                      setInvestmentForm((p) => ({ ...p, interestRate: e.target.value }))
+                    }
+                    className="field h-10 text-xs tabular-nums"
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Maturity date</label>
+                  <input
+                    type="date"
+                    value={investmentForm.maturityDate}
+                    onChange={(e) =>
+                      setInvestmentForm((p) => ({ ...p, maturityDate: e.target.value }))
+                    }
+                    className="field h-10 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label">Purchase date</label>
+                  <input
+                    type="date"
+                    value={investmentForm.purchaseDate}
+                    onChange={(e) =>
+                      setInvestmentForm((p) => ({ ...p, purchaseDate: e.target.value }))
+                    }
+                    className="field h-10 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Notes</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 3-year cumulative deposit"
+                    value={investmentForm.notes}
+                    onChange={(e) =>
+                      setInvestmentForm((p) => ({ ...p, notes: e.target.value }))
+                    }
+                    className="field h-10 text-xs"
+                  />
+                </div>
+              </div>
+
               <div className="pt-2 flex gap-2">
                 <button
                   type="button"
@@ -1056,6 +1309,34 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                   }
                   className="field h-10 text-sm"
                 />
+              </div>
+
+              <div>
+                <label className="field-label">Status</label>
+                <div className="flex bg-[var(--sunken)] p-0.5 rounded-[6px]">
+                  <button
+                    type="button"
+                    onClick={() => setSalaryForm((p) => ({ ...p, status: 'received' }))}
+                    className={`flex-1 text-xs py-1.5 rounded-[4px] transition-colors cursor-pointer ${
+                      salaryForm.status === 'received'
+                        ? 'bg-[var(--surface)] text-[var(--ink)] font-medium shadow-xs'
+                        : 'text-[var(--ink-3)]'
+                    }`}
+                  >
+                    Received
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSalaryForm((p) => ({ ...p, status: 'pending' }))}
+                    className={`flex-1 text-xs py-1.5 rounded-[4px] transition-colors cursor-pointer ${
+                      salaryForm.status === 'pending'
+                        ? 'bg-[var(--surface)] text-[var(--ink)] font-medium shadow-xs'
+                        : 'text-[var(--ink-3)]'
+                    }`}
+                  >
+                    Pending
+                  </button>
+                </div>
               </div>
 
               <div className="pt-2 flex gap-2">

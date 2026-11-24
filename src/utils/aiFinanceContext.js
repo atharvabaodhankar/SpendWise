@@ -1,3 +1,5 @@
+import { getLocalDateString, getTimestampMs } from './dateUtils';
+
 const CURRENCY_FORMATTER = new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
@@ -11,28 +13,27 @@ function normalizeAmount(value) {
 
 function normalizeDate(dateValue) {
   if (!dateValue) return null;
-
-  if (typeof dateValue === 'string') {
-    return dateValue;
-  }
-
-  if (typeof dateValue?.toDate === 'function') {
-    return dateValue.toDate().toISOString().split('T')[0];
-  }
-
-  if (dateValue instanceof Date) {
-    return dateValue.toISOString().split('T')[0];
-  }
-
-  return null;
+  return getLocalDateString(dateValue) || null;
 }
 
 function sortByDateDescending(left, right) {
-  return new Date(right.date ?? 0).getTime() - new Date(left.date ?? 0).getTime();
+  const dateA = getLocalDateString(left.date);
+  const dateB = getLocalDateString(right.date);
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return 1;
+  if (!dateB) return -1;
+  const cmp = dateB.localeCompare(dateA);
+  if (cmp !== 0) return cmp;
+  return getTimestampMs(right.createdAt) - getTimestampMs(left.createdAt);
 }
 
 function sortInvestmentsByDateDescending(left, right) {
-  return new Date(right.purchaseDate ?? 0).getTime() - new Date(left.purchaseDate ?? 0).getTime();
+  const dateA = getLocalDateString(left.purchaseDate || left.date);
+  const dateB = getLocalDateString(right.purchaseDate || right.date);
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return 1;
+  if (!dateB) return -1;
+  return dateB.localeCompare(dateA);
 }
 
 export function formatCurrency(value) {

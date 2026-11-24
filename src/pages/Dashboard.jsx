@@ -13,6 +13,7 @@ import {
   deleteDoc,
   doc,
   setDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { ChevronRight, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import TransactionForm from '../components/TransactionForm';
@@ -24,6 +25,12 @@ import InitialBalanceSetup from '../components/InitialBalanceSetup';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import Money from '../components/Money';
 import { checkBalanceAlert, checkDailyExpenseAlert } from '../utils/emailAlerts';
+import {
+  getLocalDateString,
+  getLocalTodayString,
+  getCurrentMonthString,
+  sortTransactionsChronological,
+} from '../utils/dateUtils';
 
 const BANKNOTE_HUES = [
   'var(--cat-stone)',
@@ -35,54 +42,6 @@ const BANKNOTE_HUES = [
 ];
 
 const HERO_METRIC_STORAGE_KEY = 'spendwise_hero_metric_preference';
-
-function getLocalDateString(dateVal) {
-  if (!dateVal) return '';
-  if (typeof dateVal === 'string') {
-    const trimmed = dateVal.trim();
-    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (match) {
-      if (trimmed.includes('T')) {
-        const d = new Date(trimmed);
-        if (!isNaN(d.getTime())) {
-          const y = d.getFullYear();
-          const m = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          return `${y}-${m}-${day}`;
-        }
-      }
-      return `${match[1]}-${match[2]}-${match[3]}`;
-    }
-    const d = new Date(trimmed);
-    if (!isNaN(d.getTime())) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    }
-    return trimmed.split('T')[0] || '';
-  }
-  if (dateVal instanceof Date) {
-    if (isNaN(dateVal.getTime())) return '';
-    const y = dateVal.getFullYear();
-    const m = String(dateVal.getMonth() + 1).padStart(2, '0');
-    const day = String(dateVal.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-  if (dateVal && typeof dateVal.toDate === 'function') {
-    try {
-      const d = dateVal.toDate();
-      if (isNaN(d.getTime())) return '';
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    } catch {
-      return '';
-    }
-  }
-  return '';
-}
 
 export default function Dashboard({ initialBalances, initialDebts, initialPreferences, initialHeroMetric } = {}) {
   const auth = useAuth?.() || {};
@@ -183,18 +142,38 @@ export default function Dashboard({ initialBalances, initialDebts, initialPrefer
   useEffect(() => {
     if (!currentUser) return;
 
-    // Transactions listener
+    // Transactions listener with sort and graceful fallback
+    const sortTransactionsList = (list) => sortTransactionsChronological(list);
+
+    let unsubscribeTransactions = () => {};
     const transactionsQuery = query(
       collection(db, 'transactions'),
       where('userId', '==', currentUser.uid),
       orderBy('date', 'desc')
     );
-    const unsubscribeTransactions = onSnapshot(transactionsQuery, (qs) => {
-      const data = [];
-      qs.forEach((d) => data.push({ id: d.id, ...d.data() }));
-      setTransactions(data);
-      setLoading(false);
-    });
+
+    unsubscribeTransactions = onSnapshot(
+      transactionsQuery,
+      (qs) => {
+        const data = [];
+        qs.forEach((d) => data.push({ id: d.id, ...d.data() }));
+        setTransactions(sortTransactionsList(data));
+        setLoading(false);
+      },
+      (error) => {
+        console.warn('Composite index query failed, using fallback query:', error);
+        const fallbackQuery = query(
+          collection(db, 'transactions'),
+          where('userId', '==', currentUser.uid)
+        );
+        unsubscribeTransactions = onSnapshot(fallbackQuery, (qs) => {
+          const data = [];
+          qs.forEach((d) => data.push({ id: d.id, ...d.data() }));
+          setTransactions(sortTransactionsList(data));
+          setLoading(false);
+        });
+      }
+    );
 
     let unsubscribeBalances = () => {};
     if (!initialBalances) {
@@ -380,6 +359,29 @@ export default function Dashboard({ initialBalances, initialDebts, initialPrefer
   const handleConfirmDelete = async () => {
     if (!deleteConfirmation) return;
     try {
+      // Reconcile balance if transaction affected current balance
+      if (deleteConfirmation.affectCurrentBalance !== false && currentUser) {
+        const amt = Number(deleteConfirmation.amount) || 0;
+        const pm = (deleteConfirmation.paymentMethod || '').toLowerCase() === 'cash' ? 'cash' : 'online';
+        // Reversal: If expense, refund back (+amt); if income, subtract (-amt)
+        const reversalDelta = deleteConfirmation.type === 'expense' ? amt : -amt;
+        const balanceRef = doc(db, 'currentBalances', currentUser.uid);
+        const bSnap = await getDoc(balanceRef);
+        if (bSnap.exists()) {
+          const cur = bSnap.data();
+          await setDoc(
+            balanceRef,
+            {
+              ...cur,
+              [pm]: (Number(cur[pm]) || 0) + reversalDelta,
+              lastUpdated: new Date(),
+              updatedBy: 'dashboard_delete',
+            },
+            { merge: true }
+          );
+        }
+      }
+
       await deleteDoc(doc(db, 'transactions', deleteConfirmation.id));
       setDeleteConfirmation(null);
       showSuccess('Transaction deleted.');
@@ -395,13 +397,9 @@ export default function Dashboard({ initialBalances, initialDebts, initialPrefer
 
   // Calculate local date strings
   const { todayStr, currentMonthStr } = useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
     return {
-      todayStr: `${y}-${m}-${d}`,
-      currentMonthStr: `${y}-${m}`,
+      todayStr: getLocalTodayString(),
+      currentMonthStr: getCurrentMonthString(),
     };
   }, []);
 

@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { formatCurrency } from './aiFinanceContext';
+import { getLocalDateString, getLocalTodayString } from './dateUtils';
 
 function toNumber(value, fallback = 0) {
   const parsed = Number.parseFloat(value ?? fallback);
@@ -16,23 +17,7 @@ function toNumber(value, fallback = 0) {
 }
 
 function toDateString(dateValue) {
-  if (!dateValue) {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  if (typeof dateValue === 'string') {
-    return dateValue;
-  }
-
-  if (typeof dateValue?.toDate === 'function') {
-    return dateValue.toDate().toISOString().split('T')[0];
-  }
-
-  if (dateValue instanceof Date) {
-    return dateValue.toISOString().split('T')[0];
-  }
-
-  return new Date().toISOString().split('T')[0];
+  return getLocalDateString(dateValue) || getLocalTodayString();
 }
 
 function normalizeTransactionInput(transaction, fallbackType = 'expense') {
@@ -227,7 +212,7 @@ export async function adjustBalanceFromAssistant(userId, payload) {
       category: 'Balance Adjustment',
       description: `Online balance adjustment: ${reason}`,
       paymentMethod: 'online',
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalTodayString(),
       userId,
       createdAt: new Date(),
       affectCurrentBalance: false,
@@ -242,7 +227,7 @@ export async function adjustBalanceFromAssistant(userId, payload) {
       category: 'Balance Adjustment',
       description: `Cash balance adjustment: ${reason}`,
       paymentMethod: 'cash',
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalTodayString(),
       userId,
       createdAt: new Date(),
       affectCurrentBalance: false,
