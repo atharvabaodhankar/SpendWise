@@ -481,6 +481,18 @@ const TOOLS = [
           type: 'string',
           description: 'Unique ID of the investment record to update.',
         },
+        name: {
+          type: 'string',
+          description: 'Updated name of the investment holding.',
+        },
+        assetType: {
+          type: 'string',
+          description: 'Updated asset category (e.g. mutual_fund, fd, stocks, gold, silver, crypto, other).',
+        },
+        provider: {
+          type: 'string',
+          description: 'Updated platform or broker (e.g. Zerodha, PhonePe, Groww, SBI).',
+        },
         currentValue: {
           type: 'number',
           description: 'Updated current market value.',
@@ -488,6 +500,18 @@ const TOOLS = [
         investedAmount: {
           type: 'number',
           description: 'Updated invested principal amount.',
+        },
+        interestRate: {
+          type: 'number',
+          description: 'Updated annual interest rate percentage.',
+        },
+        maturityDate: {
+          type: 'string',
+          description: 'Updated maturity date in YYYY-MM-DD format.',
+        },
+        purchaseDate: {
+          type: 'string',
+          description: 'Updated purchase date in YYYY-MM-DD format.',
         },
         units: {
           type: 'number',

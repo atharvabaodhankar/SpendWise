@@ -32,20 +32,22 @@ function toDateString(dateValue) {
 }
 
 export function normalizeInvestmentInput(inv) {
-  const investedAmount = toNumber(inv.investedAmount ?? inv.amount);
+  const investedAmount = toNumber(inv.investedAmount ?? inv.amount ?? inv.invested);
   const currentValue = inv.currentValue !== undefined && inv.currentValue !== null
     ? toNumber(inv.currentValue)
-    : investedAmount;
+    : (inv.current !== undefined && inv.current !== null ? toNumber(inv.current) : investedAmount);
 
   return {
     name: inv.name?.trim() || 'Investment',
-    assetType: inv.assetType?.trim() || 'other', // gold, silver, mutual_fund, fd, stocks, crypto, other
+    assetType: inv.assetType?.trim() || inv.type?.trim() || 'other', // gold, silver, mutual_fund, fd, stocks, crypto, other
     provider: inv.provider?.trim() || 'Direct', // PhonePe, Zerodha, Groww, SBI, etc.
     investedAmount,
     currentValue,
     purchaseDate: toDateString(inv.purchaseDate || inv.date),
     maturityDate: inv.maturityDate ? toDateString(inv.maturityDate) : null,
-    interestRate: inv.interestRate ? toNumber(inv.interestRate) : null,
+    interestRate: inv.interestRate !== undefined && inv.interestRate !== null && inv.interestRate !== ''
+      ? toNumber(inv.interestRate)
+      : null,
     units: inv.units ? toNumber(inv.units) : null,
     notes: inv.notes?.trim() || '',
   };
@@ -69,13 +71,17 @@ export async function addInvestment(userId, data) {
 }
 
 export async function updateInvestment(userId, investmentId, updates) {
-  const invRef = doc(db, 'investments', investmentId);
+  const actualInvestmentId = updates !== undefined ? investmentId : userId;
+  const actualUserId = updates !== undefined ? userId : null;
+  const actualUpdates = updates !== undefined ? updates : investmentId;
+
+  const invRef = doc(db, 'investments', actualInvestmentId);
   const snapshot = await getDoc(invRef);
   if (!snapshot.exists()) throw new Error('Investment not found.');
-  if (snapshot.data().userId !== userId) throw new Error('Unauthorized.');
+  if (actualUserId && snapshot.data().userId !== actualUserId) throw new Error('Unauthorized.');
 
   const existing = snapshot.data();
-  const normalized = normalizeInvestmentInput({ ...existing, ...updates });
+  const normalized = normalizeInvestmentInput({ ...existing, ...actualUpdates });
 
   await updateDoc(invRef, {
     ...normalized,
@@ -83,7 +89,7 @@ export async function updateInvestment(userId, investmentId, updates) {
   });
 
   return {
-    id: investmentId,
+    id: actualInvestmentId,
     ...normalized,
     message: `Updated ${normalized.name}.`,
   };

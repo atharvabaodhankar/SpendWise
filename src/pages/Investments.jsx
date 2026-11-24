@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { db } from '../firebase/config';
@@ -14,9 +14,11 @@ import {
   X,
   ChevronRight,
   Check,
+  Pencil,
 } from 'lucide-react';
 import {
   addInvestment,
+  updateInvestment,
   deleteInvestment,
 } from '../utils/investmentService';
 import {
@@ -56,6 +58,7 @@ export function formatAssetType(type) {
     'mutual fund': 'Mutual Funds',
     stocks: 'Stocks / Equity',
     stock: 'Stocks / Equity',
+    equity: 'Stocks / Equity',
     crypto: 'Cryptocurrency',
     cryptocurrency: 'Cryptocurrency',
     gold: 'Gold',
@@ -80,6 +83,25 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
   const [filterType, setFilterType] = useState('all');
   const [showAddInvestmentModal, setShowAddInvestmentModal] = useState(false);
   const [selectedMobileHolding, setSelectedMobileHolding] = useState(null);
+
+  // Edit Investment State
+  const [editingInvestment, setEditingInvestment] = useState(null);
+  const [editInvestmentForm, setEditInvestmentForm] = useState({
+    name: '',
+    assetType: 'Mutual Funds',
+    provider: '',
+    investedAmount: '',
+    currentValue: '',
+    interestRate: '',
+    maturityDate: '',
+    purchaseDate: getLocalTodayString(),
+    notes: '',
+  });
+
+  // Inline current value quick edit state for desktop table
+  const [inlineEditingId, setInlineEditingId] = useState(null);
+  const [inlineCurrentValue, setInlineCurrentValue] = useState('');
+  const inlineEditContainerRef = useRef(null);
 
   // Salary State
   const [salaries, setSalaries] = useState(() => initialSalaryHistory || []);
@@ -147,6 +169,42 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
 
     return () => unsubSal();
   }, [currentUser, initialSalaryHistory]);
+
+  // Dismiss edit modal on Escape key
+  useEffect(() => {
+    if (!editingInvestment) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setEditingInvestment(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editingInvestment]);
+
+  // Dismiss inline edit on click outside or Escape
+  useEffect(() => {
+    if (!inlineEditingId) return;
+    const handleClickOutside = (e) => {
+      if (
+        inlineEditContainerRef.current &&
+        !inlineEditContainerRef.current.contains(e.target)
+      ) {
+        setInlineEditingId(null);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setInlineEditingId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [inlineEditingId]);
 
   // Portfolio calculations
   const { totalInvested, totalCurrentValue, netReturn, assetTypesPresent, typeBreakdown } =
@@ -269,6 +327,139 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
     } catch (err) {
       console.error('Failed to delete investment:', err);
       showError('Failed to delete investment.');
+    }
+  };
+
+  const normalizeFormAssetType = (type) => {
+    const formatted = formatAssetType(type);
+    if (formatted === 'Stocks / Equity') return 'Stocks';
+    return formatted;
+  };
+
+  const openEditModal = (inv) => {
+    const invAmt = inv.investedAmount ?? inv.invested ?? 0;
+    const curAmt = inv.currentValue ?? inv.current ?? invAmt;
+    setEditingInvestment(inv);
+    setEditInvestmentForm({
+      name: inv.name || '',
+      assetType: normalizeFormAssetType(inv.assetType || inv.type || 'Mutual Funds'),
+      provider: inv.provider || '',
+      investedAmount: invAmt !== undefined && invAmt !== null ? String(invAmt) : '',
+      currentValue: curAmt !== undefined && curAmt !== null ? String(curAmt) : '',
+      interestRate: inv.interestRate !== undefined && inv.interestRate !== null ? String(inv.interestRate) : '',
+      maturityDate: inv.maturityDate || '',
+      purchaseDate: inv.purchaseDate || getLocalTodayString(),
+      notes: inv.notes || '',
+    });
+  };
+
+  // Handle update investment (backend + local state)
+  const handleUpdateInvestment = async (invId, updates) => {
+    try {
+      if (currentUser && !initialHoldings) {
+        await updateInvestment(currentUser.uid, invId, updates);
+      }
+      setInvestments((prev) =>
+        prev.map((i) => {
+          if (i.id !== invId) return i;
+          return {
+            ...i,
+            ...updates,
+            investedAmount: updates.investedAmount ?? updates.invested ?? i.investedAmount ?? i.invested,
+            invested: updates.invested ?? updates.investedAmount ?? i.invested ?? i.investedAmount,
+            currentValue: updates.currentValue ?? updates.current ?? i.currentValue ?? i.current,
+            current: updates.current ?? updates.currentValue ?? i.current ?? i.currentValue,
+          };
+        })
+      );
+      setSelectedMobileHolding((prev) => {
+        if (!prev || prev.id !== invId) return prev;
+        return {
+          ...prev,
+          ...updates,
+          investedAmount: updates.investedAmount ?? updates.invested ?? prev.investedAmount ?? prev.invested,
+          invested: updates.invested ?? updates.investedAmount ?? prev.invested ?? prev.investedAmount,
+          currentValue: updates.currentValue ?? updates.current ?? prev.currentValue ?? prev.current,
+          current: updates.current ?? updates.currentValue ?? prev.current ?? prev.currentValue,
+        };
+      });
+      showSuccess('Investment updated.');
+      return true;
+    } catch (err) {
+      console.error('Failed to update investment:', err);
+      showError('Failed to update investment.');
+      return false;
+    }
+  };
+
+  // Handle edit investment modal submit
+  const handleEditInvestmentSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingInvestment) return;
+
+    const invAmt = parseFloat(editInvestmentForm.investedAmount);
+    const curAmt = parseFloat(
+      editInvestmentForm.currentValue !== ''
+        ? editInvestmentForm.currentValue
+        : editInvestmentForm.investedAmount
+    );
+
+    if (!editInvestmentForm.name || isNaN(invAmt) || invAmt <= 0) {
+      showError('Please enter a valid asset name and invested amount.');
+      return;
+    }
+    if (isNaN(curAmt) || curAmt < 0) {
+      showError('Please enter a valid current value.');
+      return;
+    }
+
+    const updates = {
+      name: editInvestmentForm.name.trim(),
+      assetType: editInvestmentForm.assetType,
+      provider: editInvestmentForm.provider.trim(),
+      investedAmount: invAmt,
+      invested: invAmt,
+      currentValue: curAmt,
+      current: curAmt,
+      interestRate: editInvestmentForm.interestRate ? parseFloat(editInvestmentForm.interestRate) : null,
+      maturityDate: editInvestmentForm.maturityDate || null,
+      purchaseDate: editInvestmentForm.purchaseDate || getLocalTodayString(),
+      notes: editInvestmentForm.notes.trim(),
+    };
+
+    const success = await handleUpdateInvestment(editingInvestment.id, updates);
+    if (success) {
+      setEditingInvestment(null);
+    }
+  };
+
+  // Quick inline edit helpers for current value in desktop table
+  const startInlineEdit = (inv) => {
+    const currentVal = inv.currentValue ?? inv.current ?? inv.investedAmount ?? inv.invested ?? 0;
+    setInlineEditingId(inv.id);
+    setInlineCurrentValue(String(currentVal));
+  };
+
+  const handleSaveInlineCurrentValue = async (invId) => {
+    const parsed = parseFloat(inlineCurrentValue);
+    if (isNaN(parsed) || parsed < 0) {
+      showError('Please enter a valid current value.');
+      return;
+    }
+    const currentInv = investments.find((i) => i.id === invId);
+    const existingVal = Number(
+      currentInv?.currentValue ?? currentInv?.current ?? currentInv?.investedAmount ?? currentInv?.invested ?? 0
+    );
+    if (parsed === existingVal) {
+      setInlineEditingId(null);
+      return;
+    }
+    const success = await handleUpdateInvestment(invId, {
+      currentValue: parsed,
+      current: parsed,
+    });
+    if (success) {
+      setInlineEditingId(null);
     }
   };
 
@@ -611,7 +802,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     <th className="py-2.5 px-4 text-right font-normal">Invested</th>
                     <th className="py-2.5 px-4 text-right font-normal">Current value</th>
                     <th className="py-2.5 px-4 text-right font-normal">Return</th>
-                    <th className="py-2.5 pl-4 text-right font-normal w-12" aria-label="Actions"></th>
+                    <th className="py-2.5 pl-4 text-right font-normal w-20" aria-label="Actions"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--line)]">
@@ -672,7 +863,67 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                             <Money amount={invAmt} className="font-medium text-[var(--ink-2)]" />
                           </td>
                           <td className="py-3.5 px-4 text-right">
-                            <Money amount={curAmt} className="font-medium text-[var(--ink)]" />
+                            {inlineEditingId === inv.id ? (
+                              <div
+                                ref={inlineEditContainerRef}
+                                className="inline-flex items-center justify-end gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-3)] pointer-events-none">
+                                    ₹
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    inputMode="decimal"
+                                    value={inlineCurrentValue}
+                                    onChange={(e) => setInlineCurrentValue(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleSaveInlineCurrentValue(inv.id);
+                                      } else if (e.key === 'Escape') {
+                                        setInlineEditingId(null);
+                                      }
+                                    }}
+                                    autoFocus
+                                    aria-label="Edit current value"
+                                    className="field h-7 pl-5 pr-2 text-xs w-28 text-right tabular-nums py-0"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveInlineCurrentValue(inv.id)}
+                                  className="p-1 rounded-[4px] text-[var(--credit)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
+                                  aria-label="Save current value"
+                                  title="Save"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setInlineEditingId(null)}
+                                  className="p-1 rounded-[4px] text-[var(--ink-3)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
+                                  aria-label="Cancel editing"
+                                  title="Cancel"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => startInlineEdit(inv)}
+                                className="inline-flex items-center justify-end gap-1.5 group/val py-0.5 px-1.5 -mr-1.5 rounded-[4px] hover:bg-[var(--sunken)] transition-colors cursor-pointer text-right group"
+                                aria-label={`Edit current value for ${inv.name || 'holding'}`}
+                                title="Click to edit current value"
+                              >
+                                <Money amount={curAmt} className="font-medium text-[var(--ink)]" />
+                                <Pencil className="w-3.5 h-3.5 text-[var(--ink-3)] group-hover:text-[var(--ink)] opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity" />
+                              </button>
+                            )}
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             {diff === 0 ? (
@@ -691,14 +942,26 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                             )}
                           </td>
                           <td className="py-3.5 pl-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteInvestment(inv.id)}
-                              className="p-1.5 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
-                              aria-label="Delete holding"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(inv)}
+                                className="p-1.5 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
+                                aria-label={`Edit holding ${inv.name || 'holding'}`}
+                                title="Edit holding"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteInvestment(inv.id)}
+                                className="p-1.5 rounded-[6px] text-[var(--ink-3)] hover:text-[var(--debit)] hover:bg-[var(--sunken)] transition-colors cursor-pointer"
+                                aria-label={`Delete holding ${inv.name || 'holding'}`}
+                                title="Delete holding"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1007,12 +1270,26 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                 />
               </div>
 
-              <div className="flex justify-between py-1 border-b border-[var(--line)]">
+              <div className="flex justify-between items-center py-1 border-b border-[var(--line)]">
                 <span className="text-[var(--ink-3)]">Current value</span>
-                <Money
-                  amount={Number(selectedMobileHolding.currentValue ?? selectedMobileHolding.current) || 0}
-                  className="font-medium text-[var(--ink)]"
-                />
+                <div className="flex items-center gap-2">
+                  <Money
+                    amount={Number(selectedMobileHolding.currentValue ?? selectedMobileHolding.current) || 0}
+                    className="font-medium text-[var(--ink)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const holding = selectedMobileHolding;
+                      setSelectedMobileHolding(null);
+                      openEditModal(holding);
+                    }}
+                    className="text-xs px-2 py-0.5 rounded-[4px] bg-[var(--sunken)] text-[var(--ink-2)] hover:text-[var(--ink)] cursor-pointer"
+                    aria-label="Edit current value"
+                  >
+                    Edit
+                  </button>
+                </div>
               </div>
 
               <div className="flex justify-between py-1 border-b border-[var(--line)]">
@@ -1027,28 +1304,225 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                   }
                   return (
                     <span
-                      className={`font-medium ${
+                      className={`font-medium flex items-center gap-1 ${
                         diff > 0 ? 'text-[var(--credit)]' : 'text-[var(--debit)]'
                       }`}
                     >
-                      {diff > 0 ? '+' : '−'}₹{Math.abs(diff).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ({Math.abs(pct).toFixed(1)}%)
+                      <span>{diff > 0 ? '+' : '−'}</span>
+                      <Money amount={Math.abs(diff)} />
+                      <span>({Math.abs(pct).toFixed(1)}%)</span>
                     </span>
                   );
                 })()}
               </div>
             </div>
 
-            {/* Always-reachable Delete Action */}
-            <div className="pt-2">
+            {/* Action Buttons: Edit and Delete */}
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const holding = selectedMobileHolding;
+                  setSelectedMobileHolding(null);
+                  openEditModal(holding);
+                }}
+                className="btn btn-secondary flex-1 text-xs h-10 flex items-center justify-center gap-2 cursor-pointer"
+                aria-label="Edit holding"
+              >
+                <Pencil className="w-4 h-4" />
+                <span>Edit holding</span>
+              </button>
               <button
                 type="button"
                 onClick={() => handleDeleteInvestment(selectedMobileHolding.id)}
-                className="btn btn-danger w-full text-xs h-10 flex items-center justify-center gap-2 cursor-pointer"
+                className="btn btn-danger flex-1 text-xs h-10 flex items-center justify-center gap-2 cursor-pointer"
+                aria-label="Delete holding"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete holding</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT INVESTMENT MODAL ── */}
+      {editingInvestment && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Edit investment"
+          onClick={() => setEditingInvestment(null)}
+        >
+          <div
+            className="w-full sm:max-w-md bg-[var(--surface)] border border-[var(--line)] rounded-t-[14px] sm:rounded-[14px] shadow-[var(--shadow-pop)] p-6 space-y-4 max-h-[90dvh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--line)]">
+              <h3 className="text-base font-semibold text-[var(--ink)]">Edit investment</h3>
+              <button
+                type="button"
+                onClick={() => setEditingInvestment(null)}
+                className="p-1 rounded text-[var(--ink-3)] hover:text-[var(--ink)] cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditInvestmentSubmit} className="space-y-4">
+              <div>
+                <label className="field-label">Asset name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Parag Parikh Flexi Cap"
+                  value={editInvestmentForm.name}
+                  onChange={(e) =>
+                    setEditInvestmentForm((p) => ({ ...p, name: e.target.value }))
+                  }
+                  className="field h-10 text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label">Type</label>
+                  <CustomSelect
+                    value={editInvestmentForm.assetType}
+                    onChange={(e) =>
+                      setEditInvestmentForm((p) => ({ ...p, assetType: e.target.value }))
+                    }
+                    className="h-10 text-xs w-full"
+                  >
+                    <option value="Mutual Funds">Mutual Funds</option>
+                    <option value="Fixed Deposits">Fixed Deposits</option>
+                    <option value="Gold">Gold</option>
+                    <option value="Silver">Silver</option>
+                    <option value="Stocks">Stocks / Equity</option>
+                    <option value="Cryptocurrency">Cryptocurrency</option>
+                    <option value="Other">Other</option>
+                  </CustomSelect>
+                </div>
+
+                <div>
+                  <label className="field-label">Provider</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Zerodha, PhonePe"
+                    value={editInvestmentForm.provider}
+                    onChange={(e) =>
+                      setEditInvestmentForm((p) => ({ ...p, provider: e.target.value }))
+                    }
+                    className="field h-10 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label">Invested amount (₹)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    inputMode="decimal"
+                    required
+                    placeholder="0.00"
+                    value={editInvestmentForm.investedAmount}
+                    onChange={(e) =>
+                      setEditInvestmentForm((p) => ({ ...p, investedAmount: e.target.value }))
+                    }
+                    className="field h-10 text-sm tabular-nums"
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Current value (₹)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    inputMode="decimal"
+                    required
+                    placeholder="0.00"
+                    value={editInvestmentForm.currentValue}
+                    onChange={(e) =>
+                      setEditInvestmentForm((p) => ({ ...p, currentValue: e.target.value }))
+                    }
+                    className="field h-10 text-sm tabular-nums"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label">Interest rate (% p.a.)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 7.5"
+                    value={editInvestmentForm.interestRate}
+                    onChange={(e) =>
+                      setEditInvestmentForm((p) => ({ ...p, interestRate: e.target.value }))
+                    }
+                    className="field h-10 text-xs tabular-nums"
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Maturity date</label>
+                  <input
+                    type="date"
+                    value={editInvestmentForm.maturityDate}
+                    onChange={(e) =>
+                      setEditInvestmentForm((p) => ({ ...p, maturityDate: e.target.value }))
+                    }
+                    className="field h-10 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label">Purchase date</label>
+                  <input
+                    type="date"
+                    value={editInvestmentForm.purchaseDate}
+                    onChange={(e) =>
+                      setEditInvestmentForm((p) => ({ ...p, purchaseDate: e.target.value }))
+                    }
+                    className="field h-10 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Notes</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 3-year cumulative deposit"
+                    value={editInvestmentForm.notes}
+                    onChange={(e) =>
+                      setEditInvestmentForm((p) => ({ ...p, notes: e.target.value }))
+                    }
+                    className="field h-10 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingInvestment(null)}
+                  className="btn btn-quiet flex-1 text-xs"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary flex-1 text-xs">
+                  Save changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -1105,6 +1579,7 @@ export default function Investments({ initialHoldings, initialSalaryHistory } = 
                     <option value="Gold">Gold</option>
                     <option value="Silver">Silver</option>
                     <option value="Stocks">Stocks / Equity</option>
+                    <option value="Cryptocurrency">Cryptocurrency</option>
                     <option value="Other">Other</option>
                   </CustomSelect>
                 </div>
